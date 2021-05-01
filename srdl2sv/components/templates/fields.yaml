@@ -1,0 +1,31 @@
+---
+sense_list_rst: |-
+    {indent}always_ff @(posedge {clk_name} or {rst_edge} {rst_name})
+sense_list_no_rst: |-
+    {indent}always_ff @(posedge {clk_name})
+rst_field_assign: |-
+    {indent}if ({rst_negl}{rst_name})
+    {indent}    {field_name}_q{genvars} <= {rst_value};
+    {indent}else
+sw_access_field: |-
+    {indent}if ({reg_name}_{field_name}_sw_wr{genvars})
+    {indent}begin
+sw_access_byte: |-
+    {indent}if (byte_enable[{i}])
+    {indent}    {reg_name}_{field_name}_q{genvars}[8*({i}+1)-1 -: 8] <= sw_wr_bus[8*({i}+1)-1 -: 8];
+hw_access_we_wel: |-
+    {indent}if ({negl}{reg_name}_{field_name}_hw_wr{genvars})
+hw_access_field: |-
+    {indent}begin
+    {indent}    {reg_name}_{field_name}_q{genvars} <= {reg_name}_{field_name}_in{genvars};
+    {indent}end
+end_field_ff: |-
+    {indent}end // of {reg_name}_{field_name}'s always_ff
+field_comment: |-
+
+    {indent}//-----------------FIELD SUMMARY-----------------
+    {indent}// name       : {name}
+    {indent}// access     : hw = {hw_access} {hw_precedence} 
+    {indent}//              sw = {sw_access} {sw_precedence}
+    {indent}// reset      : {rst_active} / {rst_type}
+    {indent}//-----------------------------------------------

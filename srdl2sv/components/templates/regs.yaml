@@ -1,0 +1,20 @@
+---
+rw_wire_declare: |
+    logic {name}_wr {depth};
+    logic {name}_rd {depth};
+rw_wire_assign: |
+    assign {name}_bus_wr[i] = addr == {} && r_vld;
+    assign {name}_bus_wr[i] = addr == {} && r_vld;
+reg_comment: |-
+    /*******************************************************************
+     *******************************************************************
+     * REGISTER              : {name}
+     * DIMENSION             : {dimensions}
+     * DEPTHS (per dimension): {depth}
+     *******************************************************************
+     *******************************************************************/
+generate_for_start: |-
+    {indent}for ({iterator} = 0; {iterator} < {limit}; {iterator}++)
+    {indent}begin
+generate_for_end: |-
+    {indent}end // of for loop with iterator {dimension}
