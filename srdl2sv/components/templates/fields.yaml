@@ -13,6 +13,7 @@ sw_access_field: |-
 sw_access_byte: |-
     {indent}if (byte_enable[{i}])
     {indent}    {reg_name}_{field_name}_q{genvars}[8*({i}+1)-1 -: 8] <= sw_wr_bus[8*({i}+1)-1 -: 8];
+
 hw_access_we_wel: |-
     {indent}if ({negl}{reg_name}_{field_name}_hw_wr{genvars})
 hw_access_field: |-
@@ -29,3 +30,9 @@ field_comment: |-
     {indent}//              sw = {sw_access} {sw_precedence}
     {indent}// reset      : {rst_active} / {rst_type}
     {indent}//-----------------------------------------------
+combo_operation_comment: |-
+
+    {indent}// Combinational logic for {reg_name}_{field_name}
+assign_combo_operation: |-
+    {indent}assign {reg_name}_{field_name}_{op_name}{genvars} = {op_verilog}{reg_name}_{field_name}_q{genvars}
+
