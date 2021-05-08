@@ -130,6 +130,10 @@ class Field:
                         field_name = obj.inst_name,
                         genvars = genvars_str,
                         indent = self.indent(indent_lvl)))
+            else:
+                access_rtl['hw_write'].append(
+                    Field.templ_dict['hw_access_no_we_wel'].format(
+                        indent = self.indent(indent_lvl)))
 
             access_rtl['hw_write'].append(
                 Field.templ_dict['hw_access_field'].format(
@@ -173,18 +177,27 @@ class Field:
 
         # Check if hardware has precedence (default `precedence = sw`)
         if precedence == 'PrecedenceType.sw':
-            rtl_order = ['sw_write',
-                         'else' if len(access_rtl['hw_write']) > 0 else '',
+            order_list = ['sw_write',
                          'hw_write']
         else:
-            rtl_order = ['hw_write',
-                         'else' if len(access_rtl['sw_write']) > 0 else '',
+            order_list = ['hw_write',
                          'sw_write']
 
-        # Add dictionary to main RTL list in correct order
-        self.rtl = [
-            *self.rtl,
-            *chain.from_iterable([access_rtl[i] for i in rtl_order])]
+        # Add appropriate else
+        order_list_rtl = []
+
+        for i in order_list:
+            # Still a loop and not a list comprehension since this might
+            # get longer in the future and thus become unreadable
+            if len(access_rtl[i]) > 0:
+                order_list_rtl = [*order_list_rtl, *access_rtl[i]]
+                order_list_rtl.append("{}else".format(self.indent(indent_lvl)))
+
+        # Remove last pop
+        order_list_rtl.pop()
+
+        # Chain access RTL to the rest of the RTL
+        self.rtl = [*self.rtl, *order_list_rtl]
 
         indent_lvl -= 1
 
