@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
 
+# Standard modules
 import sys
-import os
-import re
 import time
 
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
-from systemrdl.node import FieldNode
+# Imported modules
+from systemrdl import RDLCompiler, RDLCompileError
 
+# Local modules
 from components.addrmap import AddrMap
-
+from cli.cli import CliArguments
 
 if __name__ == "__main__":
     # Take start timestamp
     start = time.time()
 
+    # Construct command line arguments
+    cli_arguments = CliArguments()
+    config = cli_arguments.get_config()
+
     # Compile and elaborate files provided from the command line
-    input_files = sys.argv[1:]
     rdlc = RDLCompiler()
 
     try:
-        for input_file in input_files:
-            rdlc.compile_file(input_file)
+        for input_file in config['input_file']:
+            rdlc.compile_file(
+                input_file, incl_search_paths=config['search_paths'])
 
         root = rdlc.elaborate()
     except RDLCompileError:
