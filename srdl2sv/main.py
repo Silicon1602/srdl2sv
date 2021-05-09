@@ -10,6 +10,7 @@ from systemrdl import RDLCompiler, RDLCompileError
 # Local modules
 from components.addrmap import AddrMap
 from cli.cli import CliArguments
+from log.log import create_logger
 
 if __name__ == "__main__":
     # Take start timestamp
@@ -33,8 +34,9 @@ if __name__ == "__main__":
 
     addrmap = AddrMap(rdlc, root.top)
 
-    print("====================================================")
-    print("Elapsed time: {} seconds".format(time.time() - start))
-    print("====================================================")
-
-
+    logger = create_logger(
+        __name__,
+        stream_log_level=config['stream_log_level'],
+        file_log_level=config['file_log_level'],
+        file_name=config['file_log_location'])
+    logger.info("Elapsed time: %f seconds", time.time() - start)

@@ -1,29 +1,46 @@
 import argparse
 import os
+import time
+import logging
 from itertools import chain
 
+logging_map = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+    "NONE": logging.NOTSET
+}
+
 class CliArguments():
+
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             description="SystemRDL 2 SystemVerilog compiler")
 
         self.parser.add_argument(
-            "-v",
-            "--verbosity",
-            action="count",
-            help="Increase output verbosity.")
+            "--stream_log_level",
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
+            default='WARNING',
+            help="Set verbosity level of output to shell. When set to 'NONE',\
+                  nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
-            "-q",
-            "--quiet",
-            action="store_true")
+            "--file_log_level",
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
+            default='INFO',
+            help="Set verbosity level of output to log-file. When set to 'NONE',\
+                  nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
             "-o",
             "--out_dir",
             type=str,
+            default="./srdl2sv_out",
             help="Define output directory to dump files.\
-                  If directory is non-existent, it will be created.")
+                  If directory is non-existent, it will be created.\
+                  (default: %(default)s)")
 
         self.parser.add_argument(
             "-d",
@@ -49,15 +66,29 @@ class CliArguments():
     def get_config(self) -> dict():
         args = self.parser.parse_args()
 
+        # Create dictionary to save config in
         config = dict()
 
+        # Save input file and output directory to dump everything in
         config['input_file'] = args.IN_RDL
-        config['verbosity'] = args.verbosity
-        config['quiet'] = args.quiet
+        config['output_dir'] = args.out_dir
 
+        # Map logging level string to integers
+        config['stream_log_level'] = logging_map[args.stream_log_level]
+        config['file_log_level'] = logging_map[args.file_log_level]
+
+        # Determine paths to be passed to systemrdl-compiler to search
+        # for include files.
         if args.recursive_search:
             config['search_paths'] = [x[0] for y in args.search_paths for x in os.walk(y)]
         else:
             config['search_paths'] = args.search_paths
+
+        # Save timestamp, so that it can be used across the compiler
+        config['ts'] = time.localtime()
+
+        # Determine name of file to hold logs
+        ts = time.strftime('%Y%m%d_%H%M%S', config['ts'])
+        config['file_log_location'] = "srdl2sv_{}.log".format(ts)
 
         return config
