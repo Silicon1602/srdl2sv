@@ -5,6 +5,9 @@ from systemrdl.node import FieldNode
 
 from components.field import Field
 
+# Local modules
+from log.log import create_logger
+
 TAB = "    "
 
 class Register:
@@ -12,10 +15,19 @@ class Register:
     with open('srdl2sv/components/templates/regs.yaml', 'r') as file:
         templ_dict = yaml.load(file, Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode):
+    def __init__(self, obj: node.RootNode, config: dict):
         self.obj = obj
         self.name = obj.inst_name
         self.rtl = []
+
+        # Create logger object
+        self.logger = create_logger(
+            "{}.{}".format(__name__, obj.inst_name),
+            stream_log_level=config['stream_log_level'],
+            file_log_level=config['file_log_level'],
+            file_name=config['file_log_location'])
+
+        self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
 
         if obj.is_array:
             sel_arr = 'array'
@@ -60,7 +72,7 @@ class Register:
         self.fields = []
 
         for field in obj.fields():
-            field_obj = Field(field, indent_lvl, dimensions)
+            field_obj = Field(field, indent_lvl, dimensions, config)
             self.fields.append(field_obj)
 
             self.rtl += field_obj.rtl

@@ -4,9 +4,9 @@ import re
 from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
 from systemrdl.node import FieldNode
 
-
 # Local packages
 from components.register import Register
+from log.log import create_logger
 from . import templates
 
 # Import templates
@@ -17,9 +17,19 @@ except ImportError:
     import importlib_resources as pkg_resources
 
 class AddrMap:
-    def __init__(self, rdlc: RDLCompiler, obj: node.RootNode):
+    def __init__(self, rdlc: RDLCompiler, obj: node.RootNode, config: dict):
 
         self.rdlc = rdlc
+        self.name = obj.inst_name
+
+        # Create logger object
+        self.logger = create_logger(
+            "{}.{}".format(__name__, obj.inst_name),
+            stream_log_level=config['stream_log_level'],
+            file_log_level=config['file_log_level'],
+            file_name=config['file_log_location'])
+
+        self.logger.debug('Starting to process addrmap "{}"'.format(obj.inst_name))
 
         template = pkg_resources.read_text(templates, 'addrmap.sv')
 
@@ -37,12 +47,10 @@ class AddrMap:
             elif isinstance(child, node.RegfileNode):
                 pass
             elif isinstance(child, node.RegNode):
-                self.registers.add(Register(child))
+                self.registers.add(Register(child, config))
 
-        for i in self.registers:
-            print("\n\n")
-            for j in i.rtl:
-                print(j)
+        # TODO: Temporarily override RTL
+        self.rtl = [x.get_rtl() for x in self.registers]
 
     def get_rtl(self) -> str:
         return '\n'.join(self.rtl)

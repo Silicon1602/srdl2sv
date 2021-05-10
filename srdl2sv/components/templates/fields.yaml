@@ -16,6 +16,8 @@ sw_access_byte: |-
 
 hw_access_we_wel: |-
     {indent}if ({negl}{reg_name}_{field_name}_hw_wr{genvars})
+hw_access_no_we_wel: |-
+    {indent}if (1) // we or wel property not set
 hw_access_field: |-
     {indent}begin
     {indent}    {reg_name}_{field_name}_q{genvars} <= {reg_name}_{field_name}_in{genvars};

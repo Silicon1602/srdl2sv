@@ -36,8 +36,18 @@ def create_logger (
         file_name: Optional[str] = None):
 
     log = logging.getLogger(mod_name)
-    log.setLevel(min(stream_log_level, file_log_level))
 
+    # Set log level. If the minimum log level of one of the
+    # two loggers is 0, the maximum of both values must be taken.
+    # Otherwise, the complete logger gets deactivated.
+    min_log_level = min(stream_log_level, file_log_level)
+
+    if min_log_level == 0:
+        log.setLevel(max(stream_log_level, file_log_level))
+    else:
+        log.setLevel(min_log_level)
+
+    # Create log handlers
     if file_log_level > 0 and file_name:
         file_handler = logging.FileHandler(file_name)
         file_handler.setLevel(file_log_level)
