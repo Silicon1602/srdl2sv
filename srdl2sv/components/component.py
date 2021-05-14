@@ -1,8 +1,15 @@
 import re
 from itertools import chain
+from typing import NamedTuple
 
 # Local modules
 from log.log import create_logger
+
+# Define NamedTuple
+class Port(NamedTuple):
+    name: str
+    packed_dim: str
+    unpacked_dim: list
 
 class Component():
     def __init__(self):

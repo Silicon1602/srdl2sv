@@ -4,9 +4,6 @@ module_declaration: |-
     // Bus I/O
     // TODO
 
-    // InOuts
-    {inouts}
-
     // Inputs
     {inputs}
 
@@ -14,8 +11,6 @@ module_declaration: |-
     {outputs}
     );
 input_port: |-
-    input       {name},
+    input  {packed_dim:10s}{name:30s} {unpacked_dim},
 output_port: |-
-    output      {name},
-inout_port: |-
-    inout       {name},
+    output {packed_dim:10s}{name:30s} {unpacked_dim},

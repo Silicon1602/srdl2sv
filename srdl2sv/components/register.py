@@ -61,7 +61,7 @@ class Register(Component):
         # Create RTL for fields
         # Fields should be in order in RTL,therefore, use list
         for field in obj.fields():
-            field_obj = Field(field, dimensions, config)
+            field_obj = Field(field, array_dimensions, config)
 
             if not config['disable_sanity']:
                 field_obj.sanity_checks()

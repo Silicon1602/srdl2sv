@@ -8,7 +8,7 @@ from systemrdl.rdltypes import PrecedenceType, AccessType
 
 # Local modules
 from log.log import create_logger
-from components.component import Component
+from components.component import Component, Port
 from . import templates
 
 class Field(Component):
@@ -17,7 +17,7 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode, dimensions: int, config:dict):
+    def __init__(self, obj: node.RootNode, dimensions: list, config:dict):
         super().__init__()
 
         # Save and/or process important variables
@@ -181,7 +181,7 @@ class Field(Component):
             ]
 
 
-    def __process_variables(self, obj: node.RootNode, dimensions: int):
+    def __process_variables(self, obj: node.RootNode, dimensions: list):
         # Save object
         self.obj = obj
 
@@ -194,8 +194,11 @@ class Field(Component):
         self.path_underscored = self.path.replace('.', '_')
         self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
 
+        # Save dimensions of unpacked dimension
+        self.dimensions = dimensions
+
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(dimensions)]
+        genvars = ['[{}]'.format(chr(97+i)) for i in range(len(dimensions))]
         self.genvars_str = ''.join(genvars)
 
         # Write enable
@@ -267,14 +270,26 @@ class Field(Component):
     def __add_ports(self):
         # Port is writable by hardware --> Input port from hardware
         if self.hw_access in (AccessType.rw, AccessType.w):
-            self.ports['input'].append("{}_in".format(self.path_underscored))
+            self.ports['input'].append(
+                Port("{}_in".format(self.path_underscored),
+                     "",
+                     self.dimensions
+                ))
 
             # Port has enable signal --> create such an enable
             if self.we_or_wel:
-                self.ports['input'].append("{}_hw_wr".format(self.path_underscored))
+                self.ports['input'].append(
+                    Port("{}_hw_wr".format(self.path_underscored),
+                         "",
+                         self.dimensions
+                    ))
 
         if self.hw_access in (AccessType.rw, AccessType.r):
-            self.ports['output'].append("{}_r".format(self.path_underscored))
+            self.ports['output'].append(
+                Port("{}_r".format(self.path_underscored),
+                     "[{}-1:0]".format(self.obj.width) if self.obj.width > 0 else "",
+                     self.dimensions
+                ))
 
     def sanity_checks(self):
         # If hw=rw/sw=[r]w and hw has no we/wel, sw will never be able to write

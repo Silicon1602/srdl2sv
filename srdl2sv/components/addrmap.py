@@ -59,18 +59,20 @@ class AddrMap(Component):
         # Start assembling addrmap module
         self.logger.info("Starting to assemble input/output/inout ports")
 
-        # Inout port
-        inout_ports_rtl = [
-            AddrMap.templ_dict['inout_port'].format(
-                name = x) for x in self.get_ports('inout')]
         # Input ports
         input_ports_rtl = [
             AddrMap.templ_dict['input_port'].format(
-                name = x) for x in self.get_ports('input')]
+                name = x.name,
+                packed_dim = x.packed_dim,
+                unpacked_dim = '[{}]'.format(']['.join([str(y) for y in x.unpacked_dim])))
+            for x in self.get_ports('input')]
         # Output ports
         output_ports_rtl = [
             AddrMap.templ_dict['output_port'].format(
-                name = x) for x in self.get_ports('output')]
+                name = x.name,
+                packed_dim = x.packed_dim,
+                unpacked_dim = '[{}]'.format(']['.join([str(y) for y in x.unpacked_dim])))
+            for x in self.get_ports('output')]
 
         # Remove comma from last port entry
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')
@@ -78,13 +80,8 @@ class AddrMap(Component):
         self.rtl_header.append(
             AddrMap.templ_dict['module_declaration'].format(
                 name = obj.inst_name,
-                inouts = '\n'.join(inout_ports_rtl),
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
-
-
-
-
 
     def __process_variables(self, obj: node.RootNode):
         # Save object
