@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+# TODO: In general, it would be more useful if the hierarchy of the objects pop up
+#       in the logs, not the Python objectname and than the name of the SRDL object.
 class CustomFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
 

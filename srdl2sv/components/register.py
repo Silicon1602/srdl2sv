@@ -1,32 +1,29 @@
+import importlib.resources as pkg_resources
 import yaml
 
 from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
 from systemrdl.node import FieldNode
 
-from components.field import Field
-
 # Local modules
 from log.log import create_logger
+from components.component import Component
+from components.field import Field
+from . import templates
 
-TAB = "    "
-
-class Register:
+class Register(Component):
     # Save YAML template as class variable
-    with open('srdl2sv/components/templates/regs.yaml', 'r') as file:
-        templ_dict = yaml.load(file, Loader=yaml.FullLoader)
+    templ_dict = yaml.load(
+        pkg_resources.read_text(templates, 'regs.yaml'),
+        Loader=yaml.FullLoader)
 
     def __init__(self, obj: node.RootNode, config: dict):
-        self.obj = obj
-        self.name = obj.inst_name
-        self.rtl = []
+        super().__init__()
+
+        # Save and/or process important variables
+        self.__process_variables(obj)
 
         # Create logger object
-        self.logger = create_logger(
-            "{}.{}".format(__name__, obj.inst_name),
-            stream_log_level=config['stream_log_level'],
-            file_log_level=config['file_log_level'],
-            file_name=config['file_log_location'])
-
+        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
         self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
 
         if obj.is_array:
@@ -38,56 +35,55 @@ class Register:
 
         depth = '[{}]'.format(']['.join(f"{i}" for i in array_dimensions))
         dimensions = len(array_dimensions)
-        indent_lvl = 0
 
         # Create comment and provide user information about register he/she
         # is looking at.
-        self.rtl.append(
+        self.rtl_header.append(
             Register.templ_dict['reg_comment'].format(
                 name = obj.inst_name,
                 dimensions = dimensions,
                 depth = depth))
 
         # Create wires every register
-        self.rtl.append(
+        self.rtl_header.append(
             Register.templ_dict['rw_wire_declare'].format(
                 name = obj.inst_name,
                 depth = depth))
 
         # Create generate block for register and add comment
-        self.rtl.append("generate")
+        self.rtl_header.append("generate")
         for i in range(dimensions):
-            self.rtl.append(
+            self.rtl_header.append(
                 Register.templ_dict['generate_for_start'].format(
                     iterator = chr(97+i),
-                    limit = array_dimensions[i],
-                    indent = self.indent(i)))
-
-            indent_lvl = i
-
-        indent_lvl += 1
+                    limit = array_dimensions[i]))
 
         # Create RTL for fields
         # Fields should be in order in RTL,therefore, use list
-        self.fields = []
-
         for field in obj.fields():
-            field_obj = Field(field, indent_lvl, dimensions, config)
-            self.fields.append(field_obj)
+            field_obj = Field(field, dimensions, config)
 
-            self.rtl += field_obj.rtl
+            if not config['disable_sanity']:
+                field_obj.sanity_checks()
+
+            self.children.append(field_obj)
 
         # End loops
         for i in range(dimensions-1, -1, -1):
-            self.rtl.append(
+            self.rtl_footer.append(
                 Register.templ_dict['generate_for_end'].format(
-                    dimension = chr(97+i),
-                    indent = self.indent(i)))
+                    dimension = chr(97+i)))
 
+    def __process_variables(self, obj: node.RootNode):
+        # Save object
+        self.obj = obj
 
-    @staticmethod
-    def indent(level):
-        return TAB*level
+        # Create full name
+        self.owning_addrmap = obj.owning_addrmap.inst_name
+        self.path = obj.get_path()\
+                        .replace('[]', '')\
+                        .replace('{}.'.format(self.owning_addrmap), '')
 
-    def get_rtl(self) -> str:
-        return '\n'.join(self.rtl)
+        self.path_underscored = self.path.replace('.', '_')
+
+        self.name = obj.inst_name

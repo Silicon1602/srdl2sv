@@ -40,7 +40,7 @@ if __name__ == "__main__":
     except RDLCompileError:
         sys.exit(1)
 
-    addrmap = AddrMap(rdlc, root.top, config)
+    addrmap = AddrMap(root.top, config)
 
     # Create output directory
     try:
@@ -55,7 +55,12 @@ if __name__ == "__main__":
     out_file_name = "{}/{}.sv".format(config['output_dir'], addrmap.name)
 
     with open(out_file_name, 'w') as file:
-        file.write(addrmap.get_rtl())
+        file.write(
+            addrmap.get_rtl(
+                tab_width=config['tab_width'],
+                real_tabs=config['real_tabs']
+            )
+        )
 
         logger.info('Succesfully created "{}"'.format(out_file_name))
 

@@ -14,7 +14,7 @@ reg_comment: |-
      *******************************************************************
      *******************************************************************/
 generate_for_start: |-
-    {indent}for ({iterator} = 0; {iterator} < {limit}; {iterator}++)
-    {indent}begin
+    for ({iterator} = 0; {iterator} < {limit}; {iterator}++)
+    begin
 generate_for_end: |-
-    {indent}end // of for loop with iterator {dimension}
+    end // of for loop with iterator {dimension}

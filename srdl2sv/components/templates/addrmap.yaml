@@ -1,0 +1,21 @@
+---
+module_declaration: |-
+    module {name} (
+    // Bus I/O
+    // TODO
+
+    // InOuts
+    {inouts}
+
+    // Inputs
+    {inputs}
+
+    // Outputs
+    {outputs}
+    );
+input_port: |-
+    input       {name},
+output_port: |-
+    output      {name},
+inout_port: |-
+    inout       {name},

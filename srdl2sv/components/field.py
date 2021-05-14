@@ -1,38 +1,31 @@
 import math
+import importlib.resources as pkg_resources
 import yaml
 
 from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
 from systemrdl.node import FieldNode
 from systemrdl.rdltypes import PrecedenceType, AccessType
-from itertools import chain
 
 # Local modules
 from log.log import create_logger
+from components.component import Component
+from . import templates
 
-TAB = "    "
-
-class Field:
+class Field(Component):
     # Save YAML template as class variable
-    with open('srdl2sv/components/templates/fields.yaml', 'r') as file:
-        templ_dict = yaml.load(file, Loader=yaml.FullLoader)
+    templ_dict = yaml.load(
+        pkg_resources.read_text(templates, 'fields.yaml'),
+        Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode, indent_lvl: int, dimensions: int, config:dict):
-        self.obj = obj
-        self.rtl = []
-        self.bytes = math.ceil(obj.width / 8)
+    def __init__(self, obj: node.RootNode, dimensions: int, config:dict):
+        super().__init__()
+
+        # Save and/or process important variables
+        self.__process_variables(obj, dimensions)
 
         # Create logger object
-        self.logger = create_logger(
-            "{}.{}".format(__name__, obj.inst_name),
-            stream_log_level=config['stream_log_level'],
-            file_log_level=config['file_log_level'],
-            file_name=config['file_log_location'])
-
+        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
         self.logger.debug('Starting to process field "{}"'.format(obj.inst_name))
-
-        # Make a list of I/O that shall be added to the addrmap
-        self.input_ports = []
-        self.output_ports = []
 
         ##################################################################################
         # LIMITATION:
@@ -40,84 +33,29 @@ class Field:
         # It is planned, however, for v2.0.0 of the compiler. More information
         # can be found here: https://github.com/SystemRDL/systemrdl-compiler/issues/51
         ##################################################################################
-
-        # Determine resets. This includes checking for async/sync resets,
-        # the reset value, and whether the field actually has a reset
-        try:
-            rst_signal = obj.get_property("resetsignal")
-            rst_name  = rst_signal.inst_name
-            rst_async = rst_signal.get_property("async")
-            rst_type = "asynchronous" if rst_async else "synchronous"
-
-            # Active low or active high?
-            if rst_signal.get_property("activelow"):
-                rst_edge = "negedge"
-                rst_negl = "!"
-                rst_active = "active_low"
-            else:
-                rst_edge = "posedge"
-                rst_negl = ""
-                rst_active = "active_high"
-
-            # Value of reset?
-            rst_value = '\'x' if obj.get_property("reset") == None else obj.get_property('reset')
-        except:
-            rst_async = False
-            rst_name = None
-            rst_negl = None
-            rst_edge = None
-            rst_value = "'x"
-            rst_active = "-"
-            rst_type = "-"
-
-        # Get certain properties
-        hw_access = obj.get_property('hw')
-        sw_access = obj.get_property('sw')
-        precedence = obj.get_property('precedence')
-
-        # Add comment with summary on field's properties
-        self.rtl.append(
-            Field.templ_dict['field_comment'].format(
-                name = obj.inst_name,
-                hw_access = str(hw_access)[11:],
-                sw_access = str(sw_access)[11:],
-                hw_precedence = '(precedence)' if precedence == PrecedenceType.hw else '',
-                sw_precedence = '(precedence)' if precedence == PrecedenceType.sw else '',
-                rst_active = rst_active,
-                rst_type = rst_type,
-                indent = self.indent(indent_lvl)))
+        # Print a summary
+        self.summary()
 
         # Handle always_ff
-        sense_list = 'sense_list_rst' if rst_async else 'sense_list_no_rst'
+        sense_list = 'sense_list_rst' if self.rst['async'] else 'sense_list_no_rst'
 
-        self.rtl.append(
+        self.rtl_header.append(
             Field.templ_dict[sense_list].format(
                 clk_name = "clk",
-                rst_edge = rst_edge,
-                rst_name = rst_name,
-                indent = self.indent(indent_lvl)))
-
-
-        # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(dimensions)]
-        genvars_str = ''.join(genvars)
+                rst_edge = self.rst['edge'],
+                rst_name = self.rst['name']))
 
         # Add actual reset line
-        if rst_name:
-            indent_lvl += 1
-
-            self.rtl.append(
+        if self.rst['name']:
+            self.rtl_header.append(
                 Field.templ_dict['rst_field_assign'].format(
-                    field_name = obj.inst_name,
-                    rst_name = rst_name,
-                    rst_negl = rst_negl,
-                    rst_value = rst_value,
-                    genvars = genvars_str,
-                    indent = self.indent(indent_lvl)))
+                    path = self.path_underscored,
+                    rst_name = self.rst['name'],
+                    rst_negl =  "!" if self.rst['active'] == "active_high" else "",
+                    rst_value = self.rst['value'],
+                    genvars = self.genvars_str))
 
-        self.rtl.append("{}begin".format(self.indent(indent_lvl)))
-
-        indent_lvl += 1
+        self.rtl_header.append("begin")
 
         # Not all access types are required and the order might differ
         # depending on what types are defined and what precedence is
@@ -133,67 +71,67 @@ class Field:
         # Define hardware access (if applicable)
         access_rtl['hw_write'] = []
 
-        if hw_access in (AccessType.rw, AccessType.w):
-            if obj.get_property('we') or obj.get_property('wel'):
+        if self.hw_access in (AccessType.rw, AccessType.w):
+            if self.we_or_wel:
                 access_rtl['hw_write'].append(
                     Field.templ_dict['hw_access_we_wel'].format(
                         negl = '!' if obj.get_property('wel') else '',
-                        reg_name = obj.parent.inst_name,
-                        field_name = obj.inst_name,
-                        genvars = genvars_str,
-                        indent = self.indent(indent_lvl)))
+                        path = self.path_underscored,
+                        genvars = self.genvars_str))
             else:
                 access_rtl['hw_write'].append(
-                    Field.templ_dict['hw_access_no_we_wel'].format(
-                        indent = self.indent(indent_lvl)))
+                    Field.templ_dict['hw_access_no_we_wel'])
 
             access_rtl['hw_write'].append(
                 Field.templ_dict['hw_access_field'].format(
-                    reg_name = obj.parent.inst_name,
-                    field_name = obj.inst_name,
-                    genvars = genvars_str,
-                    indent = self.indent(indent_lvl)))
+                    path = self.path_underscored,
+                    genvars = self.genvars_str))
 
         # Define software access (if applicable)
         access_rtl['sw_write'] = []
 
-        if sw_access in (AccessType.rw, AccessType.w):
+        if self.sw_access in (AccessType.rw, AccessType.w):
             access_rtl['sw_write'].append(
                 Field.templ_dict['sw_access_field'].format(
-                    reg_name = obj.parent.inst_name,
-                    field_name = obj.inst_name,
-                    genvars = genvars_str,
-                    indent = self.indent(indent_lvl)))
-
-            indent_lvl += 1
+                    path = self.path_underscored,
+                    genvars = self.genvars_str))
 
             # If field spans multiple bytes, every byte shall have a seperate enable!
-            for i in range(self.bytes):
+            for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
                 access_rtl['sw_write'].append(
                     Field.templ_dict['sw_access_byte'].format(
-                        reg_name = obj.parent.inst_name,
-                        field_name = obj.inst_name,
-                        genvars = genvars_str,
+                        path = self.path_underscored,
+                        genvars = self.genvars_str,
                         i = i,
-                        indent = self.indent(indent_lvl)))
+                        msb_bus = str(8*(i+1)-1 if i != self.msbyte else self.obj.msb),
+                        bus_w = str(8 if i != self.msbyte else self.obj.width-(8*j)),
+                        msb_field = str(8*(j+1)-1 if i != self.msbyte else self.obj.width-1),
+                        field_w = str(8 if i != self.msbyte else self.obj.width-(8*j))))
 
-            indent_lvl -= 1
+            access_rtl['sw_write'].append("end")
 
-            access_rtl['sw_write'].append("{}end".format(self.indent(indent_lvl)))
+        # Add singlepulse property
+        access_rtl['singlepulse'] = [
+            Field.templ_dict['singlepulse'].format(
+                path = self.path_underscored,
+                genvars = self.genvars_str)
+            ]
 
-        # Define else with correct indentation and add to dictionary
-        access_rtl['else'] = ["{}else".format(self.indent(indent_lvl))]
+        # Define else
+        access_rtl['else'] = ["else"]
 
         # Add empty string
         access_rtl[''] = ['']
 
         # Check if hardware has precedence (default `precedence = sw`)
-        if precedence == 'PrecedenceType.sw':
+        if self.precedence == 'PrecedenceType.sw':
             order_list = ['sw_write',
-                         'hw_write']
+                         'hw_write',
+                         'singlepulse']
         else:
             order_list = ['hw_write',
-                         'sw_write']
+                         'sw_write',
+                         'singlepulse']
 
         # Add appropriate else
         order_list_rtl = []
@@ -203,57 +141,149 @@ class Field:
             # get longer in the future and thus become unreadable
             if len(access_rtl[i]) > 0:
                 order_list_rtl = [*order_list_rtl, *access_rtl[i]]
-                order_list_rtl.append("{}else".format(self.indent(indent_lvl)))
+                order_list_rtl.append("else")
 
         # Remove last pop
         order_list_rtl.pop()
 
         # Chain access RTL to the rest of the RTL
-        self.rtl = [*self.rtl, *order_list_rtl]
+        self.rtl_header = [*self.rtl_header, *order_list_rtl]
 
-        indent_lvl -= 1
-
-        self.rtl.append(
+        self.rtl_header.append(
             Field.templ_dict['end_field_ff'].format(
-                reg_name = obj.parent.inst_name,
-                field_name = obj.inst_name,
-                indent = self.indent(indent_lvl)))
+                path = self.path_underscored))
 
-        #####################
-        # Add combo logic
-        #####################
+
+        self.__add_combo()
+        self.__add_ports()
+
+    def __add_combo(self):
         operations = []
-        if obj.get_property('anded'):
+        if self.obj.get_property('anded'):
             operations.append(['anded', '&'])
-        if obj.get_property('ored'):
+        if self.obj.get_property('ored'):
             operations.append(['ored', '|'])
-        if obj.get_property('xored'):
+        if self.obj.get_property('xored'):
             operations.append(['xored', '^'])
 
         if len(operations) > 0:
-            self.rtl.append(
+            self.rtl_header.append(
                 Field.templ_dict['combo_operation_comment'].format(
-                    reg_name = obj.parent.inst_name,
-                    field_name = obj.inst_name,
-                    indent = self.indent(indent_lvl)))
+                    path = self.path_underscored))
 
-        self.rtl = [
-            *self.rtl,
+        self.rtl_header = [
+            *self.rtl_header,
             *[Field.templ_dict['assign_combo_operation'].format(
-                field_name = obj.inst_name,
-                reg_name = obj.parent.inst_name,
-                genvars = genvars_str,
+                path = self.path_underscored,
+                genvars = self.genvars_str,
                 op_name = i[0],
-                op_verilog = i[1],
-                indent = self.indent(indent_lvl)) for i in operations]]
-
-        # TODO: Set sanity checks. For example, having no we but precedence = hw
-        #       will cause weird behavior.
+                op_verilog = i[1]) for i in operations]
+            ]
 
 
-    @staticmethod
-    def indent(level):
-        return TAB*level
+    def __process_variables(self, obj: node.RootNode, dimensions: int):
+        # Save object
+        self.obj = obj
 
-    def get_rtl(self) -> str:
-        return '\n'.join(self.rtl)
+        # Create full name
+        self.owning_addrmap = obj.owning_addrmap.inst_name
+        self.path = obj.get_path()\
+                        .replace('[]', '')\
+                        .replace('{}.'.format(self.owning_addrmap), '')
+
+        self.path_underscored = self.path.replace('.', '_')
+        self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
+
+        # Calculate how many genvars shall be added
+        genvars = ['[{}]'.format(chr(97+i)) for i in range(dimensions)]
+        self.genvars_str = ''.join(genvars)
+
+        # Write enable
+        self.we_or_wel = self.obj.get_property('we') or self.obj.get_property('wel')
+
+        # Save byte boundaries
+        self.lsbyte = math.floor(obj.inst.lsb / 8)
+        self.msbyte = math.floor(obj.inst.msb / 8)
+
+        # Determine resets. This includes checking for async/sync resets,
+        # the reset value, and whether the field actually has a reset
+        self.rst = dict()
+
+        try:
+            rst_signal = obj.get_property("resetsignal")
+
+            self.rst['name']  = rst_signal.inst_name
+            self.rst['async'] = rst_signal.get_property("async")
+            self.rst['type'] = "asynchronous" if rst['async'] else "synchronous"
+
+            # Active low or active high?
+            if rst_signal.get_property("activelow"):
+                self.rst['edge'] = "negedge"
+                self.rst['active'] = "active_low"
+            else:
+                self.rst['edge'] = "posedge"
+                self.rst['active'] = "active_high"
+
+            # Value of reset?
+            self.rst['value'] = '\'x' if obj.get_property("reset") == None else\
+                                obj.get_property('reset')
+        except:
+            self.rst['async'] = False
+            self.rst['name'] = None
+            self.rst['edge'] = None
+            self.rst['value'] = "'x"
+            self.rst['active'] = "-"
+            self.rst['type'] = "-"
+
+        self.hw_access = obj.get_property('hw')
+        self.sw_access = obj.get_property('sw')
+        self.precedence = obj.get_property('precedence')
+
+
+    def summary(self):
+        # Additional flags that are set
+        misc_flags = set(self.obj.list_properties())
+
+        # Remove some flags that are not interesting
+        # or that are listed elsewhere
+        misc_flags.discard('hw')
+        misc_flags.discard('reset')
+
+        # Add comment with summary on field's properties
+        self.rtl_header.append(
+            Field.templ_dict['field_comment'].format(
+                name = self.obj.inst_name,
+                hw_access = str(self.hw_access)[11:],
+                sw_access = str(self.sw_access)[11:],
+                hw_precedence = '(precedence)' if self.precedence == PrecedenceType.hw else '',
+                sw_precedence = '(precedence)' if self.precedence == PrecedenceType.sw else '',
+                rst_active = self.rst['active'],
+                rst_type = self.rst['type'],
+                misc_flags = misc_flags if misc_flags else '-',
+                lsb = self.obj.lsb,
+                msb = self.obj.msb,
+                path_wo_field = self.path_wo_field))
+
+    def __add_ports(self):
+        # Port is writable by hardware --> Input port from hardware
+        if self.hw_access in (AccessType.rw, AccessType.w):
+            self.ports['input'].append("{}_in".format(self.path_underscored))
+
+            # Port has enable signal --> create such an enable
+            if self.we_or_wel:
+                self.ports['input'].append("{}_hw_wr".format(self.path_underscored))
+
+        if self.hw_access in (AccessType.rw, AccessType.r):
+            self.ports['output'].append("{}_r".format(self.path_underscored))
+
+    def sanity_checks(self):
+        # If hw=rw/sw=[r]w and hw has no we/wel, sw will never be able to write
+        if not self.we_or_wel and\
+                self.precedence == PrecedenceType.hw and \
+                self.hw_access in (AccessType.rw, AccessType.w) and \
+                self.sw_access in (AccessType.rw, AccessType.w):
+
+            self.logger.warning("Fields with hw=rw/sw=[r]w, we/wel not set and "\
+                                "precedence for hardware will render software's "\
+                                "write property useless since hardware will "\
+                                "write every cycle.")
