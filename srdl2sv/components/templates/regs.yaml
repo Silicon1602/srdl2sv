@@ -1,10 +1,10 @@
 ---
 rw_wire_declare: |
-    logic {name}_wr {depth};
-    logic {name}_rd {depth};
+    logic {path}_sw_wr {depth};
+    logic {path}_sw_rd {depth};
 rw_wire_assign: |
-    assign {name}_bus_wr[i] = addr == {} && r_vld;
-    assign {name}_bus_wr[i] = addr == {} && r_vld;
+    assign {path}_sw_wr{genvars} = addr == ({addr}+({genvars_sum})*{stride}) && r_vld;
+    assign {path}_sw_rd{genvars} = addr == ({addr}+({genvars_sum})*{stride}) && w_vld;
 reg_comment: |-
     /*******************************************************************
      *******************************************************************
