@@ -10,7 +10,7 @@ rst_field_assign: |-
     end
     else
 sw_access_field: |-
-    if ({path}_sw_wr{genvars})
+    if ({path_wo_field}_sw_wr{genvars})
     begin
 sw_access_byte: |-
     if (byte_enable[{i}])

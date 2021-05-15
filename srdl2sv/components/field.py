@@ -93,7 +93,7 @@ class Field(Component):
         if self.sw_access in (AccessType.rw, AccessType.w):
             access_rtl['sw_write'].append(
                 Field.templ_dict['sw_access_field'].format(
-                    path = self.path_underscored,
+                    path_wo_field = self.path_wo_field,
                     genvars = self.genvars_str))
 
             # If field spans multiple bytes, every byte shall have a seperate enable!
@@ -287,7 +287,7 @@ class Field(Component):
         if self.hw_access in (AccessType.rw, AccessType.r):
             self.ports['output'].append(
                 Port("{}_r".format(self.path_underscored),
-                     "[{}-1:0]".format(self.obj.width) if self.obj.width > 0 else "",
+                     "[{}:0]".format(self.obj.width-1) if self.obj.width > 1 else "",
                      self.dimensions
                 ))
 
