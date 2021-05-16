@@ -17,17 +17,57 @@ sw_access_byte: |-
     begin
     {path}_q{genvars}[{msb_field}-:{field_w}] <= sw_wr_bus[{msb_bus}-:{bus_w}];
     end
-
+ 
 hw_access_we_wel: |-
     if ({negl}{path}_hw_wr{genvars})
 hw_access_no_we_wel: |-
-    if (1) // we or wel property not set
+    // we or wel property not set
 hw_access_field: |-
     begin
     {path}_q{genvars} <= {path}_in{genvars};
     end
 end_field_ff: |-
     end // of {path}'s always_ff
+OnWriteType.woset: |-
+    if (byte_enable[{i}]) // woset property
+    begin
+    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] | sw_wr_bus[{msb_bus}-:{bus_w}];
+    end
+OnWriteType.woclr: |-
+    if (byte_enable[{i}]) // woclr property
+    begin
+    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & ~sw_wr_bus[{msb_bus}-:{bus_w}];
+    end
+OnWriteType.wot: |-
+    if (byte_enable[{i}]) // wot property
+    begin
+    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ^ sw_wr_bus[{msb_bus}-:{bus_w}];
+    end
+OnWriteType.wzs: |-
+    if (byte_enable[{i}]) // wzs property
+    begin
+    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & sw_wr_bus[{msb_bus}-:{bus_w}];
+    end
+OnWriteType.wzt: |-
+    if (byte_enable[{i}]) // wzt property
+    begin
+    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ~^ sw_wr_bus[{msb_bus}-:{bus_w}];
+    end
+OnWriteType.wclr: |-
+    {path}_q{genvars} <= {{width{{1'b0}}}};
+OnWriteType.wset: |-
+    {path}_q{genvars} <= {{width{{1'b1}}}};
+OnReadType.rclr: |-
+    if ({path_wo_field}_sw_rd{genvars}) // rclr property
+    begin
+    {path}_q{genvars} <= {{width{{1'b0}}}};
+    end
+OnReadType.rset: |-
+    if ({path_wo_field}_sw_rd{genvars}) // rset property
+    begin
+    {path}_q{genvars} <= {{width{{1'b1}}}};
+    end
+
 field_comment: |-
 
     //-----------------FIELD SUMMARY-----------------
@@ -46,4 +86,8 @@ singlepulse: |-
     begin
     {path}{genvars} <= 0;
     end
+out_port_assign: |-
+
+    // Connect register to hardware output port
+    assign {path}_r{genvars} <= {path}_q{genvars};
 
