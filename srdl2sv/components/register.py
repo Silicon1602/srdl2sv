@@ -66,13 +66,18 @@ class Register(Component):
         # Assign variables from bus
         self.obj.current_idx = [0]
 
+        if self.dimensions:
+            rw_wire_assign_field = 'rw_wire_assign_multi_dim'
+        else:
+            rw_wire_assign_field = 'rw_wire_assign_1_dim'
+
         self.rtl_header.append(
-            Register.templ_dict['rw_wire_assign'].format(
+            Register.templ_dict[rw_wire_assign_field].format(
                 path = self.path,
                 addr = self.obj.absolute_address,
                 genvars = self.genvars_str,
                 genvars_sum =self.genvars_sum_str,
-                stride = self.obj.array_stride if self.obj.array_stride else '0',
+                stride = self.obj.array_stride,
                 depth = self.depth))
 
     def __process_variables(self, obj: node.RootNode):
@@ -96,7 +101,7 @@ class Register(Component):
             self.array_dimensions = self.obj.array_dimensions
         else:
             self.sel_arr = 'single'
-            self.array_dimensions = [1]
+            self.array_dimensions = []
 
         self.depth = '[{}]'.format(']['.join(f"{i}" for i in self.array_dimensions))
         self.dimensions = len(self.array_dimensions)

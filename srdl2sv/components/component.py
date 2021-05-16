@@ -124,9 +124,3 @@ class Component():
         name.append(split_name[1])
 
         return ''.join(name)
-
-
-
-
-
-

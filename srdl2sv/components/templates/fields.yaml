@@ -95,5 +95,5 @@ singlepulse: |-
 out_port_assign: |-
 
     // Connect register to hardware output port
-    assign {path}_r{genvars} <= {path}_q{genvars};
+    assign {path}_r{genvars} = {path}_q{genvars};
 

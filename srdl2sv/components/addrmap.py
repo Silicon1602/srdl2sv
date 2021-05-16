@@ -8,7 +8,6 @@ from systemrdl.node import FieldNode
 # Local packages
 from components.component import Component
 from components.register import Register
-from log.log import create_logger
 from . import templates
 
 
@@ -64,14 +63,21 @@ class AddrMap(Component):
             AddrMap.templ_dict['input_port'].format(
                 name = x.name,
                 packed_dim = x.packed_dim,
-                unpacked_dim = '[{}]'.format(']['.join([str(y) for y in x.unpacked_dim])))
+                unpacked_dim = '[{}]'.format(
+                    ']['.join(
+                        [str(y) for y in x.unpacked_dim]))
+                    if x.unpacked_dim else '')
             for x in self.get_ports('input')]
+
         # Output ports
         output_ports_rtl = [
             AddrMap.templ_dict['output_port'].format(
                 name = x.name,
                 packed_dim = x.packed_dim,
-                unpacked_dim = '[{}]'.format(']['.join([str(y) for y in x.unpacked_dim])))
+                unpacked_dim = '[{}]'.format(
+                    ']['.join(
+                        [str(y) for y in x.unpacked_dim]))
+                    if x.unpacked_dim else '')
             for x in self.get_ports('output')]
 
         # Remove comma from last port entry
