@@ -27,6 +27,7 @@ class Component():
             stream_log_level=config['stream_log_level'],
             file_log_level=config['file_log_level'],
             file_name=config['file_log_location'])
+        self.logger.propagate = False
 
     def get_ports(self, port_type: str):
         self.logger.debug("Return port list")
