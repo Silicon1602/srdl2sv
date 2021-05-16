@@ -1,6 +1,7 @@
 import re
 from itertools import chain
 from typing import NamedTuple
+from systemrdl import node
 
 # Local modules
 from log.log import create_logger
@@ -91,3 +92,41 @@ class Component():
                 indent_lvl += 1
 
         return '\n'.join(rtl_indented)
+
+    @staticmethod
+    def get_underscored_path(path: str, owning_addrmap: str):
+        return path\
+                .replace('[]', '')\
+                .replace('{}.'.format(owning_addrmap), '')\
+                .replace('.', '_')
+
+    @staticmethod
+    def split_dimensions(path: str):
+        new_path = re.match(r'(.*?)(\[.*\])?(.*)', path)
+        return (''.join([new_path.group(1), new_path.group(3)]),
+                new_path.group(2) if new_path.group(2) else '[0]')
+
+    @staticmethod
+    def get_ref_name(obj):
+        name = []
+
+        split_name = Component.split_dimensions(
+            Component.get_underscored_path(
+                obj.get_path(),
+                obj.owning_addrmap.inst_name)
+            )
+
+        name.append(split_name[0])
+
+        if isinstance(obj, (node.FieldNode)):
+            name.append('_q')
+
+        name.append(split_name[1])
+
+        return ''.join(name)
+
+
+
+
+
+

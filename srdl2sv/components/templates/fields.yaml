@@ -12,6 +12,12 @@ rst_field_assign: |-
 sw_access_field: |-
     if ({path_wo_field}_sw_wr{genvars})
     begin
+sw_access_field_swwe: |-
+    if ({path_wo_field}_sw_wr{genvars} && {swwe}) // swwe property
+    begin
+sw_access_field_swwel: |-
+    if ({path_wo_field}_sw_wr{genvars} && !{swwel}) // swwel property
+    begin
 sw_access_byte: |-
     if (byte_enable[{i}])
     begin

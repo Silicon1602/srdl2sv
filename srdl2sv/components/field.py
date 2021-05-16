@@ -16,7 +16,7 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode, dimensions: list, config:dict):
+    def __init__(self, obj: node.FieldNode, dimensions: list, config:dict):
         super().__init__()
 
         # Save and/or process important variables
@@ -208,10 +208,26 @@ class Field(Component):
         access_rtl['sw_write'] = []
 
         if self.sw_access in (AccessType.rw, AccessType.w):
-            access_rtl['sw_write'].append(
-                Field.templ_dict['sw_access_field'].format(
-                    path_wo_field = self.path_wo_field,
-                    genvars = self.genvars_str))
+            swwe = self.obj.get_property('swwe')
+            swwel = self.obj.get_property('swwel')
+
+            if isinstance(swwe, (node.FieldNode, node.SignalNode)):
+                access_rtl['sw_write'].append(
+                    Field.templ_dict['sw_access_field_swwe'].format(
+                        path_wo_field = self.path_wo_field,
+                        genvars = self.genvars_str,
+                        swwe = Component.get_ref_name(swwe)))
+            elif isinstance(swwel, (node.FieldNode, node.SignalNode)):
+                access_rtl['sw_write'].append(
+                    Field.templ_dict['sw_access_field_swwel'].format(
+                        path_wo_field = self.path_wo_field,
+                        genvars = self.genvars_str,
+                        swwel = Component.get_ref_name(swwel)))
+            else:
+                access_rtl['sw_write'].append(
+                    Field.templ_dict['sw_access_field'].format(
+                        path_wo_field = self.path_wo_field,
+                        genvars = self.genvars_str))
 
             # Check if an onwrite property is set
             onwrite = self.obj.get_property('onwrite')
