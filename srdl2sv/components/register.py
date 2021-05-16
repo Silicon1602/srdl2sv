@@ -5,7 +5,6 @@ from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
 from systemrdl.node import FieldNode
 
 # Local modules
-from log.log import create_logger
 from components.component import Component
 from components.field import Field
 from . import templates
@@ -73,7 +72,7 @@ class Register(Component):
                 addr = self.obj.absolute_address,
                 genvars = self.genvars_str,
                 genvars_sum =self.genvars_sum_str,
-                stride = self.obj.array_stride,
+                stride = self.obj.array_stride if self.obj.array_stride else '0',
                 depth = self.depth))
 
     def __process_variables(self, obj: node.RootNode):
@@ -117,5 +116,4 @@ class Register(Component):
             genvars_sum.append(chr(97+self.dimensions-1-i))
 
         self.genvars_sum_str = ''.join(genvars_sum)
-        print(self.genvars_sum_str)
 
