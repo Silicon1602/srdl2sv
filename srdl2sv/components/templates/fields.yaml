@@ -1,99 +1,192 @@
 ---
-sense_list_rst: |-
-    always_ff @(posedge {clk_name} or {rst_edge} {rst_name})
-sense_list_no_rst: |-
-    always_ff @(posedge {clk_name})
-rst_field_assign: |-
-    if ({rst_negl}{rst_name})
-    begin
-    {path}_q{genvars} <= {rst_value};
-    end
-    else
-sw_access_field: |-
-    if ({path_wo_field}_sw_wr{genvars})
-    begin
-sw_access_field_swwe: |-
-    if ({path_wo_field}_sw_wr{genvars} && {swwe}) // swwe property
-    begin
-sw_access_field_swwel: |-
-    if ({path_wo_field}_sw_wr{genvars} && !{swwel}) // swwel property
-    begin
-sw_access_byte: |-
-    if (byte_enable[{i}])
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
+sense_list_rst:
+    rtl: |-
+        always_ff @(posedge {clk_name} or {rst_edge} {rst_name})
+sense_list_no_rst: 
+    rtl: |-
+        always_ff @(posedge {clk_name})
+rst_field_assign: 
+    rtl: |-
+        if ({rst_negl}{rst_name})
+        begin
+        {path}_q{genvars} <= {rst_value};
+        end
+        else
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
+sw_access_field: 
+    rtl: |-
+        if ({path_wo_field}_sw_wr{genvars})
+        begin
+sw_access_field_swwe: 
+    rtl: |-
+        if ({path_wo_field}_sw_wr{genvars} && {swwe}) // swwe property
+        begin
+sw_access_field_swwel: 
+    rtl: |-
+        if ({path_wo_field}_sw_wr{genvars} && !{swwel}) // swwel property
+        begin
+sw_access_byte: 
+    rtl: |-
+        if (byte_enable[{i}])
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
  
-hw_access_we_wel: |-
-    if ({negl}{path}_hw_wr{genvars})
-hw_access_no_we_wel: |-
-    // we or wel property not set
-hw_access_field: |-
-    begin
-    {path}_q{genvars} <= {path}_in{genvars};
-    end
-end_field_ff: |-
-    end // of {path}'s always_ff
-OnWriteType.woset: |-
-    if (byte_enable[{i}]) // woset property
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] | sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
-OnWriteType.woclr: |-
-    if (byte_enable[{i}]) // woclr property
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & ~sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
-OnWriteType.wot: |-
-    if (byte_enable[{i}]) // wot property
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ^ sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
-OnWriteType.wzs: |-
-    if (byte_enable[{i}]) // wzs property
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
-OnWriteType.wzt: |-
-    if (byte_enable[{i}]) // wzt property
-    begin
-    {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ~^ sw_wr_bus[{msb_bus}-:{bus_w}];
-    end
-OnWriteType.wclr: |-
-    {path}_q{genvars} <= {{width{{1'b0}}}};
-OnWriteType.wset: |-
-    {path}_q{genvars} <= {{width{{1'b1}}}};
-OnReadType.rclr: |-
-    if ({path_wo_field}_sw_rd{genvars}) // rclr property
-    begin
-    {path}_q{genvars} <= {{width{{1'b0}}}};
-    end
-OnReadType.rset: |-
-    if ({path_wo_field}_sw_rd{genvars}) // rset property
-    begin
-    {path}_q{genvars} <= {{width{{1'b1}}}};
-    end
+hw_access_we_wel: 
+    rtl: |-
+        if ({negl}{path}_hw_wr{genvars})
+hw_access_no_we_wel: 
+    rtl: |-
+        // we or wel property not set
+hw_access_field: 
+    rtl: |-
+        begin
+        {path}_q{genvars} <= {path}_in{genvars};
+        end
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
+    input_ports:
+        - name: '{path}_in'
+          signal_type: '{field_type}'
+end_field_ff: 
+    rtl: |-
+        end // of {path}'s always_ff
+OnWriteType.woset: 
+    rtl: |-
+        if (byte_enable[{i}]) // woset property
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] | sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
+OnWriteType.woclr: 
+    rtl: |-
+        if (byte_enable[{i}]) // woclr property
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & ~sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
+OnWriteType.wot: 
+    rtl: |-
+        if (byte_enable[{i}]) // wot property
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ^ sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
+OnWriteType.wzs: 
+    rtl: |-
+        if (byte_enable[{i}]) // wzs property
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] & sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
+OnWriteType.wzt: 
+    rtl: |-
+        if (byte_enable[{i}]) // wzt property
+        begin
+        {path}_q{genvars}[{msb_field}-:{field_w}] <= {path}_q{genvars}[{msb_field}-:{field_w}] ~^ sw_wr_bus[{msb_bus}-:{bus_w}];
+        end
+OnWriteType.wclr: 
+    rtl: |-
+        {path}_q{genvars} <= {{width{{1'b0}}}};
+OnWriteType.wset: 
+    rtl: |-
+        {path}_q{genvars} <= {{width{{1'b1}}}};
+OnReadType.rclr: 
+    rtl: |-
+        if ({path_wo_field}_sw_rd{genvars}) // rclr property
+        begin
+        {path}_q{genvars} <= {{width{{1'b0}}}};
+        end
+OnReadType.rset: 
+    rtl: |-
+        if ({path_wo_field}_sw_rd{genvars}) // rset property
+        begin
+        {path}_q{genvars} <= {{width{{1'b1}}}};
+        end
 
-field_comment: |-
+field_comment: 
+    rtl: |-
 
-    //-----------------FIELD SUMMARY-----------------
-    // name       : {name} ({path_wo_field}[{msb}:{lsb}])
-    // access     : hw = {hw_access} {hw_precedence} 
-    //              sw = {sw_access} {sw_precedence}
-    // reset      : {rst_active} / {rst_type}
-    // flags      : {misc_flags}
-    //-----------------------------------------------
-combo_operation_comment: |-
+        //-----------------FIELD SUMMARY-----------------
+        // name       : {name} ({path_wo_field}[{msb}:{lsb}])
+        // access     : hw = {hw_access} {hw_precedence} 
+        //              sw = {sw_access} {sw_precedence}
+        // reset      : {rst_active} / {rst_type}
+        // flags      : {misc_flags}
+        //-----------------------------------------------
+combo_operation_comment: 
+    rtl: |-
 
-    // Combinational logic for {path}
-assign_combo_operation: |-
-    assign {path}_{op_name}{genvars} = {op_verilog}{path}_q{genvars}
-singlepulse: |-
-    begin
-    {path}{genvars} <= 0;
-    end
-out_port_assign: |-
+        // Combinational logic for {path}
+assign_anded_operation: 
+    rtl: |-
+        assign {path}_anded{genvars} = {op_verilog}{path}_q{genvars};
+    output_ports:
+        - name: '{path}_anded'
+          signal_type: 'logic'
+assign_ored_operation: 
+    rtl: |-
+        assign {path}_ored{genvars} = {op_verilog}{path}_q{genvars};
+    output_ports:
+        - name: '{path}_ored'
+          signal_type: 'logic'
+assign_xored_operation: 
+    rtl: |-
+        assign {path}_xored{genvars} = {op_verilog}{path}_q{genvars};
+    output_ports:
+        - name: '{path}_xored'
+          signal_type: 'logic'
+singlepulse: 
+    rtl: |-
+        begin
+        {path}{genvars}_q <= 0;
+        end
+out_port_assign: 
+    rtl: |-
+        // Connect register to hardware output port
+        assign {path}_r{genvars} = {path}_q{genvars};
+    output_ports:
+        - name: '{path}_r'
+          signal_type: '{field_type}'
+counter: 
+    rtl: |-
+        always_comb
+        begin
+        {path}_next{genvars}       = {path}_q{genvars};
+        {path}_update_cnt{genvars} = 0;
 
-    // Connect register to hardware output port
-    assign {path}_r{genvars} = {path}_q{genvars};
+        {incr_counter}
+
+        {decr_counter}
+        end
+incr_counter: 
+    rtl: |-
+        {incr_counter_condition}
+        begin
+        {path}_next{genvars}      += {path}_{operation_str}_val{genvars}; 
+        {path}_update_cnt{genvars} = 1;
+        end
+decr_counter: 
+    rtl: |-
+        {incr_counter_condition}
+        begin
+        {path}_next{genvars}      += {path}_{operation_str}_val{genvars}; 
+        {path}_update_cnt{genvars} = 1;
+        end
+incr_counter_condition:
+    rtl: |-
+        if ({path}_incr{genvars})
+incr_sat_counter_condition:
+    rtl: |-
+        if ({path}_incr{genvars} && {path}_next{genvars} + {path}_incr_val{genvars} <= {sat_value})
+decr_counter_condition:
+    rtl: |-
+        if ({path}_decr{genvars})
+decr_sat_counter_condition:
+    rtl: |-
+        if ({path}_decr{genvars} && {path}_next{genvars} - {path}_decr_val{genvars} >= {sat_value})
+
+
+
+
+
 

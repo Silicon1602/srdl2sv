@@ -7,7 +7,7 @@ from systemrdl.node import FieldNode
 from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType
 
 # Local modules
-from components.component import Component, Port
+from components.component import Component
 from . import templates
 
 class Field(Component):
@@ -16,11 +16,11 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.FieldNode, dimensions: list, config:dict):
+    def __init__(self, obj: node.FieldNode, array_dimensions: list, config:dict):
         super().__init__()
 
         # Save and/or process important variables
-        self.__process_variables(obj, dimensions)
+        self.__process_variables(obj, array_dimensions)
 
         # Create logger object
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
@@ -40,49 +40,55 @@ class Field(Component):
         self.__add_access_rtl()
         self.__add_combo()
         self.__add_ports()
+        self.__prepend_signal_declarations()
 
     def __add_combo(self):
         operations = []
         if self.obj.get_property('anded'):
-            operations.append(['anded', '&'])
+            operations.append(['&', 'assign_anded_operation'])
         if self.obj.get_property('ored'):
-            operations.append(['ored', '|'])
+            operations.append(['|', 'assign_ored_operation'])
         if self.obj.get_property('xored'):
-            operations.append(['xored', '^'])
+            operations.append(['^', 'assign_xored_operation'])
 
         if len(operations) > 0:
             self.rtl_header.append(
-                Field.templ_dict['combo_operation_comment'].format(
+                Field.templ_dict['combo_operation_comment']['rtl'].format(
                     path = self.path_underscored))
 
         self.rtl_header = [
             *self.rtl_header,
-            *[Field.templ_dict['assign_combo_operation'].format(
+            *[Field.templ_dict[i[1]]['rtl'].format(
                 path = self.path_underscored,
                 genvars = self.genvars_str,
-                op_name = i[0],
-                op_verilog = i[1]) for i in operations]
+                op_verilog = i[0]) for i in operations]
             ]
 
+        [self.yaml_signals_to_list(Field.templ_dict[i[1]]) for i in operations]
 
-    def __process_variables(self, obj: node.RootNode, dimensions: list):
+
+    def __process_variables(self, obj: node.RootNode, array_dimensions: list):
         # Save object
         self.obj = obj
 
         # Create full name
         self.owning_addrmap = obj.owning_addrmap.inst_name
-        self.path = obj.get_path()\
+        self.full_path = obj.get_path().replace('[]', '')
+        self.path = self.full_path\
                         .replace('[]', '')\
                         .replace('{}.'.format(self.owning_addrmap), '')
 
         self.path_underscored = self.path.replace('.', '_')
         self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
 
+        # Field type
+        self.field_type = 'logic'
+
         # Save dimensions of unpacked dimension
-        self.dimensions = dimensions
+        self.array_dimensions = array_dimensions
 
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(len(dimensions))]
+        genvars = ['[{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]
         self.genvars_str = ''.join(genvars)
 
         # Write enable
@@ -138,7 +144,7 @@ class Field(Component):
 
         # Add comment with summary on field's properties
         return \
-            Field.templ_dict['field_comment'].format(
+            Field.templ_dict['field_comment']['rtl'].format(
                 name = self.obj.inst_name,
                 hw_access = str(self.hw_access)[11:],
                 sw_access = str(self.sw_access)[11:],
@@ -156,7 +162,7 @@ class Field(Component):
         sense_list = 'sense_list_rst' if self.rst['async'] else 'sense_list_no_rst'
 
         self.rtl_header.append(
-            Field.templ_dict[sense_list].format(
+            Field.templ_dict[sense_list]['rtl'].format(
                 clk_name = "clk",
                 rst_edge = self.rst['edge'],
                 rst_name = self.rst['name']))
@@ -164,14 +170,23 @@ class Field(Component):
         # Add actual reset line
         if self.rst['name']:
             self.rtl_header.append(
-                Field.templ_dict['rst_field_assign'].format(
+                Field.templ_dict['rst_field_assign']['rtl'].format(
                     path = self.path_underscored,
                     rst_name = self.rst['name'],
                     rst_negl =  "!" if self.rst['active'] == "active_high" else "",
                     rst_value = self.rst['value'],
                     genvars = self.genvars_str))
 
+            self.yaml_signals_to_list(Field.templ_dict['rst_field_assign'])
+
         self.rtl_header.append("begin")
+
+        # Add name of actual field to Signal field
+        # TODO
+
+    def __prepend_signal_declarations(self):
+        pass
+
 
     def __add_access_rtl(self):
         # Not all access types are required and the order might differ
@@ -191,18 +206,20 @@ class Field(Component):
         if self.hw_access in (AccessType.rw, AccessType.w):
             if self.we_or_wel:
                 access_rtl['hw_write'].append(
-                    Field.templ_dict['hw_access_we_wel'].format(
+                    Field.templ_dict['hw_access_we_wel']['rtl'].format(
                         negl = '!' if self.obj.get_property('wel') else '',
                         path = self.path_underscored,
                         genvars = self.genvars_str))
             else:
                 access_rtl['hw_write'].append(
-                    Field.templ_dict['hw_access_no_we_wel'])
+                    Field.templ_dict['hw_access_no_we_wel']['rtl'])
 
             access_rtl['hw_write'].append(
-                Field.templ_dict['hw_access_field'].format(
+                Field.templ_dict['hw_access_field']['rtl'].format(
                     path = self.path_underscored,
                     genvars = self.genvars_str))
+
+            self.yaml_signals_to_list(Field.templ_dict['hw_access_field'])
 
         # Define software access (if applicable)
         access_rtl['sw_write'] = []
@@ -213,19 +230,19 @@ class Field(Component):
 
             if isinstance(swwe, (node.FieldNode, node.SignalNode)):
                 access_rtl['sw_write'].append(
-                    Field.templ_dict['sw_access_field_swwe'].format(
+                    Field.templ_dict['sw_access_field_swwe']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
-                        swwe = Component.get_ref_name(swwe)))
+                        swwe = Component.get_signal_name(swwe)))
             elif isinstance(swwel, (node.FieldNode, node.SignalNode)):
                 access_rtl['sw_write'].append(
-                    Field.templ_dict['sw_access_field_swwel'].format(
+                    Field.templ_dict['sw_access_field_swwel']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
-                        swwel = Component.get_ref_name(swwel)))
+                        swwel = Component.get_signal_name(swwel)))
             else:
                 access_rtl['sw_write'].append(
-                    Field.templ_dict['sw_access_field'].format(
+                    Field.templ_dict['sw_access_field']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str))
 
@@ -237,7 +254,7 @@ class Field(Component):
                     self.logger.warning("The OnReadType.wuser is not yet supported!")
                 elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
                     access_rtl['sw_write'].append(
-                        Field.templ_dict[str(onwrite)].format(
+                        Field.templ_dict[str(onwrite)]['rtl'].format(
                             path = self.path_underscored,
                             genvars = self.genvars_str,
                             path_wo_field = self.path_wo_field
@@ -247,7 +264,7 @@ class Field(Component):
                     # If field spans multiple bytes, every byte shall have a seperate enable!
                     for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
                         access_rtl['sw_write'].append(
-                            Field.templ_dict[str(onwrite)].format(
+                            Field.templ_dict[str(onwrite)]['rtl'].format(
                                 path = self.path_underscored,
                                 genvars = self.genvars_str,
                                 i = i,
@@ -260,7 +277,7 @@ class Field(Component):
                 # If field spans multiple bytes, every byte shall have a seperate enable!
                 for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
                     access_rtl['sw_write'].append(
-                        Field.templ_dict['sw_access_byte'].format(
+                        Field.templ_dict['sw_access_byte']['rtl'].format(
                             path = self.path_underscored,
                             genvars = self.genvars_str,
                             i = i,
@@ -279,7 +296,7 @@ class Field(Component):
                 self.logger.warning("The OnReadType.ruser is not yet supported!")
             else:
                 access_rtl['sw_read'].append(
-                    Field.templ_dict[str(onread)].format(
+                    Field.templ_dict[str(onread)]['rtl'].format(
                         path = self.path_underscored,
                         genvars = self.genvars_str,
                         path_wo_field = self.path_wo_field
@@ -289,7 +306,7 @@ class Field(Component):
         # Add singlepulse property
         if self.obj.get_property('singlepulse'):
             access_rtl['singlepulse'] = [
-                Field.templ_dict['singlepulse'].format(
+                Field.templ_dict['singlepulse']['rtl'].format(
                     path = self.path_underscored,
                     genvars = self.genvars_str)
                 ]
@@ -335,40 +352,19 @@ class Field(Component):
         self.rtl_header = [*self.rtl_header, *order_list_rtl]
 
         self.rtl_header.append(
-            Field.templ_dict['end_field_ff'].format(
+            Field.templ_dict['end_field_ff']['rtl'].format(
                 path = self.path_underscored))
 
 
     def __add_ports(self):
-        # Port is writable by hardware --> Input port from hardware
-        if self.hw_access in (AccessType.rw, AccessType.w):
-            self.ports['input'].append(
-                Port("{}_in".format(self.path_underscored),
-                     "",
-                     self.dimensions
-                ))
-
-            # Port has enable signal --> create such an enable
-            if self.we_or_wel:
-                self.ports['input'].append(
-                    Port("{}_hw_wr".format(self.path_underscored),
-                         "",
-                         self.dimensions
-                    ))
-
         if self.hw_access in (AccessType.rw, AccessType.r):
-            self.ports['output'].append(
-                Port("{}_r".format(self.path_underscored),
-                     "[{}:0]".format(self.obj.width-1) if self.obj.width > 1 else "",
-                     self.dimensions
-                ))
-
             # Connect flops to output port
             self.rtl_header.append(
-                Field.templ_dict['out_port_assign'].format(
+                Field.templ_dict['out_port_assign']['rtl'].format(
                     genvars = self.genvars_str,
                     path = self.path_underscored))
 
+            self.yaml_signals_to_list(Field.templ_dict['out_port_assign'])
 
     def sanity_checks(self):
         # If hw=rw/sw=[r]w and hw has no we/wel, sw will never be able to write
@@ -381,3 +377,6 @@ class Field(Component):
                                 "precedence for hardware will render software's "\
                                 "write property useless since hardware will "\
                                 "write every cycle.")
+
+
+            # TODO: Counter & hw=r shouldn't work

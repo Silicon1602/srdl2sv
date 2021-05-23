@@ -33,6 +33,7 @@ class AddrMap(Component):
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
         self.registers = dict()
+        self.rdl_nodes = dict()
 
         # Traverse through children
         for child in obj.children():
@@ -61,24 +62,26 @@ class AddrMap(Component):
         # Input ports
         input_ports_rtl = [
             AddrMap.templ_dict['input_port'].format(
-                name = x.name,
-                packed_dim = x.packed_dim,
+                name = key,
+                signal_type = value[0],
                 unpacked_dim = '[{}]'.format(
                     ']['.join(
-                        [str(y) for y in x.unpacked_dim]))
-                    if x.unpacked_dim else '')
-            for x in self.get_ports('input')]
+                        [str(y) for y in value[1]]))
+                    if value[1] else '')
+            for (key, value) in self.get_ports('input').items()
+            ]
 
         # Output ports
         output_ports_rtl = [
             AddrMap.templ_dict['output_port'].format(
-                name = x.name,
-                packed_dim = x.packed_dim,
+                name = key,
+                signal_type = value[0],
                 unpacked_dim = '[{}]'.format(
                     ']['.join(
-                        [str(y) for y in x.unpacked_dim]))
-                    if x.unpacked_dim else '')
-            for x in self.get_ports('output')]
+                        [str(y) for y in value[1]]))
+                    if value[1] else '')
+            for (key, value) in self.get_ports('output').items()
+            ]
 
         # Remove comma from last port entry
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')

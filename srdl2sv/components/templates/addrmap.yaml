@@ -11,6 +11,6 @@ module_declaration: |-
     {outputs}
     );
 input_port: |-
-    input  {packed_dim:15s}{name:25s} {unpacked_dim},
+    input  {signal_type:15s}{name:25s} {unpacked_dim},
 output_port: |-
-    output {packed_dim:15s}{name:25s} {unpacked_dim},
+    output {signal_type:15s}{name:25s} {unpacked_dim},

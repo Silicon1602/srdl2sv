@@ -7,10 +7,13 @@ from systemrdl import node
 from log.log import create_logger
 
 # Define NamedTuple
-class Port(NamedTuple):
+class TypeDefMembers(NamedTuple):
     name: str
-    packed_dim: str
-    unpacked_dim: list
+    member_type: str
+
+class TypeDef(NamedTuple):
+    name: str
+    members: list[TypeDefMembers]
 
 class Component():
     def __init__(self):
@@ -18,9 +21,10 @@ class Component():
         self.rtl_footer = []
         self.children = []
         self.ports = dict()
-        self.ports['input'] = []
-        self.ports['output'] = []
-        self.ports['inout'] = []
+        self.signals = dict()
+        self.ports['input'] = dict()
+        self.ports['output'] = dict()
+        self.field_type = ''
 
     def create_logger(self, name: str, config: dict):
         self.logger = create_logger(
@@ -32,10 +36,19 @@ class Component():
 
     def get_ports(self, port_type: str):
         self.logger.debug("Return port list")
-        return [
-            *self.ports[port_type],
-            *list(chain(*[x.get_ports(port_type) for x in self.children]))
-            ]
+
+        for x in self.children:
+            self.ports[port_type] |= x.get_ports(port_type)
+
+        return self.ports[port_type]
+
+    def get_signals(self):
+        self.logger.debug("Return signal list")
+
+        for x in self.children:
+            self.signals |= x.get_signals()
+
+        return self.signals
 
     def get_rtl(self, tab_width: int = 0, real_tabs: bool = False) -> str:
         self.logger.debug("Return RTL")
@@ -102,25 +115,60 @@ class Component():
 
     @staticmethod
     def split_dimensions(path: str):
-        new_path = re.match(r'(.*?)(\[.*\])?(.*)', path)
-        return (''.join([new_path.group(1), new_path.group(3)]),
-                new_path.group(2) if new_path.group(2) else '[0]')
+        re_dimensions = re.compile('(\[[^]]\])')
+        new_path = re_dimensions.sub('', path)
+        return (new_path, ''.join(re_dimensions.findall(path)))
 
     @staticmethod
-    def get_ref_name(obj):
+    def get_signal_name(obj):
         name = []
+
+        try:
+            child_obj = obj.node
+        except AttributeError:
+            child_obj = obj
 
         split_name = Component.split_dimensions(
             Component.get_underscored_path(
-                obj.get_path(),
-                obj.owning_addrmap.inst_name)
+                child_obj.get_path(),
+                child_obj.owning_addrmap.inst_name)
             )
 
         name.append(split_name[0])
 
-        if isinstance(obj, (node.FieldNode)):
+        if isinstance(obj, node.FieldNode):
             name.append('_q')
+        elif isinstance(obj, node.SignalNode):
+            pass
+        else:
+            name.append('_')
+            name.append(obj.name)
 
         name.append(split_name[1])
 
         return ''.join(name)
+
+    def yaml_signals_to_list(self, yaml_obj):
+        try:
+            for x in yaml_obj['signals']:
+                self.signals[x['name'].format(path = self.path_underscored)] =\
+                         (x['signal_type'].format(field_type = self.field_type),
+                         self.array_dimensions)
+        except (TypeError, KeyError):
+            pass
+
+        try:
+            for x in yaml_obj['input_ports']:
+                self.ports['input'][x['name'].format(path = self.path_underscored)] =\
+                         (x['signal_type'].format(field_type = self.field_type),
+                         self.array_dimensions)
+        except (TypeError, KeyError):
+            pass
+
+        try:
+            for x in yaml_obj['output_ports']:
+                self.ports['output'][x['name'].format(path = self.path_underscored)] =\
+                         (x['signal_type'].format(field_type = self.field_type),
+                         self.array_dimensions)
+        except (TypeError, KeyError):
+            pass

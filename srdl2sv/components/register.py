@@ -25,28 +25,6 @@ class Register(Component):
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
         self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
 
-        # Create comment and provide user information about register he/she
-        # is looking at.
-        self.rtl_header.append(
-            Register.templ_dict['reg_comment'].format(
-                name = obj.inst_name,
-                dimensions = self.dimensions,
-                depth = self.depth))
-
-        # Create wires every register
-        self.rtl_header.append(
-            Register.templ_dict['rw_wire_declare'].format(
-                path = self.path,
-                depth = self.depth))
-
-        # Create generate block for register and add comment
-        self.rtl_header.append("generate")
-        for i in range(self.dimensions):
-            self.rtl_header.append(
-                Register.templ_dict['generate_for_start'].format(
-                    iterator = chr(97+i),
-                    limit = self.array_dimensions[i]))
-
         # Create RTL for fields
         # Fields should be in order in RTL,therefore, use list
         for field in obj.fields():
@@ -56,6 +34,15 @@ class Register(Component):
                 field_obj.sanity_checks()
 
             self.children.append(field_obj)
+
+        # Create generate block for register and add comment
+        self.rtl_header.append("generate")
+        for i in range(self.dimensions):
+            self.rtl_header.append(
+                Register.templ_dict['generate_for_start'].format(
+                    iterator = chr(97+i),
+                    limit = self.array_dimensions[i]))
+
 
         # End loops
         for i in range(self.dimensions-1, -1, -1):
@@ -72,13 +59,41 @@ class Register(Component):
             rw_wire_assign_field = 'rw_wire_assign_1_dim'
 
         self.rtl_header.append(
-            Register.templ_dict[rw_wire_assign_field].format(
+            Register.templ_dict[rw_wire_assign_field]['rtl'].format(
                 path = self.path,
                 addr = self.obj.absolute_address,
                 genvars = self.genvars_str,
                 genvars_sum =self.genvars_sum_str,
                 stride = self.obj.array_stride,
                 depth = self.depth))
+
+        self.yaml_signals_to_list(Register.templ_dict[rw_wire_assign_field])
+
+        # Add wire/register instantiations
+        self.rtl_header = [
+            *[
+                Register.templ_dict['signal_declaration'].format(
+                    name = key,
+                    type = value[0],
+                    unpacked_dim = '[{}]'.format(
+                        ']['.join(
+                            [str(y) for y in value[1]]))
+                        if value[1] else '')
+                for (key, value) in self.get_signals().items()],
+                '',
+                *self.rtl_header,
+            ]
+
+        # Create comment and provide user information about register he/she
+        # is looking at.
+        self.rtl_header = [
+            Register.templ_dict['reg_comment'].format(
+                name = obj.inst_name,
+                dimensions = self.dimensions,
+                depth = self.depth),
+                *self.rtl_header
+            ]
+
 
     def __process_variables(self, obj: node.RootNode):
         # Save object
