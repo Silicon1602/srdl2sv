@@ -47,4 +47,4 @@ generate_for_start: |-
 generate_for_end: |-
     end // of for loop with iterator {dimension}
 signal_declaration: |-
-    {type:10s}{name:20s} {unpacked_dim};
+    {type:{signal_width}} {name:{name_width}}{unpacked_dim};

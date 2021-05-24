@@ -2,12 +2,12 @@ import math
 import importlib.resources as pkg_resources
 import yaml
 
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
-from systemrdl.node import FieldNode
+from systemrdl.node import FieldNode, SignalNode
+from systemrdl.component import Reg, Regfile, Addrmap, Root
 from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType
 
 # Local modules
-from components.component import Component
+from components.component import Component, TypeDef
 from . import templates
 
 class Field(Component):
@@ -16,7 +16,7 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.FieldNode, array_dimensions: list, config:dict):
+    def __init__(self, obj: FieldNode, array_dimensions: list, config:dict):
         super().__init__()
 
         # Save and/or process important variables
@@ -25,6 +25,9 @@ class Field(Component):
         # Create logger object
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
         self.logger.debug('Starting to process field "{}"'.format(obj.inst_name))
+
+        # Determine field types
+        self.__process_fieldtype()
 
         ##################################################################################
         # LIMITATION:
@@ -67,7 +70,73 @@ class Field(Component):
         [self.yaml_signals_to_list(Field.templ_dict[i[1]]) for i in operations]
 
 
-    def __process_variables(self, obj: node.RootNode, array_dimensions: list):
+    def __process_fieldtype(self):
+        try:
+            enum = self.obj.get_property('encode')
+
+            # Rules for scope:
+            #   - Regfiles or addrmaps have packages
+            #   - An enum that is not defined within a register will go into the package
+            #     of the first addrmap or regfile that is found when iterating through
+            #     the parents
+            #   - Regfiles don't need to be unique in a design. Therefore, the packages of
+            #     regfiles shall be prepended by the addrmap name.
+            #   - When the enum is defined in a register, that register will be prepended
+            #     to the name of that enum.
+            #
+            # This procedure is expensive, but None.parent() will not work and therefore
+            # kill the try block in most cases
+            parent_scope = enum.get_parent_scope()
+
+            self.logger.debug("Starting to parse '{}'".format(enum))
+
+            if isinstance(parent_scope, Reg):
+                enum_name = '__'.join([enum.get_scope_path().split('::')[-1], enum.__name__])
+                parent_scope = parent_scope.parent_scope
+            else:
+                enum_name = enum.__name__
+
+            path = []
+
+            # Open up all parent scopes and append it to scope list
+            while 1:
+                if isinstance(parent_scope, Regfile):
+                    if parent_scope.is_instance:
+                        path.append(parent_scope.inst_name)
+                    else:
+                        path.append(parent_scope.type_name)
+
+                    # That's a lot of parent_scope's...
+                    parent_scope = parent_scope.parent_scope
+                else:
+                    path.append(self.owning_addrmap)
+
+                    break
+
+            # Create string. Reverse list so that order starts at addrmap
+            scope = '__'.join(reversed(path))
+
+            # Create internal NamedTuple with information on Enum
+            self.typedef[enum_name] = TypeDef (
+                scope=scope,
+                members= [(x.name, x.value) for x in self.obj.get_property('encode')]
+            )
+
+            # Save name of object
+            self.field_type =\
+                '::'.join([scope, enum_name])
+
+            self.logger.info("Parsed enum '{}'".format(enum_name))
+
+        except AttributeError:
+            # In case of an AttributeError, the encode property is None. Hence,
+            # the field has a simple width
+            if self.obj.width > 1:
+                self.field_type = 'logic [{}:0]'.format(self.obj.width-1)
+            else:
+                self.field_type = 'logic'
+
+    def __process_variables(self, obj: FieldNode, array_dimensions: list):
         # Save object
         self.obj = obj
 
@@ -80,9 +149,6 @@ class Field(Component):
 
         self.path_underscored = self.path.replace('.', '_')
         self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
-
-        # Field type
-        self.field_type = 'logic'
 
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
@@ -228,13 +294,13 @@ class Field(Component):
             swwe = self.obj.get_property('swwe')
             swwel = self.obj.get_property('swwel')
 
-            if isinstance(swwe, (node.FieldNode, node.SignalNode)):
+            if isinstance(swwe, (FieldNode, SignalNode)):
                 access_rtl['sw_write'].append(
                     Field.templ_dict['sw_access_field_swwe']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
                         swwe = Component.get_signal_name(swwe)))
-            elif isinstance(swwel, (node.FieldNode, node.SignalNode)):
+            elif isinstance(swwel, (FieldNode, SignalNode)):
                 access_rtl['sw_write'].append(
                     Field.templ_dict['sw_access_field_swwel']['rtl'].format(
                         path_wo_field = self.path_wo_field,

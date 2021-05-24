@@ -59,28 +59,49 @@ class AddrMap(Component):
         # Start assembling addrmap module
         self.logger.info("Starting to assemble input/output/inout ports")
 
+        # Prefetch dictionaries in local array
+        input_dict_list = [(key, value) for (key, value) in self.get_ports('input').items()]
+        output_dict_list = [(key, value) for (key, value) in self.get_ports('output').items()]
+
+        input_signal_width = min(
+                max([len(value[0]) for (_, value) in input_dict_list]), 40)
+
+        input_name_width = min(
+                max([len(key) for (key, _) in input_dict_list]), 40)
+
+        output_signal_width = min(
+                 max([len(value[0]) for (_, value) in output_dict_list]), 40)
+
+        output_name_width = min(
+                max([len(key) for (key, _) in output_dict_list]), 40)
+
+
         # Input ports
         input_ports_rtl = [
             AddrMap.templ_dict['input_port'].format(
                 name = key,
                 signal_type = value[0],
+                signal_width = input_signal_width,
+                name_width = input_name_width,
                 unpacked_dim = '[{}]'.format(
                     ']['.join(
                         [str(y) for y in value[1]]))
                     if value[1] else '')
-            for (key, value) in self.get_ports('input').items()
+            for (key, value) in input_dict_list
             ]
 
         # Output ports
         output_ports_rtl = [
             AddrMap.templ_dict['output_port'].format(
                 name = key,
+                signal_width = output_signal_width,
+                name_width = output_name_width,
                 signal_type = value[0],
                 unpacked_dim = '[{}]'.format(
                     ']['.join(
                         [str(y) for y in value[1]]))
                     if value[1] else '')
-            for (key, value) in self.get_ports('output').items()
+            for (key, value) in output_dict_list
             ]
 
         # Remove comma from last port entry

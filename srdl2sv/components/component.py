@@ -7,19 +7,16 @@ from systemrdl import node
 from log.log import create_logger
 
 # Define NamedTuple
-class TypeDefMembers(NamedTuple):
-    name: str
-    member_type: str
-
 class TypeDef(NamedTuple):
-    name: str
-    members: list[TypeDefMembers]
+    scope: str
+    members: tuple
 
 class Component():
     def __init__(self):
         self.rtl_header = []
         self.rtl_footer = []
         self.children = []
+        self.typedef = dict()
         self.ports = dict()
         self.signals = dict()
         self.ports['input'] = dict()

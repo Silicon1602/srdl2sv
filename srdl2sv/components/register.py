@@ -70,16 +70,24 @@ class Register(Component):
         self.yaml_signals_to_list(Register.templ_dict[rw_wire_assign_field])
 
         # Add wire/register instantiations
+        dict_list = [(key, value) for (key, value) in self.get_signals().items()]
+
+        signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
+
+        name_width = min(max([len(key) for (key, _) in dict_list]), 40)
+
         self.rtl_header = [
             *[
                 Register.templ_dict['signal_declaration'].format(
                     name = key,
                     type = value[0],
+                    signal_width = signal_width,
+                    name_width = name_width,
                     unpacked_dim = '[{}]'.format(
                         ']['.join(
                             [str(y) for y in value[1]]))
                         if value[1] else '')
-                for (key, value) in self.get_signals().items()],
+                for (key, value) in dict_list],
                 '',
                 *self.rtl_header,
             ]
