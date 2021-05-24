@@ -1,8 +1,7 @@
 import importlib.resources as pkg_resources
 import yaml
 
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
-from systemrdl.node import FieldNode
+from systemrdl import node
 
 # Local modules
 from components.component import Component
@@ -15,7 +14,7 @@ class Register(Component):
         pkg_resources.read_text(templates, 'regs.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode, config: dict):
+    def __init__(self, obj: node.RootNode, config: dict, glbl_settings: dict):
         super().__init__()
 
         # Save and/or process important variables
@@ -28,7 +27,7 @@ class Register(Component):
         # Create RTL for fields
         # Fields should be in order in RTL,therefore, use list
         for field in obj.fields():
-            field_obj = Field(field, self.array_dimensions, config)
+            field_obj = Field(field, self.array_dimensions, config, glbl_settings)
 
             if not config['disable_sanity']:
                 field_obj.sanity_checks()

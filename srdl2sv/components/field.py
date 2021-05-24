@@ -16,11 +16,11 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: FieldNode, array_dimensions: list, config:dict):
+    def __init__(self, obj: FieldNode, array_dimensions: list, config:dict, glbl_settings: dict):
         super().__init__()
 
         # Save and/or process important variables
-        self.__process_variables(obj, array_dimensions)
+        self.__process_variables(obj, array_dimensions, glbl_settings)
 
         # Create logger object
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
@@ -136,7 +136,7 @@ class Field(Component):
             else:
                 self.field_type = 'logic'
 
-    def __process_variables(self, obj: FieldNode, array_dimensions: list):
+    def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
         # Save object
         self.obj = obj
 
@@ -168,32 +168,22 @@ class Field(Component):
         # the reset value, and whether the field actually has a reset
         self.rst = dict()
 
-        try:
-            rst_signal = obj.get_property("resetsignal")
+        reset_signal = obj.get_property("resetsignal")
 
-            self.rst['name']  = rst_signal.inst_name
-            self.rst['async'] = rst_signal.get_property("async")
-            self.rst['type'] = "asynchronous" if self.rst['async'] else "synchronous"
+        if (reset_signal):
+            self.rst = Field.process_reset_signal(reset_signal)
+        else:
+            # Only use global reset (if present) if no local reset is set
+            self.rst = glbl_settings['field_reset']
 
-            # Active low or active high?
-            if rst_signal.get_property("activelow"):
-                self.rst['edge'] = "negedge"
-                self.rst['active'] = "active_low"
-            else:
-                self.rst['edge'] = "posedge"
-                self.rst['active'] = "active_high"
+        self.resets.add(self.rst['name'])
 
-            # Value of reset?
-            self.rst['value'] = '\'x' if obj.get_property("reset") == None else\
-                                obj.get_property('reset')
-        except:
-            self.rst['async'] = False
-            self.rst['name'] = None
-            self.rst['edge'] = None
-            self.rst['value'] = "'x"
-            self.rst['active'] = "-"
-            self.rst['type'] = "-"
+        # Value of reset must always be determined on field level
+        self.rst['value'] = \
+            '\'x' if obj.get_property("reset") == None else\
+                     obj.get_property('reset')
 
+        # Define hardware access
         self.hw_access = obj.get_property('hw')
         self.sw_access = obj.get_property('sw')
         self.precedence = obj.get_property('precedence')

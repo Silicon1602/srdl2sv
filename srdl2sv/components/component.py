@@ -18,6 +18,7 @@ class Component():
         self.children = []
         self.typedef = dict()
         self.ports = dict()
+        self.resets = set()
         self.signals = dict()
         self.ports['input'] = dict()
         self.ports['output'] = dict()
@@ -30,6 +31,14 @@ class Component():
             file_log_level=config['file_log_level'],
             file_name=config['file_log_location'])
         self.logger.propagate = False
+
+    def get_resets(self):
+        self.logger.debug("Return reset list")
+
+        for x in self.children:
+            self.resets |= x.get_resets()
+
+        return self.resets
 
     def get_ports(self, port_type: str):
         self.logger.debug("Return port list")
@@ -169,3 +178,29 @@ class Component():
                          self.array_dimensions)
         except (TypeError, KeyError):
             pass
+
+    @staticmethod
+    def process_reset_signal(reset_signal):
+        rst = dict()
+
+        try: 
+            rst['name']  = reset_signal.inst_name
+            rst['async'] = reset_signal.get_property("async")
+            rst['type'] = "asynchronous" if rst['async'] else "synchronous"
+
+            # Active low or active high?
+            if reset_signal.get_property("activelow"):
+                rst['edge'] = "negedge"
+                rst['active'] = "active_low"
+            else:
+                rst['edge'] = "posedge"
+                rst['active'] = "active_high"
+        except:
+            rst['async'] = False
+            rst['name'] = None
+            rst['edge'] = None
+            rst['value'] = "'x"
+            rst['active'] = "-"
+            rst['type'] = "-"
+
+        return rst

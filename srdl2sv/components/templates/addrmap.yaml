@@ -1,6 +1,11 @@
 ---
 module_declaration: |-
     module {name} (
+    // Clock & Resets
+    input  reg_clk,
+    input  bus_clk,
+    {resets} 
+
     // Bus I/O
     // TODO
 
@@ -10,6 +15,8 @@ module_declaration: |-
     // Outputs
     {outputs}
     );
+reset_port: |-
+    input  {name},
 input_port: |-
     input  {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
 output_port: |-
