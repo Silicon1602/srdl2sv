@@ -239,7 +239,7 @@ class Field(Component):
                 Field.templ_dict['rst_field_assign']['rtl'].format(
                     path = self.path_underscored,
                     rst_name = self.rst['name'],
-                    rst_negl =  "!" if self.rst['active'] == "active_high" else "",
+                    rst_negl =  "!" if self.rst['active'] == "active_low" else "",
                     rst_value = self.rst['value'],
                     genvars = self.genvars_str))
 
