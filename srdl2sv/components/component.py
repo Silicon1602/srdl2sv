@@ -12,7 +12,7 @@ class TypeDef(NamedTuple):
     members: tuple
 
 class Component():
-    def __init__(self):
+    def __init__(self, obj, config):
         self.rtl_header = []
         self.rtl_footer = []
         self.children = []
@@ -23,6 +23,19 @@ class Component():
         self.ports['input'] = dict()
         self.ports['output'] = dict()
         self.field_type = ''
+
+        # Save object
+        self.obj = obj
+
+        # Save name
+        self.name = obj.inst_name
+
+        # Create path
+        self.create_underscored_path()
+
+        # Create logger object
+        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
+        self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
 
     def create_logger(self, name: str, config: dict):
         self.logger = create_logger(
@@ -121,7 +134,7 @@ class Component():
 
     @staticmethod
     def split_dimensions(path: str):
-        re_dimensions = re.compile('(\[[^]]\])')
+        re_dimensions = re.compile('(\[[^]]*\])')
         new_path = re_dimensions.sub('', path)
         return (new_path, ''.join(re_dimensions.findall(path)))
 
@@ -159,7 +172,7 @@ class Component():
             for x in yaml_obj['signals']:
                 self.signals[x['name'].format(path = self.path_underscored)] =\
                          (x['signal_type'].format(field_type = self.field_type),
-                         self.array_dimensions)
+                         self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -167,7 +180,7 @@ class Component():
             for x in yaml_obj['input_ports']:
                 self.ports['input'][x['name'].format(path = self.path_underscored)] =\
                          (x['signal_type'].format(field_type = self.field_type),
-                         self.array_dimensions)
+                         self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -175,7 +188,7 @@ class Component():
             for x in yaml_obj['output_ports']:
                 self.ports['output'][x['name'].format(path = self.path_underscored)] =\
                          (x['signal_type'].format(field_type = self.field_type),
-                         self.array_dimensions)
+                         self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -204,3 +217,11 @@ class Component():
             rst['type'] = "-"
 
         return rst
+
+    def create_underscored_path(self):
+        self.owning_addrmap = self.obj.owning_addrmap.inst_name
+        self.full_path = Component.split_dimensions(self.obj.get_path())[0]
+        self.path = self.full_path\
+                        .replace('{}.'.format(self.owning_addrmap), '')
+
+        self.path_underscored = self.path.replace('.', '__')

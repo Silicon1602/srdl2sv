@@ -142,6 +142,7 @@ singlepulse:
         end
 out_port_assign: 
     rtl: |-
+
         // Connect register to hardware output port
         assign {path}_r{genvars} = {path}_q{genvars};
     output_ports:

@@ -2,11 +2,12 @@ import re
 import importlib.resources as pkg_resources
 import yaml
 
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener, node
+from systemrdl import node
 from systemrdl.node import FieldNode
 
 # Local packages
 from components.component import Component
+from components.regfile import RegFile
 from components.register import Register
 from . import templates
 
@@ -18,16 +19,11 @@ class AddrMap(Component):
         Loader=yaml.FullLoader)
 
     def __init__(self, obj: node.RootNode, config: dict):
-        super().__init__()
-
-        # Save and/or process important variables
-        self.__process_variables(obj)
+        super().__init__(obj, config)
 
         # Create logger object
         self.create_logger(self.path, config)
         self.logger.debug('Starting to process addrmap')
-
-        template = pkg_resources.read_text(templates, 'addrmap.sv')
 
         # Check if global resets are defined
         glbl_settings = dict()
@@ -48,7 +44,7 @@ class AddrMap(Component):
                 self.logger.info('Found hierarchical addrmap. Entering it...')
                 self.logger.error('Child addrmaps are not implemented yet!')
             elif isinstance(child, node.RegfileNode):
-                self.logger.error('Regfiles are not implemented yet!')
+                self.children.append(RegFile(child, [], [], config, glbl_settings))
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
@@ -57,15 +53,19 @@ class AddrMap(Component):
                     self.logger.error('Alias registers are not implemented yet!')
                 else:
                     self.registers[child.inst_name] = \
-                        Register(child, config, glbl_settings)
+                        Register(child, [], [], config, glbl_settings)
 
-        # Add regfiles and registers to children
-        self.children = [x for x in self.registers.values()]
+        # Add registers to children. This must be done in a last step
+        # to account for all possible alias combinations
+        self.children = [
+            *self.children,
+            *[x for x in self.registers.values()]
+            ]
 
         self.logger.info("Done generating all child-regfiles/registers")
 
         # Start assembling addrmap module
-        self.logger.info("Starting to assemble input/output/inout ports")
+        self.logger.info("Starting to assemble input & output ports")
 
         # Reset ports
         reset_ports_rtl = [
@@ -124,24 +124,10 @@ class AddrMap(Component):
 
         self.rtl_header.append(
             AddrMap.templ_dict['module_declaration'].format(
-                name = obj.inst_name,
+                name = self.name,
                 resets = '\n'.join(reset_ports_rtl),
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
-
-    def __process_variables(self, obj: node.RootNode):
-        # Save object
-        self.obj = obj
-
-        # Create full name
-        self.owning_addrmap = obj.owning_addrmap.inst_name
-        self.path = obj.get_path()\
-                        .replace('[]', '')\
-                        .replace('{}.'.format(self.owning_addrmap), '')
-
-        self.path_underscored = self.path.replace('.', '_')
-
-        self.name = obj.inst_name
 
     def __process_global_resets(self):
         field_reset_list = \

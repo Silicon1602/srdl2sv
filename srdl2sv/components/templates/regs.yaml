@@ -4,8 +4,8 @@ rw_wire_assign_1_dim:
         // Assign register-activation signals
         assign {path}_reg_active{genvars} = addr == {addr};
 
-        assign {path}_sw_wr      = {path}_reg_active && r_vld;
-        assign {path}_sw_rd      = {path}_reg_active && w_vld;
+        assign {path}_sw_wr = {path}_reg_active && r_vld;
+        assign {path}_sw_rd = {path}_reg_active && w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'
@@ -19,10 +19,10 @@ rw_wire_assign_multi_dim:
     rtl: |
     
         // Assign register-activation signals
-        assign {path}_reg_active{genvars} = addr == ({addr}+({genvars_sum})*{stride});
+        assign {path}_reg_active{genvars} = addr == {addr}+({genvars_sum});
 
-        assign {path}_sw_wr{genvars}      = {path}_reg_active{genvars} && r_vld;
-        assign {path}_sw_rd{genvars}      = {path}_reg_active{genvars} && w_vld;
+        assign {path}_sw_wr{genvars} = {path}_reg_active{genvars} && r_vld;
+        assign {path}_sw_rd{genvars} = {path}_reg_active{genvars} && w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'

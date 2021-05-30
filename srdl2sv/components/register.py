@@ -1,5 +1,6 @@
 import importlib.resources as pkg_resources
 import yaml
+import math
 
 from systemrdl import node
 
@@ -14,20 +15,22 @@ class Register(Component):
         pkg_resources.read_text(templates, 'regs.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: node.RootNode, config: dict, glbl_settings: dict):
-        super().__init__()
+    def __init__(
+            self,
+            obj: node.RegNode,
+            parents_dimensions: list,
+            parents_stride: list,
+            config: dict,
+            glbl_settings: dict):
+        super().__init__(obj, config)
 
         # Save and/or process important variables
-        self.__process_variables(obj)
-
-        # Create logger object
-        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
-        self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
+        self.__process_variables(obj, parents_dimensions, parents_stride)
 
         # Create RTL for fields
         # Fields should be in order in RTL,therefore, use list
         for field in obj.fields():
-            field_obj = Field(field, self.array_dimensions, config, glbl_settings)
+            field_obj = Field(field, self.total_array_dimensions, config, glbl_settings)
 
             if not config['disable_sanity']:
                 field_obj.sanity_checks()
@@ -35,11 +38,13 @@ class Register(Component):
             self.children.append(field_obj)
 
         # Create generate block for register and add comment
-        self.rtl_header.append("generate")
+        if self.dimensions:
+            self.rtl_header.append("generate")
+
         for i in range(self.dimensions):
             self.rtl_header.append(
                 Register.templ_dict['generate_for_start'].format(
-                    iterator = chr(97+i),
+                    iterator = chr(97+i+self.parents_depths),
                     limit = self.array_dimensions[i]))
 
 
@@ -48,6 +53,9 @@ class Register(Component):
             self.rtl_footer.append(
                 Register.templ_dict['generate_for_end'].format(
                     dimension = chr(97+i)))
+
+        if self.dimensions:
+            self.rtl_footer.append("endgenerate")
 
         # Assign variables from bus
         self.obj.current_idx = [0]
@@ -59,11 +67,10 @@ class Register(Component):
 
         self.rtl_header.append(
             Register.templ_dict[rw_wire_assign_field]['rtl'].format(
-                path = self.path,
+                path = self.path_underscored,
                 addr = self.obj.absolute_address,
                 genvars = self.genvars_str,
                 genvars_sum =self.genvars_sum_str,
-                stride = self.obj.array_stride,
                 depth = self.depth))
 
         self.yaml_signals_to_list(Register.templ_dict[rw_wire_assign_field])
@@ -102,7 +109,11 @@ class Register(Component):
             ]
 
 
-    def __process_variables(self, obj: node.RootNode):
+    def __process_variables(
+            self,
+            obj: node.RegNode,
+            parents_dimensions: list,
+            parents_stride: list):
         # Save object
         self.obj = obj
 
@@ -110,37 +121,62 @@ class Register(Component):
         self.name = obj.inst_name
 
         # Create full name
-        self.owning_addrmap = obj.owning_addrmap.inst_name
-        self.path = obj.get_path()\
-                        .replace('[]', '')\
-                        .replace('{}.'.format(self.owning_addrmap), '')
-
-        self.path_underscored = self.path.replace('.', '_')
+        self.create_underscored_path()
 
         # Determine dimensions of register
         if obj.is_array:
             self.sel_arr = 'array'
+            self.total_array_dimensions = [*parents_dimensions, *self.obj.array_dimensions]
             self.array_dimensions = self.obj.array_dimensions
+
+            # Merge parent's stride with stride of this regfile. Before doing so, the
+            # respective stride of the different dimensions shall be calculated
+            self.total_stride = [
+                *parents_stride, 
+                *[math.prod(self.array_dimensions[i+1:])
+                    *self.obj.array_stride
+                        for i, _ in enumerate(self.array_dimensions)]
+                ]
         else:
             self.sel_arr = 'single'
+            self.total_array_dimensions = parents_dimensions
             self.array_dimensions = []
+            self.total_stride = self.obj.array_stride
+
+        # How many dimensions were already part of some higher up hierarchy?
+        self.parents_depths = len(parents_dimensions)
+
+        self.total_depth = '[{}]'.format(']['.join(f"{i}" for i in self.total_array_dimensions))
+        self.total_dimensions = len(self.total_array_dimensions)
 
         self.depth = '[{}]'.format(']['.join(f"{i}" for i in self.array_dimensions))
         self.dimensions = len(self.array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(self.dimensions)]
+        genvars = ['[{}]'.format(chr(97+i)) for i in range(self.total_dimensions)]
         self.genvars_str = ''.join(genvars)
 
         # Determine value to compare address with
         genvars_sum = []
-        for i in range(self.dimensions):
-            if i != 0:
-                genvars_sum.append("+")
-                genvars_sum.append("*".join(map(str,self.array_dimensions[self.dimensions-i:])))
+        try:
+            for i, stride in enumerate(self.total_stride):
+                genvars_sum.append(chr(97+i))
                 genvars_sum.append("*")
+                genvars_sum.append(str(stride))
+                genvars_sum.append("+")
 
-            genvars_sum.append(chr(97+self.dimensions-1-i))
+            genvars_sum.pop()
+
+            self.logger.debug(
+                "Multidimensional with dimensions '{}' and stride '{}'".format(
+                    self.total_array_dimensions,
+                    self.total_stride))
+        except TypeError:
+            self.logger.debug(
+                "Caught expected TypeError because self.total_stride is empty")
+        except IndexError:
+            self.logger.debug(
+                "Caugt expected IndexError because genvars_sum is empty")
 
         self.genvars_sum_str = ''.join(genvars_sum)
 

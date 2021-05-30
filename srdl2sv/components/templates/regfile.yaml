@@ -1,0 +1,17 @@
+---
+regfile_comment:
+    rtl: |-
+        /*******************************************************************
+         *******************************************************************
+         * REGFILE               : {name}
+         * DIMENSION             : {dimensions}
+         * DEPTHS (per dimension): {depth}
+         *******************************************************************
+         *******************************************************************/
+generate_for_start: 
+    rtl: |-
+        for ({iterator} = 0; {iterator} < {limit}; {iterator}++)
+        begin
+generate_for_end: 
+    rtl: |-
+        end // of for loop with iterator {dimension}

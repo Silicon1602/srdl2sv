@@ -16,15 +16,16 @@ class Field(Component):
         pkg_resources.read_text(templates, 'fields.yaml'),
         Loader=yaml.FullLoader)
 
-    def __init__(self, obj: FieldNode, array_dimensions: list, config:dict, glbl_settings: dict):
-        super().__init__()
+    def __init__(
+            self,
+            obj: FieldNode,
+            array_dimensions: list,
+            config:dict,
+            glbl_settings: dict):
+        super().__init__(obj, config)
 
         # Save and/or process important variables
         self.__process_variables(obj, array_dimensions, glbl_settings)
-
-        # Create logger object
-        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
-        self.logger.debug('Starting to process field "{}"'.format(obj.inst_name))
 
         # Determine field types
         self.__process_fieldtype()
@@ -137,21 +138,12 @@ class Field(Component):
                 self.field_type = 'logic'
 
     def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
-        # Save object
-        self.obj = obj
-
         # Create full name
-        self.owning_addrmap = obj.owning_addrmap.inst_name
-        self.full_path = obj.get_path().replace('[]', '')
-        self.path = self.full_path\
-                        .replace('[]', '')\
-                        .replace('{}.'.format(self.owning_addrmap), '')
-
-        self.path_underscored = self.path.replace('.', '_')
         self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
 
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
+        self.total_array_dimensions = array_dimensions
 
         # Calculate how many genvars shall be added
         genvars = ['[{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]
@@ -170,7 +162,7 @@ class Field(Component):
 
         reset_signal = obj.get_property("resetsignal")
 
-        if (reset_signal):
+        if reset_signal:
             self.rst = Field.process_reset_signal(reset_signal)
         else:
             # Only use global reset (if present) if no local reset is set
@@ -180,7 +172,7 @@ class Field(Component):
 
         # Value of reset must always be determined on field level
         self.rst['value'] = \
-            '\'x' if obj.get_property("reset") == None else\
+            '\'x' if not obj.get_property("reset") else\
                      obj.get_property('reset')
 
         # Define hardware access
@@ -201,7 +193,7 @@ class Field(Component):
         # Add comment with summary on field's properties
         return \
             Field.templ_dict['field_comment']['rtl'].format(
-                name = self.obj.inst_name,
+                name = self.name,
                 hw_access = str(self.hw_access)[11:],
                 sw_access = str(self.sw_access)[11:],
                 hw_precedence = '(precedence)' if self.precedence == PrecedenceType.hw else '',
