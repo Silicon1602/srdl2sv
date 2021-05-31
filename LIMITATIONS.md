@@ -1,2 +1,0 @@
-- Depth of an array is limited to X
-- [Any limitations to the systemrdl-compiler](https://systemrdl-compiler.readthedocs.io/en/latest/known_issues.html) also apply to the SystemRDL2SystemVerilog compiler.
