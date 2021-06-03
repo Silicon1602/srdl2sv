@@ -31,6 +31,9 @@ class AddrMap(Component):
         (glbl_settings['field_reset'], glbl_settings['cpuif_reset']) = \
             self.__process_global_resets()
 
+        # Use global settings to define whether a component is already in a generate block
+        glbl_settings['generate_active'] = False
+
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)

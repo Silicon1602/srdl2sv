@@ -42,8 +42,17 @@ class RegFile(Component):
             ]
 
         # Create generate block for register and add comment
-        if self.dimensions:
+        for i in range(self.dimensions-1, -1, -1):
+            self.rtl_footer.append(
+                RegFile.templ_dict['generate_for_end']['rtl'].format(
+                    dimension = chr(97+i)))
+
+        if self.dimensions and not glbl_settings['generate_active']:
             self.rtl_header.append("generate")
+            self.generate_initiated = True
+            glbl_settings['generate_active'] = True
+        else:
+            self.generate_initiated = False
 
         for i in range(self.dimensions):
             self.rtl_header.append(
@@ -101,6 +110,11 @@ class RegFile(Component):
             ]
 
         self.logger.info("Done generating all child-regfiles/registers")
+
+        # End generate loop
+        if self.generate_initiated:
+            glbl_settings['generate_active'] = False
+            self.rtl_footer.append("endgenerate")
 
     def __process_variables(self,
             obj: node.RegfileNode,

@@ -38,8 +38,12 @@ class Register(Component):
             self.children.append(field_obj)
 
         # Create generate block for register and add comment
-        if self.dimensions:
+        if self.dimensions and not glbl_settings['generate_active']:
             self.rtl_header.append("generate")
+            glbl_settings['generate_active'] = True
+            self.generate_initiated = True
+        else:
+            self.generate_initiated = False
 
         for i in range(self.dimensions):
             self.rtl_header.append(
@@ -54,7 +58,8 @@ class Register(Component):
                 Register.templ_dict['generate_for_end'].format(
                     dimension = chr(97+i)))
 
-        if self.dimensions:
+        if self.generate_initiated:
+            glbl_settings['generate_active'] = False
             self.rtl_footer.append("endgenerate")
 
         # Assign variables from bus
