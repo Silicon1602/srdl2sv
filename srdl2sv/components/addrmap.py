@@ -140,6 +140,9 @@ class AddrMap(Component):
                 outputs = '\n'.join(output_ports_rtl)))
 
 
+        # Add endmodule keyword
+        self.rtl_footer.append('endmodule')
+
     def __process_global_resets(self):
         field_reset_list = \
             [x for x in self.obj.signals() if x.get_property('field_reset')]
