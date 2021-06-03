@@ -145,6 +145,7 @@ class Field(Component):
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
         self.total_array_dimensions = array_dimensions
+        self.total_dimensions = len(self.total_array_dimensions)
 
         # Calculate how many genvars shall be added
         genvars = ['[{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]

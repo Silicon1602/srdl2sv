@@ -147,6 +147,14 @@ class AddrMap(Component):
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
 
+        # Append genvars
+        genvars = ''.join([
+            '\ngenvar ',
+            ','.join([chr(97+i) for i in range(self.get_max_dim_depth())]),
+            ';\n'
+            ])
+
+        self.rtl_header.append(genvars)
 
         # Add endmodule keyword
         self.rtl_footer.append('endmodule')

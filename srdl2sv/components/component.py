@@ -65,6 +65,21 @@ class Component():
 
         return self.ports[port_type]
 
+    def get_max_dim_depth(self) -> int:
+        try:
+            total_dimensions = self.total_dimensions
+            total_array_dimensions = self.total_array_dimensions
+        except AttributeError:
+            total_dimensions = 0
+            total_array_dimensions = []
+
+        self.logger.debug("Return depth '{}' for dimensions (including "\
+                          "parents) '{}'".format(total_dimensions, total_array_dimensions))
+        return max([
+            total_dimensions,
+            *[x.get_max_dim_depth() for x in self.children]
+            ])
+
     def get_signals(self):
         self.logger.debug("Return signal list")
 
