@@ -35,6 +35,7 @@ class AddrMap(Component):
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
         self.registers = dict()
+        self.regfiles = []
 
         # Traverse through children
         for child in obj.children():
@@ -44,7 +45,7 @@ class AddrMap(Component):
                 self.logger.info('Found hierarchical addrmap. Entering it...')
                 self.logger.error('Child addrmaps are not implemented yet!')
             elif isinstance(child, node.RegfileNode):
-                self.children.append(RegFile(child, [], [], config, glbl_settings))
+                self.regfiles.append(RegFile(child, [], [], config, glbl_settings))
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
@@ -58,7 +59,7 @@ class AddrMap(Component):
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
         self.children = [
-            *self.children,
+            *self.regfiles,
             *[x for x in self.registers.values()]
             ]
 
@@ -69,7 +70,7 @@ class AddrMap(Component):
 
         # Reset ports
         reset_ports_rtl = [
-            AddrMap.templ_dict['reset_port'].format(
+            AddrMap.templ_dict['reset_port']['rtl'].format(
                 name = name)
             for name in [x for x in self.get_resets()]
             ]
@@ -93,7 +94,7 @@ class AddrMap(Component):
 
         # Input ports
         input_ports_rtl = [
-            AddrMap.templ_dict['input_port'].format(
+            AddrMap.templ_dict['input_port']['rtl'].format(
                 name = key,
                 signal_type = value[0],
                 signal_width = input_signal_width,
@@ -107,7 +108,7 @@ class AddrMap(Component):
 
         # Output ports
         output_ports_rtl = [
-            AddrMap.templ_dict['output_port'].format(
+            AddrMap.templ_dict['output_port']['rtl'].format(
                 name = key,
                 signal_width = output_signal_width,
                 name_width = output_name_width,
@@ -122,12 +123,19 @@ class AddrMap(Component):
         # Remove comma from last port entry
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')
 
+        import_package_list = []
+        [import_package_list.append(
+            AddrMap.templ_dict['import_package']['rtl'].format(
+                name = self.name)) for x in self.get_package_names()]
+
         self.rtl_header.append(
-            AddrMap.templ_dict['module_declaration'].format(
+            AddrMap.templ_dict['module_declaration']['rtl'].format(
                 name = self.name,
+                import_package_list = ',\n'.join(import_package_list),
                 resets = '\n'.join(reset_ports_rtl),
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
+
 
     def __process_global_resets(self):
         field_reset_list = \
@@ -166,5 +174,56 @@ class AddrMap(Component):
         cpuif_reset = AddrMap.process_reset_signal(cpuif_reset_item)
 
         return (field_reset, cpuif_reset)
+
+    def get_package_names(self) -> set():
+        names = set()
+
+        for i in self.registers.values():
+            for key, value in i.get_typedefs().items():
+                names.add(value.scope)
+
+        return names
+
+    def get_package_rtl(self, tab_width: int = 4, real_tabs = False) -> dict():
+        # First go through all registers in this scope to generate a package
+        package_rtl = []
+        enum_rtl = []
+        rtl_return = dict()
+
+        for i in self.registers.values():
+            for key, value in i.get_typedefs().items():
+                variable_list = []
+
+                max_name_width = min(
+                        max([len(x[0]) for x in value.members]), 40)
+
+                for var in value.members:
+                    variable_list.append(
+                        AddrMap.templ_dict['enum_var_list_item']['rtl'].format(
+                            value = var[1],
+                            width = value.width,
+                            max_name_width = max_name_width,
+                            name = var[0]))
+
+                enum_rtl.append(
+                    AddrMap.templ_dict['enum_declaration']['rtl'].format(
+                        width=value.width-1,
+                        name = key,
+                        enum_var_list = ',\n'.join(variable_list)))
+
+        package_rtl =\
+            AddrMap.templ_dict['package_declaration']['rtl'].format(
+                name = self.name,
+                pkg_content = '\n\n'.join(enum_rtl))
+
+
+        rtl_return[self.name] = AddrMap.add_tabs(
+            package_rtl,
+            tab_width,
+            real_tabs)
+
+        # TODO Later, request get_package_rtl()-method of all child regfiles
+
+        return rtl_return
 
 

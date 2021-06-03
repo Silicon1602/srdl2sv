@@ -35,7 +35,7 @@ srdl2sv example_addrmap.rdl
 ## Help function
 A comprehensive help function of the tool can be invoked by running `srdl2sv --help`.
 ```
-usage: main.py [-h] [-o OUT_DIR] [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-r] [-x] [--stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}] [--file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
+usage: main.py [-h] [-o OUT_DIR] [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-r] [-x] [-e] [--stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}] [--file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
                [--real_tabs] [--tab_width TAB_WIDTH]
                IN_RDL [IN_RDL ...]
 
@@ -53,6 +53,7 @@ optional arguments:
   -r, --recursive_search
                         If set, the dependency directories will be searched recursively.
   -x, --disable_sanity  Disable sanity checks or components. This might speed up the compiler but is generally not recommended!
+  -e, --disable_enums   Disable enumeration generation. This will prevent the compiler from generating packages and it will prevent it from using enums in the port list.
   --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
                         Set verbosity level of output to shell. When set to 'NONE', nothing will be printed to the shell. (default: WARNING)
   --file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}

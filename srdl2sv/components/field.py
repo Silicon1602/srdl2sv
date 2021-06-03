@@ -73,6 +73,9 @@ class Field(Component):
 
     def __process_fieldtype(self):
         try:
+            if not self.config['enums']:
+                raise AttributeError
+
             enum = self.obj.get_property('encode')
 
             # Rules for scope:
@@ -102,10 +105,7 @@ class Field(Component):
             # Open up all parent scopes and append it to scope list
             while 1:
                 if isinstance(parent_scope, Regfile):
-                    if parent_scope.is_instance:
-                        path.append(parent_scope.inst_name)
-                    else:
-                        path.append(parent_scope.type_name)
+                    path.append(parent_scope._scope_name)
 
                     # That's a lot of parent_scope's...
                     parent_scope = parent_scope.parent_scope
@@ -118,14 +118,15 @@ class Field(Component):
             scope = '__'.join(reversed(path))
 
             # Create internal NamedTuple with information on Enum
-            self.typedef[enum_name] = TypeDef (
+            self.typedefs[enum_name] = TypeDef (
                 scope=scope,
+                width=self.obj.width,
                 members= [(x.name, x.value) for x in self.obj.get_property('encode')]
             )
 
             # Save name of object
             self.field_type =\
-                '::'.join([scope, enum_name])
+                '::'.join(['_'.join([scope, 'pkg']), enum_name])
 
             self.logger.info("Parsed enum '{}'".format(enum_name))
 

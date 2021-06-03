@@ -51,6 +51,14 @@ class CliArguments():
                   up the compiler but is generally not recommended!")
 
         self.parser.add_argument(
+            "-e",
+            "--disable_enums",
+            action="store_true",
+            help="Disable enumeration generation. This will prevent the\
+                  compiler from generating packages and it will prevent\
+                  it from using enums in the port list.")
+
+        self.parser.add_argument(
             "--stream_log_level",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
             default='WARNING',
@@ -117,5 +125,8 @@ class CliArguments():
 
         # Sanity check related
         config['disable_sanity'] = args.disable_sanity
+
+        # Set enums
+        config['enums'] = not args.disable_enums
 
         return config

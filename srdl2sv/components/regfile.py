@@ -55,6 +55,7 @@ class RegFile(Component):
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
         self.registers = dict()
+        self.regfiles = []
 
         # Set object to 0 for easy addressing
         self.obj.current_idx = [0]
@@ -69,7 +70,7 @@ class RegFile(Component):
             elif isinstance(child, node.RegfileNode):
                 self.obj.current_idx = [0]
 
-                self.children.append(
+                self.regfiles.append(
                     RegFile(
                         child,
                         self.total_array_dimensions,
@@ -95,7 +96,7 @@ class RegFile(Component):
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
         self.children = [
-            *self.children,
+            *self.regfiles,
             *[x for x in self.registers.values()]
             ]
 

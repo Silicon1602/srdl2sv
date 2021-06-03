@@ -52,9 +52,10 @@ if __name__ == "__main__":
             config['output_dir']))
 
     # Save RTL to file
-    out_file_name = "{}/{}.sv".format(config['output_dir'], addrmap.name)
+    # Start out with addrmap
+    out_addrmap_file = "{}/{}.sv".format(config['output_dir'], addrmap.name)
 
-    with open(out_file_name, 'w') as file:
+    with open(out_addrmap_file, 'w') as file:
         file.write(
             addrmap.get_rtl(
                 tab_width=config['tab_width'],
@@ -62,6 +63,15 @@ if __name__ == "__main__":
             )
         )
 
-        logger.info('Succesfully created "{}"'.format(out_file_name))
+        logger.info('Succesfully created "{}"'.format(out_addrmap_file))
+
+    # Start grabbing packages. This returns a dictionary for the main addrmap
+    # and all it's child regfiles/addrmaps
+    for key, value in addrmap.get_package_rtl(
+        tab_width=config['tab_width'],
+        real_tabs=config['real_tabs']
+    ).items():
+        with open('{}/{}_pkg.sv'.format(config['output_dir'], key), 'w') as file:
+            file.write(value)
 
     logger.info("Elapsed time: %f seconds", time.time() - start)

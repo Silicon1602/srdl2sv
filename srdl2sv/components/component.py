@@ -9,6 +9,7 @@ from log.log import create_logger
 # Define NamedTuple
 class TypeDef(NamedTuple):
     scope: str
+    width: int
     members: tuple
 
 class Component():
@@ -16,7 +17,7 @@ class Component():
         self.rtl_header = []
         self.rtl_footer = []
         self.children = []
-        self.typedef = dict()
+        self.typedefs = dict()
         self.ports = dict()
         self.resets = set()
         self.signals = dict()
@@ -32,6 +33,9 @@ class Component():
 
         # Create path
         self.create_underscored_path()
+
+        # Save config
+        self.config = config
 
         # Create logger object
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
@@ -69,6 +73,14 @@ class Component():
 
         return self.signals
 
+    def get_typedefs(self):
+        self.logger.debug("Return typedef list")
+
+        for x in self.children:
+            self.typedefs |= x.get_typedefs()
+
+        return self.typedefs
+
     def get_rtl(self, tab_width: int = 0, real_tabs: bool = False) -> str:
         self.logger.debug("Return RTL")
 
@@ -83,7 +95,7 @@ class Component():
 
         # Join lists and return string
         if tab_width > 0:
-            return Component.__add_tabs(
+            return Component.add_tabs(
                         '\n'.join(rtl),
                         tab_width,
                         real_tabs)
@@ -91,8 +103,9 @@ class Component():
         return '\n'.join(rtl)
 
     @staticmethod
-    def __add_tabs(rtl: str, tab_width: int = 4, real_tabs = False) -> str:
+    def add_tabs(rtl: str, tab_width: int = 4, real_tabs = False) -> str:
         indent_lvl = 0
+        indent_lvl_next = 0
 
         # Define tab style
         tab = "\t" if real_tabs else " " 
@@ -100,8 +113,7 @@ class Component():
 
         # Define triggers for which the indentation level will increment or
         # decrement on the next line
-        incr_trigger = re.compile('\\bbegin\\b')
-        decr_trigger = re.compile('\\bend\\b')
+        trigger_re = re.compile(r'.*?((?:\bbegin\b|\{)|(?:\bend\b|}))([^$]*)')
 
         rtl_indented = []
 
@@ -109,19 +121,33 @@ class Component():
         for line in rtl.split('\n', -1):
             skip_incr_check = False
 
-            # Check if indentation must be decremented
-            if decr_trigger.search(line):
-                indent_lvl -= 1
-                skip_incr_check = True
+            line_split = line
+
+            # This is done because the increment of the indent level must
+            # be delayed one cycle
+            indent_lvl = indent_lvl_next
+
+            while 1:
+                # Check if indentation must be decremented
+                matchObj = trigger_re.match(line_split)
+
+                if matchObj:
+                    if matchObj.group(1) in ('begin', '{'):
+                        indent_lvl_next += 1
+                    else:
+                        indent_lvl = indent_lvl_next - 1
+                        indent_lvl_next -= 1
+
+                    line_split = matchObj.group(2)
+
+                    if not line_split:
+                        break
+                else:
+                    break
 
             # Add tabs
             rtl_indented.append("{}{}".format(tab*indent_lvl, line))
 
-            # Check if tab level must be incremented
-            if skip_incr_check:
-                continue
-            elif incr_trigger.search(line):
-                indent_lvl += 1
 
         return '\n'.join(rtl_indented)
 
