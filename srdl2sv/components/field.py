@@ -140,7 +140,7 @@ class Field(Component):
 
     def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
         # Create full name
-        self.path_wo_field = '.'.join(self.path.split('.', -1)[0:-1])
+        self.path_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
 
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
@@ -247,50 +247,54 @@ class Field(Component):
         #   - hw_write --> write access for the hardware interface
         #   - sw_write --> write access for the software interface
         #
-        access_rtl = dict([])
+        access_rtl = dict()
 
         # Define hardware access (if applicable)
-        access_rtl['hw_write'] = []
-
         if self.hw_access in (AccessType.rw, AccessType.w):
             if self.we_or_wel:
-                access_rtl['hw_write'].append(
+                access_rtl['hw_write'] = ([
                     Field.templ_dict['hw_access_we_wel']['rtl'].format(
                         negl = '!' if self.obj.get_property('wel') else '',
                         path = self.path_underscored,
-                        genvars = self.genvars_str))
+                        genvars = self.genvars_str)
+                    ],
+                    False)
             else:
-                access_rtl['hw_write'].append(
-                    Field.templ_dict['hw_access_no_we_wel']['rtl'])
+                access_rtl['hw_write'] = ([
+                    Field.templ_dict['hw_access_no_we_wel']['rtl']
+                    ],
+                    True)
 
-            access_rtl['hw_write'].append(
+            access_rtl['hw_write'][0].append(
                 Field.templ_dict['hw_access_field']['rtl'].format(
                     path = self.path_underscored,
                     genvars = self.genvars_str))
 
             self.yaml_signals_to_list(Field.templ_dict['hw_access_field'])
+        else:
+            access_rtl['hw_write'] = ([], False)
 
         # Define software access (if applicable)
-        access_rtl['sw_write'] = []
+        access_rtl['sw_write'] = ([], False)
 
         if self.sw_access in (AccessType.rw, AccessType.w):
             swwe = self.obj.get_property('swwe')
             swwel = self.obj.get_property('swwel')
 
             if isinstance(swwe, (FieldNode, SignalNode)):
-                access_rtl['sw_write'].append(
+                access_rtl['sw_write'][0].append(
                     Field.templ_dict['sw_access_field_swwe']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
                         swwe = Component.get_signal_name(swwe)))
             elif isinstance(swwel, (FieldNode, SignalNode)):
-                access_rtl['sw_write'].append(
+                access_rtl['sw_write'][0].append(
                     Field.templ_dict['sw_access_field_swwel']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
                         swwel = Component.get_signal_name(swwel)))
             else:
-                access_rtl['sw_write'].append(
+                access_rtl['sw_write'][0].append(
                     Field.templ_dict['sw_access_field']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str))
@@ -302,7 +306,7 @@ class Field(Component):
                 if onwrite == OnWriteType.wuser:
                     self.logger.warning("The OnReadType.wuser is not yet supported!")
                 elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
-                    access_rtl['sw_write'].append(
+                    access_rtl['sw_write'][0].append(
                         Field.templ_dict[str(onwrite)]['rtl'].format(
                             path = self.path_underscored,
                             genvars = self.genvars_str,
@@ -312,7 +316,7 @@ class Field(Component):
                 else:
                     # If field spans multiple bytes, every byte shall have a seperate enable!
                     for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
-                        access_rtl['sw_write'].append(
+                        access_rtl['sw_write'][0].append(
                             Field.templ_dict[str(onwrite)]['rtl'].format(
                                 path = self.path_underscored,
                                 genvars = self.genvars_str,
@@ -325,7 +329,7 @@ class Field(Component):
                 # Normal write
                 # If field spans multiple bytes, every byte shall have a seperate enable!
                 for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
-                    access_rtl['sw_write'].append(
+                    access_rtl['sw_write'][0].append(
                         Field.templ_dict['sw_access_byte']['rtl'].format(
                             path = self.path_underscored,
                             genvars = self.genvars_str,
@@ -335,16 +339,16 @@ class Field(Component):
                             msb_field = str(8*(j+1)-1 if i != self.msbyte else self.obj.width-1),
                             field_w = str(8 if i != self.msbyte else self.obj.width-(8*j))))
 
-            access_rtl['sw_write'].append("end")
+            access_rtl['sw_write'][0].append("end")
 
         onread = self.obj.get_property('onread')
 
-        access_rtl['sw_read'] = []
+        access_rtl['sw_read'] = ([], False)
         if self.sw_access in (AccessType.rw, AccessType.r) and onread:
             if onread == OnReadType.ruser:
                 self.logger.warning("The OnReadType.ruser is not yet supported!")
             else:
-                access_rtl['sw_read'].append(
+                access_rtl['sw_read'][0].append(
                     Field.templ_dict[str(onread)]['rtl'].format(
                         path = self.path_underscored,
                         genvars = self.genvars_str,
@@ -354,19 +358,20 @@ class Field(Component):
 
         # Add singlepulse property
         if self.obj.get_property('singlepulse'):
-            access_rtl['singlepulse'] = [
+            access_rtl['singlepulse'] = ([
                 Field.templ_dict['singlepulse']['rtl'].format(
                     path = self.path_underscored,
                     genvars = self.genvars_str)
-                ]
+                ],
+                True)
         else:
-            access_rtl['singlepulse'] = []
+            access_rtl['singlepulse'] = ([], False)
 
         # Define else
-        access_rtl['else'] = ["else"]
+        access_rtl['else'] = (["else"], False)
 
         # Add empty string
-        access_rtl[''] = ['']
+        access_rtl[''] = ([''], False)
 
         # Check if hardware has precedence (default `precedence = sw`)
         if self.precedence == PrecedenceType.sw:
@@ -386,15 +391,20 @@ class Field(Component):
 
         # Add appropriate else
         order_list_rtl = []
+        abort_set = False
 
         for i in order_list:
             # Still a loop and not a list comprehension since this might
             # get longer in the future and thus become unreadable
-            if len(access_rtl[i]) > 0:
-                order_list_rtl = [*order_list_rtl, *access_rtl[i]]
+            if len(access_rtl[i][0]) and not abort_set:
+                order_list_rtl = [*order_list_rtl, *access_rtl[i][0]]
                 order_list_rtl.append("else")
 
-        # Remove last pop
+                # If he access_rtl entry has an abortion entry, do not print
+                # any further branches of the conditional block
+                abort_set = access_rtl[i][1]
+
+        # Remove last else
         order_list_rtl.pop()
 
         # Chain access RTL to the rest of the RTL
