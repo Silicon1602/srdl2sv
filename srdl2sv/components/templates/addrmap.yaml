@@ -2,7 +2,7 @@
 module_declaration: 
     rtl: |-
         module {name}
-        {import_package_list};
+        {import_package_list}
         (
         // Clock & Resets
         input  reg_clk,

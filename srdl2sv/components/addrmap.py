@@ -1,5 +1,6 @@
 import re
 import importlib.resources as pkg_resources
+from sys import exit
 import yaml
 
 from systemrdl import node
@@ -127,14 +128,21 @@ class AddrMap(Component):
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')
 
         import_package_list = []
-        [import_package_list.append(
-            AddrMap.templ_dict['import_package']['rtl'].format(
-                name = self.name)) for x in self.get_package_names()]
+        try:
+            import_package_list = [[
+                AddrMap.templ_dict['import_package']['rtl'].format(
+                    name = self.name),
+                ',\n'
+                ] for x in self.get_package_names()][0][:-1]
+
+            import_package_list.append(';')
+        except IndexError:
+            pass
 
         self.rtl_header.append(
             AddrMap.templ_dict['module_declaration']['rtl'].format(
                 name = self.name,
-                import_package_list = ',\n'.join(import_package_list),
+                import_package_list = ''.join(import_package_list),
                 resets = '\n'.join(reset_ports_rtl),
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
@@ -191,10 +199,17 @@ class AddrMap(Component):
         return names
 
     def get_package_rtl(self, tab_width: int = 4, real_tabs = False) -> dict():
+        if not self.config['enums']:
+            return dict()
+
         # First go through all registers in this scope to generate a package
         package_rtl = []
         enum_rtl = []
         rtl_return = dict()
+
+        # Need to keep track of enum names since they shall be unique
+        # per scope
+        enum_members = dict()
 
         for i in self.registers.values():
             for key, value in i.get_typedefs().items():
@@ -204,6 +219,25 @@ class AddrMap(Component):
                         max([len(x[0]) for x in value.members]), 40)
 
                 for var in value.members:
+                    if var[0] not in enum_members:
+                        enum_members[var[0]] = "::".join([self.name, key])
+                    else:
+                        self.logger.fatal(
+                            "Enum member '{}' was found at multiple locations in the same "\
+                            "main scope: \n"\
+                            " -- 1st occurance: '{}'\n"\
+                            " -- 2nd occurance: '{}'\n\n"\
+                            "This is not legal because all these enums will be defined "\
+                            "in the same SystemVerilog scope. To share the same enum among "\
+                            "different registers, define them on a higher level in the "\
+                            "hierarchy.\n\n"\
+                            "Exiting...".format(
+                                var[0],
+                                enum_members[var[0]],
+                                "::".join([self.name, key])))
+
+                        exit(1)
+
                     variable_list.append(
                         AddrMap.templ_dict['enum_var_list_item']['rtl'].format(
                             value = var[1],
