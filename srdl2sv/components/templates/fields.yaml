@@ -86,21 +86,21 @@ OnWriteType.wzt:
         end
 OnWriteType.wclr: 
     rtl: |-
-        {path}_q{genvars} <= {{width{{1'b0}}}};
+        {path}_q{genvars} <= {{{width}{{1'b0}}}};
 OnWriteType.wset: 
     rtl: |-
-        {path}_q{genvars} <= {{width{{1'b1}}}};
+        {path}_q{genvars} <= {{{width}{{1'b1}}}};
 OnReadType.rclr: 
     rtl: |-
         if ({path_wo_field}_sw_rd{genvars}) // rclr property
         begin
-        {path}_q{genvars} <= {{width{{1'b0}}}};
+        {path}_q{genvars} <= {{{width}{{1'b0}}}};
         end
 OnReadType.rset: 
     rtl: |-
         if ({path_wo_field}_sw_rd{genvars}) // rset property
         begin
-        {path}_q{genvars} <= {{width{{1'b1}}}};
+        {path}_q{genvars} <= {{{width}{{1'b1}}}};
         end
 
 field_comment: 

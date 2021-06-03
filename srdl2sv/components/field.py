@@ -310,6 +310,7 @@ class Field(Component):
                         Field.templ_dict[str(onwrite)]['rtl'].format(
                             path = self.path_underscored,
                             genvars = self.genvars_str,
+                            width = self.obj.width,
                             path_wo_field = self.path_wo_field
                             )
                         )
@@ -321,6 +322,7 @@ class Field(Component):
                                 path = self.path_underscored,
                                 genvars = self.genvars_str,
                                 i = i,
+                                width = self.obj.width,
                                 msb_bus = str(8*(i+1)-1 if i != self.msbyte else self.obj.msb),
                                 bus_w = str(8 if i != self.msbyte else self.obj.width-(8*j)),
                                 msb_field = str(8*(j+1)-1 if i != self.msbyte else self.obj.width-1),
@@ -350,6 +352,7 @@ class Field(Component):
             else:
                 access_rtl['sw_read'][0].append(
                     Field.templ_dict[str(onread)]['rtl'].format(
+                        width = self.obj.width,
                         path = self.path_underscored,
                         genvars = self.genvars_str,
                         path_wo_field = self.path_wo_field
