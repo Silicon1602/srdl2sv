@@ -20,6 +20,14 @@ class CliArguments():
             description="SystemRDL 2 SystemVerilog compiler")
 
         self.parser.add_argument(
+            "-b",
+            "--bus",
+            choices=['amba3ahblite'],
+            default='amba3ahblite',
+            help="Set the bus protocol that shall be used by software to ',\
+                  communicate with the registers. (default: %(default)s)")
+
+        self.parser.add_argument(
             "-o",
             "--out_dir",
             type=str,
@@ -128,5 +136,8 @@ class CliArguments():
 
         # Set enums
         config['enums'] = not args.disable_enums
+
+        # Set bus
+        config['bus'] = args.bus
 
         return config

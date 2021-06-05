@@ -4,6 +4,7 @@
 import sys
 import time
 import os
+import importlib.resources as pkg_resources
 
 # Imported modules
 from systemrdl import RDLCompiler, RDLCompileError
@@ -12,6 +13,7 @@ from systemrdl import RDLCompiler, RDLCompileError
 from components.addrmap import AddrMap
 from cli.cli import CliArguments
 from log.log import create_logger
+from components import widgets
 
 if __name__ == "__main__":
     # Take start timestamp
@@ -73,5 +75,13 @@ if __name__ == "__main__":
     ).items():
         with open('{}/{}_pkg.sv'.format(config['output_dir'], key), 'w') as file:
             file.write(value)
+
+    # Copy over widget RTL from widget directory
+    widget_rtl = pkg_resources.read_text(widgets, '{}.sv'.format(config['bus']))
+
+    out_widget_file = "{}/{}.sv".format(config['output_dir'], config['bus'])
+
+    with open(out_widget_file, 'w') as file:
+        file.write(widget_rtl)
 
     logger.info("Elapsed time: %f seconds", time.time() - start)

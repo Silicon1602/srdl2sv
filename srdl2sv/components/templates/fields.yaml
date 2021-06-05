@@ -1,10 +1,10 @@
 ---
 sense_list_rst:
     rtl: |-
-        always_ff @(posedge {clk_name} or {rst_edge} {rst_name})
+        always_ff @(posedge reg_clk or {rst_edge} {rst_name})
 sense_list_no_rst: 
     rtl: |-
-        always_ff @(posedge {clk_name})
+        always_ff @(posedge reg_clk)
 rst_field_assign: 
     rtl: |-
         if ({rst_negl}{rst_name})
@@ -37,6 +37,9 @@ sw_access_byte:
 hw_access_we_wel: 
     rtl: |-
         if ({negl}{path}_hw_wr{genvars})
+    input_ports:
+        - name: '{path}_hw_wr'
+          signal_type: '{field_type}'
 hw_access_no_we_wel: 
     rtl: |-
         // we or wel property not set

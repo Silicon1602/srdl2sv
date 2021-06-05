@@ -11,6 +11,7 @@ from components.component import Component
 from components.regfile import RegFile
 from components.register import Register
 from . import templates
+from . import widgets
 
 
 class AddrMap(Component):
@@ -31,6 +32,10 @@ class AddrMap(Component):
 
         (glbl_settings['field_reset'], glbl_settings['cpuif_reset']) = \
             self.__process_global_resets()
+
+        # Set defaults so that some of the common component methods work
+        self.total_dimensions = 0
+        self.total_array_dimensions = []
 
         # Use global settings to define whether a component is already in a generate block
         glbl_settings['generate_active'] = False
@@ -68,6 +73,9 @@ class AddrMap(Component):
             ]
 
         self.logger.info("Done generating all child-regfiles/registers")
+
+        # Add bus widget ports
+        self.__add_bus_widget_ports()
 
         # Start assembling addrmap module
         self.logger.info("Starting to assemble input & output ports")
@@ -147,17 +155,60 @@ class AddrMap(Component):
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
 
+        # Add wire/register instantiations
+        self.__add_signal_instantiation()
+
+        # Add bus widget RTL
+        self.__add_bus_widget_instantiation()
+
         # Append genvars
+        self.__append_genvars()
+
+        # Add endmodule keyword
+        self.rtl_footer.append('endmodule')
+
+    def __add_signal_instantiation(self):
+        dict_list = [(key, value) for (key, value) in self.get_signals(True).items()]
+        signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
+        name_width = min(max([len(key) for (key, _) in dict_list]), 40)
+
+        self.rtl_header = [
+            *self.rtl_header,
+            '',
+            '// Internal signals',
+            *[AddrMap.templ_dict['signal_declaration'].format(
+                name = key,
+                type = value[0],
+                signal_width = signal_width,
+                name_width = name_width,
+                unpacked_dim = '[{}]'.format(
+                    ']['.join(
+                        [str(y) for y in value[1]]))
+                    if value[1] else '')
+                for (key, value) in dict_list],
+            ''
+            ]
+
+    def __add_bus_widget_ports(self):
+        self.widget_templ_dict = yaml.load(
+            pkg_resources.read_text(widgets, '{}.yaml'.format(self.config['bus'])),
+            Loader=yaml.FullLoader)
+
+        self.yaml_signals_to_list(self.widget_templ_dict['module_instantiation'])
+
+    def __add_bus_widget_instantiation(self):
+        self.rtl_header.append(
+            self.widget_templ_dict['module_instantiation']['rtl'])
+
+
+    def __append_genvars(self):
         genvars = ''.join([
             '\ngenvar ',
-            ','.join([chr(97+i) for i in range(self.get_max_dim_depth())]),
+            ', '.join([chr(97+i) for i in range(self.get_max_dim_depth())]),
             ';\n'
             ])
 
         self.rtl_header.append(genvars)
-
-        # Add endmodule keyword
-        self.rtl_footer.append('endmodule')
 
     def __process_global_resets(self):
         field_reset_list = \

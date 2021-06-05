@@ -7,6 +7,7 @@ module_declaration:
         // Clock & Resets
         input  reg_clk,
         input  bus_clk,
+        input  bus_rst_n,
         {resets} 
 
         // Bus I/O
@@ -30,6 +31,8 @@ input_port:
 output_port:
     rtl: 
         output {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
+signal_declaration: |-
+    {type:{signal_width}} {name:{name_width}}{unpacked_dim};
 package_declaration:
     rtl: |-
         package {name}_pkg;

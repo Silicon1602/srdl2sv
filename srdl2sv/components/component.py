@@ -66,25 +66,20 @@ class Component():
         return self.ports[port_type]
 
     def get_max_dim_depth(self) -> int:
-        try:
-            total_dimensions = self.total_dimensions
-            total_array_dimensions = self.total_array_dimensions
-        except AttributeError:
-            total_dimensions = 0
-            total_array_dimensions = []
-
         self.logger.debug("Return depth '{}' for dimensions (including "\
-                          "parents) '{}'".format(total_dimensions, total_array_dimensions))
+                          "parents) '{}'".format(self.total_dimensions, 
+                                                 self.total_array_dimensions))
         return max([
-            total_dimensions,
+            self.total_dimensions,
             *[x.get_max_dim_depth() for x in self.children]
             ])
 
-    def get_signals(self):
+    def get_signals(self, no_children = False):
         self.logger.debug("Return signal list")
 
-        for x in self.children:
-            self.signals |= x.get_signals()
+        if not no_children:
+            for x in self.children:
+                self.signals |= x.get_signals()
 
         return self.signals
 
@@ -171,7 +166,7 @@ class Component():
         return path\
                 .replace('[]', '')\
                 .replace('{}.'.format(owning_addrmap), '')\
-                .replace('.', '_')
+                .replace('.', '__')
 
     @staticmethod
     def split_dimensions(path: str):
@@ -179,8 +174,7 @@ class Component():
         new_path = re_dimensions.sub('', path)
         return (new_path, ''.join(re_dimensions.findall(path)))
 
-    @staticmethod
-    def get_signal_name(obj):
+    def get_signal_name(self, obj):
         name = []
 
         try:
@@ -199,9 +193,11 @@ class Component():
         if isinstance(obj, node.FieldNode):
             name.append('_q')
         elif isinstance(obj, node.SignalNode):
-            pass
+            # Must add it to signal list
+            self.ports['input'][obj.inst_name] =\
+                ("logic" if obj.width == 1 else 'logic [{}:0]'.format(obj.width), [])
         else:
-            name.append('_')
+            name.append('__')
             name.append(obj.name)
 
         name.append(split_name[1])

@@ -133,10 +133,7 @@ class Field(Component):
         except AttributeError:
             # In case of an AttributeError, the encode property is None. Hence,
             # the field has a simple width
-            if self.obj.width > 1:
-                self.field_type = 'logic [{}:0]'.format(self.obj.width-1)
-            else:
-                self.field_type = 'logic'
+            self.field_type = 'logic [{}:0]'.format(self.obj.width-1)
 
     def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
         # Create full name
@@ -213,7 +210,6 @@ class Field(Component):
 
         self.rtl_header.append(
             Field.templ_dict[sense_list]['rtl'].format(
-                clk_name = "clk",
                 rst_edge = self.rst['edge'],
                 rst_name = self.rst['name']))
 
@@ -252,25 +248,25 @@ class Field(Component):
 
         # Define hardware access (if applicable)
         if self.hw_access in (AccessType.rw, AccessType.w):
-            if self.we_or_wel:
-                access_rtl['hw_write'] = ([
-                    Field.templ_dict['hw_access_we_wel']['rtl'].format(
-                        negl = '!' if self.obj.get_property('wel') else '',
-                        path = self.path_underscored,
-                        genvars = self.genvars_str)
-                    ],
-                    False)
-            else:
-                access_rtl['hw_write'] = ([
-                    Field.templ_dict['hw_access_no_we_wel']['rtl']
-                    ],
-                    True)
+            write_condition = 'hw_access_we_wel' if self.we_or_wel else 'hw_access_no_we_wel'
 
+            # if-line of hw-access
+            access_rtl['hw_write'] = ([
+                Field.templ_dict[write_condition]['rtl'].format(
+                    negl = '!' if self.obj.get_property('wel') else '',
+                    path = self.path_underscored,
+                    genvars = self.genvars_str)
+                ],
+                write_condition == 'hw_access_no_we_wel') # Abort if no condition is set
+
+            # Actual assignment of register
             access_rtl['hw_write'][0].append(
                 Field.templ_dict['hw_access_field']['rtl'].format(
                     path = self.path_underscored,
                     genvars = self.genvars_str))
 
+            # Get ports/signals from list
+            self.yaml_signals_to_list(Field.templ_dict[write_condition])
             self.yaml_signals_to_list(Field.templ_dict['hw_access_field'])
         else:
             access_rtl['hw_write'] = ([], False)
@@ -287,13 +283,13 @@ class Field(Component):
                     Field.templ_dict['sw_access_field_swwe']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
-                        swwe = Component.get_signal_name(swwe)))
+                        swwe = self.get_signal_name(swwe)))
             elif isinstance(swwel, (FieldNode, SignalNode)):
                 access_rtl['sw_write'][0].append(
                     Field.templ_dict['sw_access_field_swwel']['rtl'].format(
                         path_wo_field = self.path_wo_field,
                         genvars = self.genvars_str,
-                        swwel = Component.get_signal_name(swwel)))
+                        swwel = self.get_signal_name(swwel)))
             else:
                 access_rtl['sw_write'][0].append(
                     Field.templ_dict['sw_access_field']['rtl'].format(

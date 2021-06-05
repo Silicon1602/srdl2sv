@@ -1,0 +1,72 @@
+# This file only contains the instantiation of the module
+module_instantiation:
+    rtl: |-
+        /****************************
+         * AMBA 3 AHB Lite Widget
+         ****************************/
+        amba3ahblite_widget
+        amba3ahblite_widget_inst
+            (// Register clock
+             .reg_clk,
+
+             // Outputs to internal logic
+             .addr,
+             .w_vld,
+             .r_vld,
+             .byte_enable,
+             .sw_wr_bus,
+ 
+             // Bus protocol
+             .HRESETn,
+             .HCLK,
+             .HADDR,
+             .HWRITE,
+             .HSIZE,
+             .HBURST,
+             .HPROT,
+             .HTRANS,
+             .HMASTLOCK,
+             .HREADY,
+
+             .HREADYOUT,
+             .HRESP,
+             .HRDATA);
+    signals:
+        - name: 'addr'
+          signal_type: 'logic [31:0]'
+        - name: 'w_vld'
+          signal_type: 'logic'
+        - name: 'r_vld'
+          signal_type: 'logic'
+        - name: 'byte_enable'
+          signal_type: 'logic [ 3:0]'
+        - name: 'sw_wr_bus'
+          signal_type: 'logic [31:0]'
+    input_ports:
+        - name: 'HRESETn'
+          signal_type: ''
+        - name: 'HCLK'
+          signal_type: ''
+        - name: 'HADDR'
+          signal_type: '[31:0]'
+        - name: 'HWRITE'
+          signal_type: ''
+        - name: 'HSIZE'
+          signal_type: '[2:0]'
+        - name: 'HBURST'
+          signal_type: '[2:0]'
+        - name: 'HPROT'
+          signal_type: '[3:0]'
+        - name: 'HTRANS'
+          signal_type: '[1:0]'
+        - name: 'HMASTLOCK'
+          signal_type: ''
+        - name: 'HREADY'
+          signal_type: ''
+    output_ports:
+        - name: 'HREADYOUT'
+          signal_type: ''
+        - name: 'HRESP'
+          signal_type: ''
+        - name: 'HRDATA'
+          signal_type: '[31:0]'
