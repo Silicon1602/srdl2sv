@@ -1,6 +1,7 @@
 import importlib.resources as pkg_resources
-import yaml
 import math
+import sys
+import yaml
 
 from systemrdl import node
 
@@ -25,43 +26,59 @@ class Register(Component):
         super().__init__(obj, config)
 
         # Save and/or process important variables
-        self.__process_variables(obj, parents_dimensions, parents_stride)
+        self.__process_variables(obj, parents_dimensions, parents_stride, glbl_settings)
 
         # Create RTL for fields
-        # Fields should be in order in RTL,therefore, use list
+        # Fields should be in order in RTL, therefore, use list
         for field in obj.fields():
-            field_obj = Field(field, self.total_array_dimensions, config, glbl_settings)
+            # Use range to save field in an array. Reason is, names are allowed to
+            # change when using an alias
+            field_range = ':'.join(map(str, [field.msb, field.lsb]))
+
+            self.children[field_range] = Field(field,
+                                               self.total_array_dimensions,
+                                               config,
+                                               glbl_settings)
 
             if not config['disable_sanity']:
-                field_obj.sanity_checks()
+                self.children[field_range].sanity_checks()
 
-            self.children.append(field_obj)
-
+    def create_rtl(self):
         # Create generate block for register and add comment
-        if self.dimensions and not glbl_settings['generate_active']:
+        if self.dimensions and not self.generate_active:
             self.rtl_header.append("generate")
-            glbl_settings['generate_active'] = True
-            self.generate_initiated = True
-        else:
-            self.generate_initiated = False
 
+        # Add N layers of for-loop starts
         for i in range(self.dimensions):
             self.rtl_header.append(
                 Register.templ_dict['generate_for_start'].format(
                     iterator = chr(97+i+self.parents_depths),
                     limit = self.array_dimensions[i]))
 
+        # Add decoders for all registers & aliases
+        self.__add_address_decoder()
 
-        # End loops
+        # Fields will be added by get_rtl()
+
+        # Add N layers of for-loop end
         for i in range(self.dimensions-1, -1, -1):
             self.rtl_footer.append(
                 Register.templ_dict['generate_for_end'].format(
                     dimension = chr(97+i)))
 
-        if self.generate_initiated:
-            glbl_settings['generate_active'] = False
-            self.rtl_footer.append("endgenerate")
+        if self.dimensions and not self.generate_active:
+            self.rtl_footer.append("endgenerate\n")
 
+        # Create comment and provide user information about register he/she is looking at
+        self.rtl_header = [
+            Register.templ_dict['reg_comment'].format(
+                name = obj.inst_name,
+                dimensions = self.dimensions,
+                depth = self.depth),
+                *self.rtl_header
+            ]
+
+    def __add_address_decoder(self):
         # Assign variables from bus
         self.obj.current_idx = [0]
 
@@ -70,15 +87,18 @@ class Register(Component):
         else:
             rw_wire_assign_field = 'rw_wire_assign_1_dim'
 
-        self.rtl_header.append(
-            Register.templ_dict[rw_wire_assign_field]['rtl'].format(
-                path = self.path_underscored,
-                addr = self.obj.absolute_address,
-                genvars = self.genvars_str,
-                genvars_sum =self.genvars_sum_str,
-                depth = self.depth))
-
-        self.yaml_signals_to_list(Register.templ_dict[rw_wire_assign_field])
+        [self.rtl_header.append(
+            self.process_yaml(
+                Register.templ_dict[rw_wire_assign_field],
+                {'path': x[0],
+                 'addr': x[1],
+                 'alias': '(alias)' if i > 0 else '',
+                 'genvars': self.genvars_str,
+                 'genvars_sum': self.genvars_sum_str,
+                 'depth': self.depth,
+                 'field_type': self.field_type}
+            )
+        ) for i, x in enumerate(self.alias_names)]
 
         # Add wire/register instantiations
         dict_list = [(key, value) for (key, value) in self.get_signals().items()]
@@ -103,30 +123,47 @@ class Register(Component):
                 *self.rtl_header,
             ]
 
-        # Create comment and provide user information about register he/she
-        # is looking at.
-        self.rtl_header = [
-            Register.templ_dict['reg_comment'].format(
-                name = obj.inst_name,
-                dimensions = self.dimensions,
-                depth = self.depth),
-                *self.rtl_header
-            ]
+    def add_alias(self, obj: node.RegNode):
+        for field in obj.fields():
+            # Use range to save field in an array. Reason is, names are allowed to
+            # change when using an alias
+            field_range = ':'.join(map(str, [field.msb, field.lsb]))
 
+            try:
+                self.children[field_range].add_sw_access(field, alias=True)
+            except KeyError:
+                self.logger.fatal("Range of field '{}' in alias register '{}' does "
+                                  "not correspond to range of field in original "
+                                  "register '{}'. This is illegal according to 10.5.1 b)"
+                                  "of the SystemRDL 2.0 LRM.". format(
+                                      field.inst_name,
+                                      obj.inst_name,
+                                      self.name))
+                sys.exit(1)
+
+        # Add name to list
+        self.obj.current_idx = [0]
+        self.alias_names.append((self.create_underscored_path_static(obj)[3], obj.absolute_address))
 
     def __process_variables(
             self,
             obj: node.RegNode,
             parents_dimensions: list,
-            parents_stride: list):
+            parents_stride: list,
+            glbl_settings: dict):
         # Save object
         self.obj = obj
 
         # Save name
+        self.obj.current_idx = [0]
         self.name = obj.inst_name
+        self.alias_names = [(self.create_underscored_path_static(obj)[3], obj.absolute_address)]
 
         # Create full name
         self.create_underscored_path()
+
+        # Gnerate already started?
+        self.generate_active = glbl_settings['generate_active']
 
         # Determine dimensions of register
         if obj.is_array:

@@ -16,7 +16,7 @@ class Component():
     def __init__(self, obj, config):
         self.rtl_header = []
         self.rtl_footer = []
-        self.children = []
+        self.children = dict()
         self.typedefs = dict()
         self.ports = dict()
         self.resets = set()
@@ -39,7 +39,9 @@ class Component():
 
         # Create logger object
         self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
-        self.logger.debug('Starting to process register "{}"'.format(obj.inst_name))
+        self.logger.debug('Starting to process {} "{}"'.format(
+            self.__class__.__name__,
+            obj.inst_name))
 
     def create_logger(self, name: str, config: dict):
         self.logger = create_logger(
@@ -52,7 +54,7 @@ class Component():
     def get_resets(self):
         self.logger.debug("Return reset list")
 
-        for x in self.children:
+        for x in self.children.values():
             self.resets |= x.get_resets()
 
         return self.resets
@@ -60,7 +62,7 @@ class Component():
     def get_ports(self, port_type: str):
         self.logger.debug("Return port list")
 
-        for x in self.children:
+        for x in self.children.values():
             self.ports[port_type] |= x.get_ports(port_type)
 
         return self.ports[port_type]
@@ -71,14 +73,14 @@ class Component():
                                                  self.total_array_dimensions))
         return max([
             self.total_dimensions,
-            *[x.get_max_dim_depth() for x in self.children]
+            *[x.get_max_dim_depth() for x in self.children.values()]
             ])
 
     def get_signals(self, no_children = False):
         self.logger.debug("Return signal list")
 
         if not no_children:
-            for x in self.children:
+            for x in self.children.values():
                 self.signals |= x.get_signals()
 
         return self.signals
@@ -86,7 +88,7 @@ class Component():
     def get_typedefs(self):
         self.logger.debug("Return typedef list")
 
-        for x in self.children:
+        for x in self.children.values():
             self.typedefs |= x.get_typedefs()
 
         return self.typedefs
@@ -97,8 +99,16 @@ class Component():
         # Loop through children and append RTL
         rtl_children = []
 
-        for child in self.children:
-            rtl_children.append(child.get_rtl())
+        for x in self.children.values():
+            # In case of fields, the RTL must first be generated.
+            # Reason is that we only know at the very end whether
+            # all alias registers are processed for fields
+            try:
+                x.create_rtl()
+            except:
+                pass
+
+            rtl_children.append(x.get_rtl())
 
         # Concatenate header, main, and footer
         rtl = [*self.rtl_header, *rtl_children, *self.rtl_footer]
@@ -204,30 +214,33 @@ class Component():
 
         return ''.join(name)
 
-    def yaml_signals_to_list(self, yaml_obj):
+    def process_yaml(self, yaml_obj, values: dict = {}):
         try:
             for x in yaml_obj['signals']:
-                self.signals[x['name'].format(path = self.path_underscored)] =\
-                         (x['signal_type'].format(field_type = self.field_type),
+                self.signals[x['name'].format(**values)] =\
+                         (x['signal_type'].format(**values),
                          self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
 
         try:
             for x in yaml_obj['input_ports']:
-                self.ports['input'][x['name'].format(path = self.path_underscored)] =\
-                         (x['signal_type'].format(field_type = self.field_type),
+                self.ports['input'][x['name'].format(**values)] =\
+                         (x['signal_type'].format(**values),
                          self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
 
         try:
             for x in yaml_obj['output_ports']:
-                self.ports['output'][x['name'].format(path = self.path_underscored)] =\
-                         (x['signal_type'].format(field_type = self.field_type),
+                self.ports['output'][x['name'].format(**values)] =\
+                         (x['signal_type'].format(**values),
                          self.total_array_dimensions)
         except (TypeError, KeyError):
             pass
+
+        # Return RTL with values
+        return yaml_obj['rtl'].format(**values)
 
     @staticmethod
     def process_reset_signal(reset_signal):
@@ -256,9 +269,16 @@ class Component():
         return rst
 
     def create_underscored_path(self):
-        self.owning_addrmap = self.obj.owning_addrmap.inst_name
-        self.full_path = Component.split_dimensions(self.obj.get_path())[0]
-        self.path = self.full_path\
-                        .replace('{}.'.format(self.owning_addrmap), '')
+        self.owning_addrmap, self.full_path, self.path, self.path_underscored =\
+            Component.create_underscored_path_static(self.obj)
 
-        self.path_underscored = self.path.replace('.', '__')
+    @staticmethod
+    def create_underscored_path_static(obj):
+        owning_addrmap = obj.owning_addrmap.inst_name
+        full_path = Component.split_dimensions(obj.get_path())[0]
+        path = full_path\
+                    .replace('{}.'.format(owning_addrmap), '')
+
+        path_underscored = path.replace('.', '__')
+
+        return (owning_addrmap, full_path, path, path_underscored)

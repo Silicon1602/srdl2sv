@@ -33,7 +33,9 @@ sw_access_byte:
         begin
         {path}_q{genvars}[{msb_field}-:{field_w}] <= sw_wr_bus[{msb_bus}-:{bus_w}];
         end
- 
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 hw_access_we_wel: 
     rtl: |-
         if ({negl}{path}_hw_wr{genvars})

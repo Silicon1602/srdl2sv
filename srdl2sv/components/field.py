@@ -39,12 +39,266 @@ class Field(Component):
         # Print a summary
         self.rtl_header.append(self.summary())
 
-        # Generate RTL
+        # HW Access can be handled in __init__ function but SW access
+        # must be handled in a seperate method that can be called
+        # seperately in case of alias registers
         self.__add_always_ff()
-        self.__add_access_rtl()
+        self.__add_hw_access()
         self.__add_combo()
-        self.__add_ports()
-        self.__prepend_signal_declarations()
+
+        self.add_sw_access(obj)
+
+    def add_sw_access(self, obj, alias = False):
+        access_rtl = dict()
+
+        if alias:
+            owning_addrmap, full_path, path, path_underscored =\
+                Field.create_underscored_path_static(obj)
+        else:
+            owning_addrmap, full_path, path, path_underscored =\
+                self.owning_addrmap, self.full_path, self.path, self.path_underscored
+
+        path_wo_field = '__'.join(path.split('.', -1)[0:-1])
+
+        # Define software access (if applicable)
+        access_rtl['sw_write'] = ([], False)
+
+        if obj.get_property('sw') in (AccessType.rw, AccessType.w):
+            swwe = obj.get_property('swwe')
+            swwel = obj.get_property('swwel')
+
+            if isinstance(swwe, (FieldNode, SignalNode)):
+                access_rtl['sw_write'][0].append(
+                    self.process_yaml(
+                        Field.templ_dict['sw_access_field_swwe'],
+                        {'path_wo_field': path_wo_field,
+                         'genvars': self.genvars_str,
+                         'swwe': self.get_signal_name(swwe),
+                         'field_type': self.field_type}
+                    )
+                )
+            elif isinstance(swwel, (FieldNode, SignalNode)):
+                access_rtl['sw_write'][0].append(
+                    self.process_yaml(
+                        Field.templ_dict['sw_access_field_swwel'],
+                        {'path_wo_field': path_wo_field,
+                         'genvars': self.genvars_str,
+                         'swwel': self.get_signal_name(swwel),
+                         'field_type': self.field_type}
+                    )
+                )
+            else:
+                access_rtl['sw_write'][0].append(
+                    self.process_yaml(
+                        Field.templ_dict['sw_access_field'],
+                        {'path_wo_field': path_wo_field,
+                         'genvars': self.genvars_str,
+                         'field_type': self.field_type}
+                    )
+                )
+
+            # Check if an onwrite property is set
+            onwrite = obj.get_property('onwrite')
+
+            if onwrite:
+                if onwrite == OnWriteType.wuser:
+                    self.logger.warning("The OnReadType.wuser is not yet supported!")
+                elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
+                    access_rtl['sw_write'][0].append(
+                        self.process_yaml(
+                            Field.templ_dict[str(onwrite)],
+                            {'path': path_underscored,
+                             'genvars': self.genvars_str,
+                             'width': obj.width,
+                             'path_wo_field': path_wo_field,
+                             'field_type': self.field_type}
+                        )
+                    )
+                else:
+                    # If field spans multiple bytes, every byte shall have a seperate enable!
+                    for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                        access_rtl['sw_write'][0].append(
+                            self.process_yaml(
+                                Field.templ_dict[str(onwrite)],
+                                {'path': path_underscored,
+                                 'genvars': self.genvars_str,
+                                 'i': i,
+                                 'width': obj.width,
+                                 'msb_bus': str(8*(i+1)-1 if i != self.msbyte else obj.msb),
+                                 'bus_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                                 'msb_field': str(8*(j+1)-1 if i != self.msbyte else obj.width-1),
+                                 'field_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                                 'field_type': self.field_type}
+                            )
+                        )
+
+            else:
+                # Normal write
+                # If field spans multiple bytes, every byte shall have a seperate enable!
+                for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                    access_rtl['sw_write'][0].append(
+                        self.process_yaml(
+                            Field.templ_dict['sw_access_byte'],
+                            {'path': self.path_underscored,
+                             'genvars': self.genvars_str,
+                             'i': i,
+                             'msb_bus': str(8*(i+1)-1 if i != self.msbyte else obj.msb),
+                             'bus_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                             'msb_field': str(8*(j+1)-1 if i != self.msbyte else obj.width-1),
+                             'field_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                             'field_type': self.field_type}
+                        )
+                    )
+
+            access_rtl['sw_write'][0].append("end")
+
+        onread = obj.get_property('onread')
+
+        access_rtl['sw_read'] = ([], False)
+        if obj.get_property('sw') in (AccessType.rw, AccessType.r) and onread:
+            if onread == OnReadType.ruser:
+                self.logger.warning("The OnReadType.ruser is not yet supported!")
+            else:
+                access_rtl['sw_read'][0].append(
+                    self.process_yaml(
+                        Field.templ_dict[str(onread)],
+                        {'width': obj.width,
+                         'path': path_underscored,
+                         'genvars': self.genvars_str,
+                         'path_wo_field': path_wo_field}
+                        )
+                    )
+
+        # Add singlepulse property
+        # Property cannot be overwritten by alias
+        if obj.get_property('singlepulse'):
+            self.access_rtl['singlepulse'] = ([
+                self.process_yaml(
+                    Field.templ_dict['singlepulse'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str}
+                )
+                ],
+                True)
+        else:
+            self.access_rtl['singlepulse'] = ([], False)
+
+        # Add to global dictionary
+        try:
+            # Alias, so add 'else'
+            self.access_rtl['sw_read'] = \
+                 [*self.access_rtl['sw_read'], access_rtl['sw_read']]
+            self.access_rtl['sw_write'] = \
+                 [*self.access_rtl['sw_write'], access_rtl['sw_write']]
+        except KeyError:
+            self.access_rtl['sw_read'] = [access_rtl['sw_read']]
+            self.access_rtl['sw_write'] = [access_rtl['sw_write']]
+
+    def __add_hw_access(self):
+        # Define hardware access (if applicable)
+        if self.obj.get_property('hw') in (AccessType.rw, AccessType.w):
+            write_condition = 'hw_access_we_wel' if self.we_or_wel else 'hw_access_no_we_wel'
+
+            # if-line of hw-access
+            self.access_rtl['hw_write'] = ([
+                self.process_yaml(
+                    Field.templ_dict[write_condition],
+                    {'negl': '!' if self.obj.get_property('wel') else '',
+                     'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type}
+                )
+            ],
+            write_condition == 'hw_access_no_we_wel') # Abort if no condition is set
+
+            # Actual assignment of register
+            self.access_rtl['hw_write'][0].append(
+                self.process_yaml(
+                    Field.templ_dict['hw_access_field'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type}
+                )
+            )
+        else:
+            self.access_rtl['hw_write'] = ([], False)
+
+        # Hookup flop to output port in case register is readable by hardware
+        if self.obj.get_property('hw') in (AccessType.rw, AccessType.r):
+            # Connect flops to output port
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Field.templ_dict['out_port_assign'],
+                    {'genvars': self.genvars_str,
+                     'path': self.path_underscored,
+                     'field_type': self.field_type}
+                )
+            )
+
+    def create_rtl(self):
+        # Not all access types are required and the order might differ
+        # depending on what types are defined and what precedence is
+        # set. Therefore, first add all RTL into a dictionary and
+        # later place it in the right order.
+        #
+        # Check if hardware has precedence (default `precedence = sw`)
+        if self.obj.get_property('precedence') == PrecedenceType.sw:
+            order_list = [
+                'sw_write',
+                'sw_read',
+                'hw_write',
+                'singlepulse'
+                ]
+        else:
+            order_list = [
+                'hw_write',
+                'sw_write',
+                'sw_read',
+                'singlepulse'
+                ]
+
+        # Add appropriate else
+        order_list_rtl = []
+        abort_set = False
+
+        for i in order_list:
+            # Still a loop and not a list comprehension since this might
+            # get longer in the future and thus become unreadable
+
+            # First check if we need to break or continue the loop
+            if abort_set:
+                break
+
+            # Check if there is a list that shall be unlooped
+            if isinstance(self.access_rtl[i], tuple):
+                access_rtl = [self.access_rtl[i]]
+            else:
+                access_rtl = self.access_rtl[i]
+
+            for unpacked_access_rtl in access_rtl:
+                if len(unpacked_access_rtl[0]) == 0:
+                    continue
+
+                order_list_rtl = [*order_list_rtl, *unpacked_access_rtl[0]]
+                order_list_rtl.append("else")
+
+                # If the access_rtl entry has an abortion entry, do not print
+                # any further branches of the conditional block
+                abort_set = unpacked_access_rtl[1]
+
+        # Remove last else
+        order_list_rtl.pop()
+
+        # Chain access RTL to the rest of the RTL
+        self.rtl_header = [*self.rtl_header, *order_list_rtl]
+
+        self.rtl_header.append(
+            self.process_yaml(
+                Field.templ_dict['end_field_ff'],
+                {'path': self.path_underscored}
+            )
+        )
+
 
     def __add_combo(self):
         operations = []
@@ -56,19 +310,23 @@ class Field(Component):
             operations.append(['^', 'assign_xored_operation'])
 
         if len(operations) > 0:
-            self.rtl_header.append(
-                Field.templ_dict['combo_operation_comment']['rtl'].format(
-                    path = self.path_underscored))
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Field.templ_dict['combo_operation_comment'],
+                    {'path': self.path_underscored}
+                )
+            )
 
-        self.rtl_header = [
-            *self.rtl_header,
-            *[Field.templ_dict[i[1]]['rtl'].format(
-                path = self.path_underscored,
-                genvars = self.genvars_str,
-                op_verilog = i[0]) for i in operations]
+        self.rtl_footer = [
+            *self.rtl_footer,
+            *[self.process_yaml(
+                Field.templ_dict[i[1]],
+                {'path': self.path_underscored,
+                 'genvars': self.genvars_str,
+                 'op_verilog': i[0],
+                 'field_type': self.field_type}
+            ) for i in operations]
             ]
-
-        [self.yaml_signals_to_list(Field.templ_dict[i[1]]) for i in operations]
 
 
     def __process_fieldtype(self):
@@ -174,11 +432,10 @@ class Field(Component):
             '\'x' if not obj.get_property("reset") else\
                      obj.get_property('reset')
 
-        # Define hardware access
-        self.hw_access = obj.get_property('hw')
-        self.sw_access = obj.get_property('sw')
-        self.precedence = obj.get_property('precedence')
-
+        # Define dict that holds all RTL
+        self.access_rtl = dict()
+        self.access_rtl['else'] = (["else"], False)
+        self.access_rtl[''] = ([''], False)
 
     def summary(self):
         # Additional flags that are set
@@ -189,14 +446,16 @@ class Field(Component):
         misc_flags.discard('hw')
         misc_flags.discard('reset')
 
+        precedence = self.obj.get_property('precedence')
+
         # Add comment with summary on field's properties
         return \
             Field.templ_dict['field_comment']['rtl'].format(
                 name = self.name,
-                hw_access = str(self.hw_access)[11:],
-                sw_access = str(self.sw_access)[11:],
-                hw_precedence = '(precedence)' if self.precedence == PrecedenceType.hw else '',
-                sw_precedence = '(precedence)' if self.precedence == PrecedenceType.sw else '',
+                hw_access = str(self.obj.get_property('hw'))[11:],
+                sw_access = str(self.obj.get_property('sw'))[11:],
+                hw_precedence = '(precedence)' if precedence == PrecedenceType.hw else '',
+                sw_precedence = '(precedence)' if precedence == PrecedenceType.sw else '',
                 rst_active = self.rst['active'],
                 rst_type = self.rst['type'],
                 misc_flags = misc_flags if misc_flags else '-',
@@ -209,228 +468,38 @@ class Field(Component):
         sense_list = 'sense_list_rst' if self.rst['async'] else 'sense_list_no_rst'
 
         self.rtl_header.append(
-            Field.templ_dict[sense_list]['rtl'].format(
-                rst_edge = self.rst['edge'],
-                rst_name = self.rst['name']))
+            self.process_yaml(
+                Field.templ_dict[sense_list],
+                {'rst_edge': self.rst['edge'],
+                 'rst_name': self.rst['name']}
+            )
+        )
 
         # Add actual reset line
         if self.rst['name']:
             self.rtl_header.append(
-                Field.templ_dict['rst_field_assign']['rtl'].format(
-                    path = self.path_underscored,
-                    rst_name = self.rst['name'],
-                    rst_negl =  "!" if self.rst['active'] == "active_low" else "",
-                    rst_value = self.rst['value'],
-                    genvars = self.genvars_str))
-
-            self.yaml_signals_to_list(Field.templ_dict['rst_field_assign'])
+                self.process_yaml(
+                    Field.templ_dict['rst_field_assign'],
+                    {'path': self.path_underscored,
+                     'rst_name': self.rst['name'],
+                     'rst_negl':  "!" if self.rst['active'] == "active_low" else "",
+                     'rst_value': self.rst['value'],
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type}
+                )
+            )
 
         self.rtl_header.append("begin")
 
         # Add name of actual field to Signal field
         # TODO
 
-    def __prepend_signal_declarations(self):
-        pass
-
-
-    def __add_access_rtl(self):
-        # Not all access types are required and the order might differ
-        # depending on what types are defined and what precedence is
-        # set. Therefore, first add all RTL into a dictionary and
-        # later place it in the right order.
-        #
-        # The following RTL blocks are defined:
-        #   - hw_write --> write access for the hardware interface
-        #   - sw_write --> write access for the software interface
-        #
-        access_rtl = dict()
-
-        # Define hardware access (if applicable)
-        if self.hw_access in (AccessType.rw, AccessType.w):
-            write_condition = 'hw_access_we_wel' if self.we_or_wel else 'hw_access_no_we_wel'
-
-            # if-line of hw-access
-            access_rtl['hw_write'] = ([
-                Field.templ_dict[write_condition]['rtl'].format(
-                    negl = '!' if self.obj.get_property('wel') else '',
-                    path = self.path_underscored,
-                    genvars = self.genvars_str)
-                ],
-                write_condition == 'hw_access_no_we_wel') # Abort if no condition is set
-
-            # Actual assignment of register
-            access_rtl['hw_write'][0].append(
-                Field.templ_dict['hw_access_field']['rtl'].format(
-                    path = self.path_underscored,
-                    genvars = self.genvars_str))
-
-            # Get ports/signals from list
-            self.yaml_signals_to_list(Field.templ_dict[write_condition])
-            self.yaml_signals_to_list(Field.templ_dict['hw_access_field'])
-        else:
-            access_rtl['hw_write'] = ([], False)
-
-        # Define software access (if applicable)
-        access_rtl['sw_write'] = ([], False)
-
-        if self.sw_access in (AccessType.rw, AccessType.w):
-            swwe = self.obj.get_property('swwe')
-            swwel = self.obj.get_property('swwel')
-
-            if isinstance(swwe, (FieldNode, SignalNode)):
-                access_rtl['sw_write'][0].append(
-                    Field.templ_dict['sw_access_field_swwe']['rtl'].format(
-                        path_wo_field = self.path_wo_field,
-                        genvars = self.genvars_str,
-                        swwe = self.get_signal_name(swwe)))
-            elif isinstance(swwel, (FieldNode, SignalNode)):
-                access_rtl['sw_write'][0].append(
-                    Field.templ_dict['sw_access_field_swwel']['rtl'].format(
-                        path_wo_field = self.path_wo_field,
-                        genvars = self.genvars_str,
-                        swwel = self.get_signal_name(swwel)))
-            else:
-                access_rtl['sw_write'][0].append(
-                    Field.templ_dict['sw_access_field']['rtl'].format(
-                        path_wo_field = self.path_wo_field,
-                        genvars = self.genvars_str))
-
-            # Check if an onwrite property is set
-            onwrite = self.obj.get_property('onwrite')
-
-            if onwrite:
-                if onwrite == OnWriteType.wuser:
-                    self.logger.warning("The OnReadType.wuser is not yet supported!")
-                elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
-                    access_rtl['sw_write'][0].append(
-                        Field.templ_dict[str(onwrite)]['rtl'].format(
-                            path = self.path_underscored,
-                            genvars = self.genvars_str,
-                            width = self.obj.width,
-                            path_wo_field = self.path_wo_field
-                            )
-                        )
-                else:
-                    # If field spans multiple bytes, every byte shall have a seperate enable!
-                    for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
-                        access_rtl['sw_write'][0].append(
-                            Field.templ_dict[str(onwrite)]['rtl'].format(
-                                path = self.path_underscored,
-                                genvars = self.genvars_str,
-                                i = i,
-                                width = self.obj.width,
-                                msb_bus = str(8*(i+1)-1 if i != self.msbyte else self.obj.msb),
-                                bus_w = str(8 if i != self.msbyte else self.obj.width-(8*j)),
-                                msb_field = str(8*(j+1)-1 if i != self.msbyte else self.obj.width-1),
-                                field_w = str(8 if i != self.msbyte else self.obj.width-(8*j))))
-            else:
-                # Normal write
-                # If field spans multiple bytes, every byte shall have a seperate enable!
-                for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
-                    access_rtl['sw_write'][0].append(
-                        Field.templ_dict['sw_access_byte']['rtl'].format(
-                            path = self.path_underscored,
-                            genvars = self.genvars_str,
-                            i = i,
-                            msb_bus = str(8*(i+1)-1 if i != self.msbyte else self.obj.msb),
-                            bus_w = str(8 if i != self.msbyte else self.obj.width-(8*j)),
-                            msb_field = str(8*(j+1)-1 if i != self.msbyte else self.obj.width-1),
-                            field_w = str(8 if i != self.msbyte else self.obj.width-(8*j))))
-
-            access_rtl['sw_write'][0].append("end")
-
-        onread = self.obj.get_property('onread')
-
-        access_rtl['sw_read'] = ([], False)
-        if self.sw_access in (AccessType.rw, AccessType.r) and onread:
-            if onread == OnReadType.ruser:
-                self.logger.warning("The OnReadType.ruser is not yet supported!")
-            else:
-                access_rtl['sw_read'][0].append(
-                    Field.templ_dict[str(onread)]['rtl'].format(
-                        width = self.obj.width,
-                        path = self.path_underscored,
-                        genvars = self.genvars_str,
-                        path_wo_field = self.path_wo_field
-                        )
-                    )
-
-        # Add singlepulse property
-        if self.obj.get_property('singlepulse'):
-            access_rtl['singlepulse'] = ([
-                Field.templ_dict['singlepulse']['rtl'].format(
-                    path = self.path_underscored,
-                    genvars = self.genvars_str)
-                ],
-                True)
-        else:
-            access_rtl['singlepulse'] = ([], False)
-
-        # Define else
-        access_rtl['else'] = (["else"], False)
-
-        # Add empty string
-        access_rtl[''] = ([''], False)
-
-        # Check if hardware has precedence (default `precedence = sw`)
-        if self.precedence == PrecedenceType.sw:
-            order_list = [
-                'sw_write',
-                'sw_read',
-                'hw_write',
-                'singlepulse'
-                ]
-        else:
-            order_list = [
-                'hw_write',
-                'sw_write',
-                'sw_read',
-                'singlepulse'
-                ]
-
-        # Add appropriate else
-        order_list_rtl = []
-        abort_set = False
-
-        for i in order_list:
-            # Still a loop and not a list comprehension since this might
-            # get longer in the future and thus become unreadable
-            if len(access_rtl[i][0]) and not abort_set:
-                order_list_rtl = [*order_list_rtl, *access_rtl[i][0]]
-                order_list_rtl.append("else")
-
-                # If he access_rtl entry has an abortion entry, do not print
-                # any further branches of the conditional block
-                abort_set = access_rtl[i][1]
-
-        # Remove last else
-        order_list_rtl.pop()
-
-        # Chain access RTL to the rest of the RTL
-        self.rtl_header = [*self.rtl_header, *order_list_rtl]
-
-        self.rtl_header.append(
-            Field.templ_dict['end_field_ff']['rtl'].format(
-                path = self.path_underscored))
-
-
-    def __add_ports(self):
-        if self.hw_access in (AccessType.rw, AccessType.r):
-            # Connect flops to output port
-            self.rtl_header.append(
-                Field.templ_dict['out_port_assign']['rtl'].format(
-                    genvars = self.genvars_str,
-                    path = self.path_underscored))
-
-            self.yaml_signals_to_list(Field.templ_dict['out_port_assign'])
-
     def sanity_checks(self):
         # If hw=rw/sw=[r]w and hw has no we/wel, sw will never be able to write
         if not self.we_or_wel and\
-                self.precedence == PrecedenceType.hw and \
-                self.hw_access in (AccessType.rw, AccessType.w) and \
-                self.sw_access in (AccessType.rw, AccessType.w):
+                self.obj.get_property('precedence') == PrecedenceType.hw and \
+                self.obj.get_property('hw') in (AccessType.rw, AccessType.w) and \
+                self.obj.get_property('sw') in (AccessType.rw, AccessType.w):
 
             self.logger.warning("Fields with hw=rw/sw=[r]w, we/wel not set and "\
                                 "precedence for hardware will render software's "\

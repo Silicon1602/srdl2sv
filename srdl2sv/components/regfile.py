@@ -34,18 +34,23 @@ class RegFile(Component):
         # Create comment and provide user information about register he/she
         # is looking at.
         self.rtl_header = [
-            RegFile.templ_dict['regfile_comment']['rtl'].format(
-                name = obj.inst_name,
-                dimensions = self.dimensions,
-                depth = self.depth),
-                *self.rtl_header
+            self.process_yaml(
+                RegFile.templ_dict['regfile_comment'],
+                {'name': obj.inst_name,
+                 'dimensions': self.dimensions,
+                 'depth': self.depth}
+            ),
+            *self.rtl_header
             ]
 
         # Create generate block for register and add comment
         for i in range(self.dimensions-1, -1, -1):
             self.rtl_footer.append(
-                RegFile.templ_dict['generate_for_end']['rtl'].format(
-                    dimension = chr(97+i)))
+                self.process_yaml(
+                    RegFile.templ_dict['generate_for_end'],
+                    {'dimension':  chr(97+i)}
+                )
+            )
 
         if self.dimensions and not glbl_settings['generate_active']:
             self.rtl_header.append("generate")
@@ -56,15 +61,18 @@ class RegFile(Component):
 
         for i in range(self.dimensions):
             self.rtl_header.append(
-                RegFile.templ_dict['generate_for_start']['rtl'].format(
-                    iterator = chr(97+i+self.parents_depths),
-                    limit = self.array_dimensions[i]))
+                self.process_yaml(
+                    RegFile.templ_dict['generate_for_start'],
+                    {'iterator': chr(97+i+self.parents_depths),
+                     'limit': self.array_dimensions[i]}
+                )
+            )
 
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
         self.registers = dict()
-        self.regfiles = []
+        self.regfiles = dict()
 
         # Set object to 0 for easy addressing
         self.obj.current_idx = [0]
@@ -79,19 +87,20 @@ class RegFile(Component):
             elif isinstance(child, node.RegfileNode):
                 self.obj.current_idx = [0]
 
-                self.regfiles.append(
+                self.regfiles[child.inst_name] = \
                     RegFile(
                         child,
                         self.total_array_dimensions,
                         self.total_stride,
                         config,
-                        glbl_settings))
+                        glbl_settings)
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
                     # new register. Rather, we bury up the old register and add
                     # additional properties
-                    self.logger.error('Alias registers are not implemented yet!')
+                    self.registers[child.inst.alias_primary_inst.inst_name]\
+                        .add_alias(child)
                 else:
                     self.obj.current_idx = [0]
                     self.registers[child.inst_name] = \
@@ -104,10 +113,7 @@ class RegFile(Component):
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
-        self.children = [
-            *self.regfiles,
-            *[x for x in self.registers.values()]
-            ]
+        self.children = {**self.regfiles, **self.registers}
 
         self.logger.info("Done generating all child-regfiles/registers")
 

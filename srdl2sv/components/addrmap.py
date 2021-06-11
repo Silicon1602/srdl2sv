@@ -23,10 +23,6 @@ class AddrMap(Component):
     def __init__(self, obj: node.RootNode, config: dict):
         super().__init__(obj, config)
 
-        # Create logger object
-        self.create_logger(self.path, config)
-        self.logger.debug('Starting to process addrmap')
-
         # Check if global resets are defined
         glbl_settings = dict()
 
@@ -44,7 +40,7 @@ class AddrMap(Component):
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
         self.registers = dict()
-        self.regfiles = []
+        self.regfiles = dict()
 
         # Traverse through children
         for child in obj.children():
@@ -54,28 +50,27 @@ class AddrMap(Component):
                 self.logger.info('Found hierarchical addrmap. Entering it...')
                 self.logger.error('Child addrmaps are not implemented yet!')
             elif isinstance(child, node.RegfileNode):
-                self.regfiles.append(RegFile(child, [], [], config, glbl_settings))
+                self.regfiles[child.inst_name] = \
+                    RegFile(child, [], [], config, glbl_settings)
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
                     # new register. Rather, we bury up the old register and add
                     # additional properties
-                    self.logger.error('Alias registers are not implemented yet!')
+                    self.registers[child.inst.alias_primary_inst.inst_name]\
+                        .add_alias(child)
                 else:
                     self.registers[child.inst_name] = \
                         Register(child, [], [], config, glbl_settings)
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
-        self.children = [
-            *self.regfiles,
-            *[x for x in self.registers.values()]
-            ]
+        self.children = {**self.regfiles, **self.registers}
 
         self.logger.info("Done generating all child-regfiles/registers")
 
         # Add bus widget ports
-        self.__add_bus_widget_ports()
+        widget_rtl = self.__get_widget_ports_rtl()
 
         # Start assembling addrmap module
         self.logger.info("Starting to assemble input & output ports")
@@ -159,7 +154,7 @@ class AddrMap(Component):
         self.__add_signal_instantiation()
 
         # Add bus widget RTL
-        self.__add_bus_widget_instantiation()
+        self.rtl_header.append(widget_rtl)
 
         # Append genvars
         self.__append_genvars()
@@ -189,16 +184,15 @@ class AddrMap(Component):
             ''
             ]
 
-    def __add_bus_widget_ports(self):
+    def __get_widget_ports_rtl(self):
         self.widget_templ_dict = yaml.load(
             pkg_resources.read_text(widgets, '{}.yaml'.format(self.config['bus'])),
             Loader=yaml.FullLoader)
 
-        self.yaml_signals_to_list(self.widget_templ_dict['module_instantiation'])
-
-    def __add_bus_widget_instantiation(self):
-        self.rtl_header.append(
-            self.widget_templ_dict['module_instantiation']['rtl'])
+        return self.process_yaml(
+            self.widget_templ_dict['module_instantiation'],
+            # TODO: Add widths
+        )
 
 
     def __append_genvars(self):
