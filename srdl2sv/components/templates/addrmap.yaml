@@ -48,3 +48,16 @@ enum_declaration:
 enum_var_list_item:
     rtl: |-
         {name:{max_name_width}} = {width}'d{value}
+read_mux:
+    rtl: |-
+
+      // Read multiplexer
+      always_comb
+      begin
+      case(addr)
+      {list_of_cases}
+      endcase
+      end
+list_of_mux_cases:
+    rtl: |-
+        32'd{}: sw_rd_bus = {};

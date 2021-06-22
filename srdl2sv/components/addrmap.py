@@ -69,6 +69,9 @@ class AddrMap(Component):
 
         self.logger.info("Done generating all child-regfiles/registers")
 
+        # Create RTL of all registers
+        [x.create_rtl() for x in self.registers.values()]
+
         # Add bus widget ports
         widget_rtl = self.__get_widget_ports_rtl()
 
@@ -159,8 +162,31 @@ class AddrMap(Component):
         # Append genvars
         self.__append_genvars()
 
+        # Create read multiplexer
+        self.__create_mux_string()
+
         # Add endmodule keyword
         self.rtl_footer.append('endmodule')
+
+    def __create_mux_string(self):
+        # TODO: Add variable for bus width
+        self.rtl_footer.append(
+            self.process_yaml(
+                AddrMap.templ_dict['read_mux'],
+                {'list_of_cases':
+                    '\n'.join([
+                        AddrMap.templ_dict['list_of_mux_cases']['rtl']
+                            .format(x[0][1]+x[1][0],
+                                    ''.join(
+                                        [x[0][0],
+                                         x[1][1]])) for y in self.children.values() \
+                                                        for x in y.create_mux_string()
+                        ])
+                }
+            )
+        )
+
+
 
     def __add_signal_instantiation(self):
         dict_list = [(key, value) for (key, value) in self.get_signals(True).items()]

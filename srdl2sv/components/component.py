@@ -26,6 +26,7 @@ class Component():
         self.field_type = ''
 
         # Save object
+        # TODO: should probably be list because of alias registers
         self.obj = obj
 
         # Save name
@@ -100,14 +101,6 @@ class Component():
         rtl_children = []
 
         for x in self.children.values():
-            # In case of fields, the RTL must first be generated.
-            # Reason is that we only know at the very end whether
-            # all alias registers are processed for fields
-            try:
-                x.create_rtl()
-            except:
-                pass
-
             rtl_children.append(x.get_rtl())
 
         # Concatenate header, main, and footer

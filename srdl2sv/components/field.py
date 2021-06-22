@@ -155,10 +155,14 @@ class Field(Component):
         onread = obj.get_property('onread')
 
         access_rtl['sw_read'] = ([], False)
-        if obj.get_property('sw') in (AccessType.rw, AccessType.r) and onread:
+        if obj.get_property('sw') in (AccessType.rw, AccessType.r):
+            # Append to list of registers that can read
+            self.readable_by.add(path_wo_field)
+
+            # Set onread properties
             if onread == OnReadType.ruser:
-                self.logger.warning("The OnReadType.ruser is not yet supported!")
-            else:
+                self.logger.error("The OnReadType.ruser is not yet supported!")
+            elif onread:
                 access_rtl['sw_read'][0].append(
                     self.process_yaml(
                         Field.templ_dict[str(onread)],
@@ -412,6 +416,11 @@ class Field(Component):
         # Save byte boundaries
         self.lsbyte = math.floor(obj.inst.lsb / 8)
         self.msbyte = math.floor(obj.inst.msb / 8)
+        self.msb = obj.inst.msb
+        self.lsb = obj.inst.lsb
+
+        # Set that tells which hierarchies can read this field
+        self.readable_by = set()
 
         # Determine resets. This includes checking for async/sync resets,
         # the reset value, and whether the field actually has a reset

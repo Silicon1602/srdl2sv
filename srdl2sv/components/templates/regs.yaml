@@ -15,7 +15,7 @@ rw_wire_assign_1_dim:
     input_ports:
     output_ports:
 rw_wire_assign_multi_dim: 
-    rtl: |
+    rtl: |-
         // Register-activation for '{path}' {alias}
         assign {path}_accss{genvars} = addr == {addr}+({genvars_sum});
         assign {path}_sw_wr{genvars} = {path}_accss{genvars} && r_vld;
@@ -45,3 +45,12 @@ generate_for_end: |-
     end // of for loop with iterator {dimension}
 signal_declaration: |-
     {type:{signal_width}} {name:{name_width}}{unpacked_dim};
+sw_read_assignment_var_name:
+    rtl: |-
+        {path}_rd_mux_in
+    signals:
+        - name: '{path}_rd_mux_in'
+          signal_type: 'logic [{accesswidth}:0]'
+sw_read_assignment:
+    rtl: |-
+        assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}}};

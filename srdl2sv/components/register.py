@@ -2,6 +2,7 @@ import importlib.resources as pkg_resources
 import math
 import sys
 import yaml
+import itertools
 
 from systemrdl import node
 
@@ -28,8 +29,7 @@ class Register(Component):
         # Save and/or process important variables
         self.__process_variables(obj, parents_dimensions, parents_stride, glbl_settings)
 
-        # Create RTL for fields
-        # Fields should be in order in RTL, therefore, use list
+        # Create RTL for fields of initial, non-alias register
         for field in obj.fields():
             # Use range to save field in an array. Reason is, names are allowed to
             # change when using an alias
@@ -44,6 +44,9 @@ class Register(Component):
                 self.children[field_range].sanity_checks()
 
     def create_rtl(self):
+        # Create RTL of children
+        [x.create_rtl() for x in self.children.values()]
+
         # Create generate block for register and add comment
         if self.dimensions and not self.generate_active:
             self.rtl_header.append("generate")
@@ -69,14 +72,88 @@ class Register(Component):
         if self.dimensions and not self.generate_active:
             self.rtl_footer.append("endgenerate\n")
 
+        # Add assignment of read-wires
+        self.__add_sw_read_assignments()
+
+        # Add wire instantiation
+        self.__add_signal_instantiations()
+
         # Create comment and provide user information about register he/she is looking at
         self.rtl_header = [
             Register.templ_dict['reg_comment'].format(
-                name = obj.inst_name,
+                name = self.obj.inst_name,
                 dimensions = self.dimensions,
                 depth = self.depth),
                 *self.rtl_header
             ]
+
+    def __add_sw_read_assignments(self):
+        accesswidth = self.obj.get_property('accesswidth') - 1
+        self.rtl_footer.append("")
+
+        for x in self.name_addr_mappings:
+            current_bit = 0
+            list_of_fields = []
+            for y in self.children.values():
+                if x[0] in y.readable_by:
+                    empty_bits = y.lsb - current_bit
+                    current_bit = y.msb + 1
+
+                    if empty_bits > 0:
+                        list_of_fields.append("{}'b0".format(empty_bits))
+
+                    list_of_fields.append("{}_q".format(y.path_underscored))
+
+            empty_bits = accesswidth - current_bit + 1
+
+            if empty_bits > 0:
+                list_of_fields.append("{}'b0".format(empty_bits))
+
+            # Create list of mux-inputs to later be picked up by carrying addrmap
+            self.sw_read_assignment_var_name.append(
+                (
+                    self.process_yaml(
+                        Register.templ_dict['sw_read_assignment_var_name'],
+                        {'path': x[0],
+                         'accesswidth': accesswidth}
+                    ),
+                    x[1], # Start addr
+                )
+            )
+
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Register.templ_dict['sw_read_assignment'],
+                    {'sw_read_assignment_var_name': self.sw_read_assignment_var_name[-1][0],
+                     'genvars': self.genvars_str,
+                     'list_of_fields': ', '.join(reversed(list_of_fields))}
+                )
+            )
+
+    def create_mux_string(self):
+        for mux_tuple in self.sw_read_assignment_var_name:
+            # Loop through lowest dimension and add stride of higher
+            # dimension once everything is processed
+            if self.total_array_dimensions:
+                vec = [0]*len(self.total_array_dimensions)
+
+                for i in self.eval_genvars(vec, 0, self.total_array_dimensions):
+                    yield (mux_tuple, i)
+
+    def eval_genvars(self, vec, depth, dimensions):
+        for i in range(dimensions[depth]):
+            vec[depth] = i
+
+            if depth == len(dimensions) - 1:
+                yield (
+                        eval(self.genvars_sum_str_vectorized),
+                        '[{}]'.format(']['.join(map(str, vec)))
+                      )
+            else:
+                yield from self.eval_genvars(vec, depth+1, dimensions)
+
+
+        vec[depth] = 0
 
     def __add_address_decoder(self):
         # Assign variables from bus
@@ -98,8 +175,9 @@ class Register(Component):
                  'depth': self.depth,
                  'field_type': self.field_type}
             )
-        ) for i, x in enumerate(self.alias_names)]
+        ) for i, x in enumerate(self.name_addr_mappings)]
 
+    def __add_signal_instantiations(self):
         # Add wire/register instantiations
         dict_list = [(key, value) for (key, value) in self.get_signals().items()]
 
@@ -143,7 +221,8 @@ class Register(Component):
 
         # Add name to list
         self.obj.current_idx = [0]
-        self.alias_names.append((self.create_underscored_path_static(obj)[3], obj.absolute_address))
+        self.name_addr_mappings.append(
+            (self.create_underscored_path_static(obj)[3], obj.absolute_address))
 
     def __process_variables(
             self,
@@ -151,19 +230,24 @@ class Register(Component):
             parents_dimensions: list,
             parents_stride: list,
             glbl_settings: dict):
-        # Save object
-        self.obj = obj
 
         # Save name
         self.obj.current_idx = [0]
         self.name = obj.inst_name
-        self.alias_names = [(self.create_underscored_path_static(obj)[3], obj.absolute_address)]
+
+        # Create mapping between (alias-) name and address
+        self.name_addr_mappings = [
+            (self.create_underscored_path_static(obj)[3], obj.absolute_address)
+            ]
 
         # Create full name
         self.create_underscored_path()
 
         # Gnerate already started?
         self.generate_active = glbl_settings['generate_active']
+
+        # Empty array for mux-input signals
+        self.sw_read_assignment_var_name = []
 
         # Determine dimensions of register
         if obj.is_array:
@@ -183,7 +267,7 @@ class Register(Component):
             self.sel_arr = 'single'
             self.total_array_dimensions = parents_dimensions
             self.array_dimensions = []
-            self.total_stride = self.obj.array_stride
+            self.total_stride = parents_stride
 
         # How many dimensions were already part of some higher up hierarchy?
         self.parents_depths = len(parents_dimensions)
@@ -200,6 +284,7 @@ class Register(Component):
 
         # Determine value to compare address with
         genvars_sum = []
+        genvars_sum_vectorized = []
         try:
             for i, stride in enumerate(self.total_stride):
                 genvars_sum.append(chr(97+i))
@@ -207,7 +292,14 @@ class Register(Component):
                 genvars_sum.append(str(stride))
                 genvars_sum.append("+")
 
+                genvars_sum_vectorized.append('vec[')
+                genvars_sum_vectorized.append(str(i))
+                genvars_sum_vectorized.append(']*')
+                genvars_sum_vectorized.append(str(stride))
+                genvars_sum_vectorized.append("+")
+
             genvars_sum.pop()
+            genvars_sum_vectorized.pop()
 
             self.logger.debug(
                 "Multidimensional with dimensions '{}' and stride '{}'".format(
@@ -221,4 +313,5 @@ class Register(Component):
                 "Caugt expected IndexError because genvars_sum is empty")
 
         self.genvars_sum_str = ''.join(genvars_sum)
+        self.genvars_sum_str_vectorized = ''.join(genvars_sum_vectorized)
 

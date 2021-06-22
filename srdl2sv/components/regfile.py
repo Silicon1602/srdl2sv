@@ -122,6 +122,9 @@ class RegFile(Component):
             glbl_settings['generate_active'] = False
             self.rtl_footer.append("endgenerate")
 
+        # Create RTL of all registers
+        [x.create_rtl() for x in self.registers.values()]
+
     def __process_variables(self,
             obj: node.RegfileNode,
             parents_dimensions: list,
@@ -160,4 +163,7 @@ class RegFile(Component):
         genvars = ['[{}]'.format(chr(97+i)) for i in range(self.dimensions)]
         self.genvars_str = ''.join(genvars)
 
+    def create_mux_string(self):
+        for i in self.children.values():
+            yield from i.create_mux_string()
 
