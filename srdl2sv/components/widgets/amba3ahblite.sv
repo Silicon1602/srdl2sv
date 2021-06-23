@@ -9,6 +9,9 @@ module amba3ahblite_widget
     output        r_vld,
     output [ 3:0] byte_enable,
     output [31:0] sw_wr_bus,
+
+    // Inputs from internal logic
+    input  [31:0] sw_rd_bus,
  
     // Bus protocol
     input         HRESETn,
