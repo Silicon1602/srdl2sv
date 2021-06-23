@@ -21,7 +21,7 @@ module_declaration:
         );
 import_package:
     rtl: |-
-        import {name}_pkg::*
+        import {name}_pkg::*;
 reset_port: 
     rtl:
         input  {name},

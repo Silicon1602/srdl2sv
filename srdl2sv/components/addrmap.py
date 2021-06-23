@@ -135,13 +135,14 @@ class AddrMap(Component):
 
         import_package_list = []
         try:
-            import_package_list = [[
-                AddrMap.templ_dict['import_package']['rtl'].format(
-                    name = self.name),
-                ',\n'
-                ] for x in self.get_package_names()][0][:-1]
+            for x in self.get_package_names():
+                import_package_list.append(
+                    AddrMap.templ_dict['import_package']['rtl'].format(name = x)
+                )
 
-            import_package_list.append(';')
+                import_package_list.append('\n')
+
+            import_package_list.pop()
         except IndexError:
             pass
 
@@ -272,8 +273,10 @@ class AddrMap(Component):
         names = set()
 
         for i in self.registers.values():
-            for key, value in i.get_typedefs().items():
-                names.add(value.scope)
+            for x in i.get_typedefs().values():
+                names.add(x.scope)
+
+        [names.update(x.get_package_names()) for x in self.regfiles.values()]
 
         return names
 
@@ -341,7 +344,9 @@ class AddrMap(Component):
             tab_width,
             real_tabs)
 
-        # TODO Later, request get_package_rtl()-method of all child regfiles
+        # Invoke get_package_rtl method from regfiles
+        [rtl_return.update(x.get_package_rtl(tab_width, real_tabs))
+            for x in self.regfiles.values()]
 
         return rtl_return
 

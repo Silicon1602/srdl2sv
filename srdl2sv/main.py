@@ -73,8 +73,9 @@ if __name__ == "__main__":
         tab_width=config['tab_width'],
         real_tabs=config['real_tabs']
     ).items():
-        with open('{}/{}_pkg.sv'.format(config['output_dir'], key), 'w') as file:
-            file.write(value)
+        if value:
+            with open('{}/{}_pkg.sv'.format(config['output_dir'], key), 'w') as file:
+                file.write(value)
 
     # Copy over widget RTL from widget directory
     widget_rtl = pkg_resources.read_text(widgets, '{}.sv'.format(config['bus']))

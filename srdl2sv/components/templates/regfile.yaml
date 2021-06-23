@@ -15,3 +15,18 @@ generate_for_start:
 generate_for_end: 
     rtl: |-
         end // of for loop with iterator {dimension}
+package_declaration:
+    rtl: |-
+        package {name}_pkg;
+
+        {pkg_content}
+
+        endpackage
+enum_declaration:
+    rtl: |-
+        typedef enum logic [{width}:0] {{
+        {enum_var_list}
+        }} {name};
+enum_var_list_item:
+    rtl: |-
+        {name:{max_name_width}} = {width}'d{value}

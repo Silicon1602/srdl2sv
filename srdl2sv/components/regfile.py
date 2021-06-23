@@ -167,3 +167,86 @@ class RegFile(Component):
         for i in self.children.values():
             yield from i.create_mux_string()
 
+    def get_package_names(self) -> set():
+        names = set()
+
+        for i in self.registers.values():
+            for key, value in i.get_typedefs().items():
+                names.add(value.scope)
+
+        return names
+
+    def get_package_rtl(self, tab_width: int = 4, real_tabs = False) -> dict():
+        if not self.config['enums']:
+            return None
+
+        # First go through all registers in this scope to generate a package
+        package_rtl = []
+        enum_rtl = []
+        rtl_return = list()
+
+        # Need to keep track of enum names since they shall be unique
+        # per scope
+        enum_members = dict()
+        enum_found = False
+
+        for i in self.registers.values():
+            for key, value in i.get_typedefs().items():
+                if not enum_found:
+                    enum_found = True
+                    scope = value.scope
+
+                variable_list = []
+
+                max_name_width = min(
+                        max([len(x[0]) for x in value.members]), 40)
+
+                for var in value.members:
+                    if var[0] not in enum_members:
+                        enum_members[var[0]] = "::".join([self.name, key])
+                    else:
+                        self.logger.fatal(
+                            "Enum member '{}' was found at multiple locations in the same "\
+                            "main scope: \n"\
+                            " -- 1st occurance: '{}'\n"\
+                            " -- 2nd occurance: '{}'\n\n"\
+                            "This is not legal because all these enums will be defined "\
+                            "in the same SystemVerilog scope. To share the same enum among "\
+                            "different registers, define them on a higher level in the "\
+                            "hierarchy.\n\n"\
+                            "Exiting...".format(
+                                var[0],
+                                enum_members[var[0]],
+                                "::".join([self.name, key])))
+
+                        sys.exit(1)
+
+                    variable_list.append(
+                        RegFile.templ_dict['enum_var_list_item']['rtl'].format(
+                            value = var[1],
+                            width = value.width,
+                            max_name_width = max_name_width,
+                            name = var[0]))
+
+                enum_rtl.append(
+                    RegFile.templ_dict['enum_declaration']['rtl'].format(
+                        width=value.width-1,
+                        name = key,
+                        enum_var_list = ',\n'.join(variable_list)))
+
+        if enum_found:
+            package_rtl =\
+                RegFile.templ_dict['package_declaration']['rtl'].format(
+                    name = scope,
+                    pkg_content = '\n\n'.join(enum_rtl))
+
+
+            return {scope:
+                    RegFile.add_tabs(
+                        package_rtl,
+                        tab_width,
+                        real_tabs)
+                   }
+        else:
+            return {None: None}
+
