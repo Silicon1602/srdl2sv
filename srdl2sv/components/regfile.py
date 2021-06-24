@@ -31,42 +31,6 @@ class RegFile(Component):
         # Save and/or process important variables
         self.__process_variables(obj, parents_dimensions, parents_stride)
 
-        # Create comment and provide user information about register he/she
-        # is looking at.
-        self.rtl_header = [
-            self.process_yaml(
-                RegFile.templ_dict['regfile_comment'],
-                {'name': obj.inst_name,
-                 'dimensions': self.dimensions,
-                 'depth': self.depth}
-            ),
-            *self.rtl_header
-            ]
-
-        # Create generate block for register and add comment
-        for i in range(self.dimensions-1, -1, -1):
-            self.rtl_footer.append(
-                self.process_yaml(
-                    RegFile.templ_dict['generate_for_end'],
-                    {'dimension':  chr(97+i)}
-                )
-            )
-
-        if self.dimensions and not glbl_settings['generate_active']:
-            self.rtl_header.append("generate")
-            self.generate_initiated = True
-            glbl_settings['generate_active'] = True
-        else:
-            self.generate_initiated = False
-
-        for i in range(self.dimensions):
-            self.rtl_header.append(
-                self.process_yaml(
-                    RegFile.templ_dict['generate_for_start'],
-                    {'iterator': chr(97+i+self.parents_depths),
-                     'limit': self.array_dimensions[i]}
-                )
-            )
 
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
@@ -76,6 +40,14 @@ class RegFile(Component):
 
         # Set object to 0 for easy addressing
         self.obj.current_idx = [0]
+
+        # Determine whether this regfile must add a generate block and for-loop
+        if self.dimensions and not glbl_settings['generate_active']:
+            self.generate_initiated = True
+            glbl_settings['generate_active'] = True
+        else:
+            self.generate_initiated = False
+
 
         # Traverse through children
         for child in obj.children():
@@ -115,15 +87,53 @@ class RegFile(Component):
         # to account for all possible alias combinations
         self.children = {**self.regfiles, **self.registers}
 
+        # Create RTL of all registers
+        [x.create_rtl() for x in self.registers.values()]
+
         self.logger.info("Done generating all child-regfiles/registers")
+
+        # If this regfile create a generate-block, all the register's wires must
+        # be declared outside of that block
+        if self.generate_initiated:
+            self.rtl_header = [*self.rtl_header, *self.get_signal_instantiations_list()]
+            self.rtl_header.append("")
+            self.rtl_header.append("generate")
+
+        # Create comment and provide user information about register he/she
+        # is looking at.
+        self.rtl_header = [
+            self.process_yaml(
+                RegFile.templ_dict['regfile_comment'],
+                {'name': obj.inst_name,
+                 'dimensions': self.dimensions,
+                 'depth': self.depth}
+            ),
+            *self.rtl_header
+            ]
+
+        # Create generate block for register and add comment
+        for i in range(self.dimensions-1, -1, -1):
+            self.rtl_footer.append(
+                self.process_yaml(
+                    RegFile.templ_dict['generate_for_end'],
+                    {'dimension':  chr(97+i)}
+                )
+            )
+
+        for i in range(self.dimensions):
+            self.rtl_header.append(
+                self.process_yaml(
+                    RegFile.templ_dict['generate_for_start'],
+                    {'iterator': chr(97+i+self.parents_depths),
+                     'limit': self.array_dimensions[i]}
+                )
+            )
 
         # End generate loop
         if self.generate_initiated:
             glbl_settings['generate_active'] = False
             self.rtl_footer.append("endgenerate")
-
-        # Create RTL of all registers
-        [x.create_rtl() for x in self.registers.values()]
+            self.rtl_footer.append("")
 
     def __process_variables(self,
             obj: node.RegfileNode,
@@ -166,6 +176,16 @@ class RegFile(Component):
     def create_mux_string(self):
         for i in self.children.values():
             yield from i.create_mux_string()
+
+    def get_signal_instantiations_list(self) -> set():
+        instantiations = list()
+
+        for i in self.children.values():
+            if isinstance(i, Register):
+                instantiations.append("\n// Variables of register '{}'".format(i.name))
+            instantiations = [*instantiations, *i.get_signal_instantiations_list()]
+
+        return instantiations
 
     def get_package_names(self) -> set():
         names = set()

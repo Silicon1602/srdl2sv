@@ -76,7 +76,10 @@ class Register(Component):
         self.__add_sw_read_assignments()
 
         # Add wire instantiation
-        self.__add_signal_instantiations()
+        if not self.generate_active:
+            # We can/should only do this if there is no encapsulating 
+            # regfile which create a generate
+            self.__add_signal_instantiations()
 
         # Create comment and provide user information about register he/she is looking at
         self.rtl_header = [
@@ -159,7 +162,7 @@ class Register(Component):
         # Assign variables from bus
         self.obj.current_idx = [0]
 
-        if self.dimensions:
+        if self.total_dimensions:
             rw_wire_assign_field = 'rw_wire_assign_multi_dim'
         else:
             rw_wire_assign_field = 'rw_wire_assign_1_dim'
@@ -179,27 +182,29 @@ class Register(Component):
 
     def __add_signal_instantiations(self):
         # Add wire/register instantiations
+        self.rtl_header = [
+                *self.get_signal_instantiations_list(),
+                '',
+                *self.rtl_header
+            ]
+
+    def get_signal_instantiations_list(self):
         dict_list = [(key, value) for (key, value) in self.get_signals().items()]
 
         signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
 
         name_width = min(max([len(key) for (key, _) in dict_list]), 40)
 
-        self.rtl_header = [
-            *[
-                Register.templ_dict['signal_declaration'].format(
-                    name = key,
-                    type = value[0],
-                    signal_width = signal_width,
-                    name_width = name_width,
-                    unpacked_dim = '[{}]'.format(
-                        ']['.join(
-                            [str(y) for y in value[1]]))
-                        if value[1] else '')
-                for (key, value) in dict_list],
-                '',
-                *self.rtl_header,
-            ]
+        return [Register.templ_dict['signal_declaration'].format(
+                   name = key,
+                   type = value[0],
+                   signal_width = signal_width,
+                   name_width = name_width,
+                   unpacked_dim = '[{}]'.format(
+                       ']['.join(
+                           [str(y) for y in value[1]]))
+                       if value[1] else '')
+               for (key, value) in dict_list]
 
     def add_alias(self, obj: node.RegNode):
         for field in obj.fields():
