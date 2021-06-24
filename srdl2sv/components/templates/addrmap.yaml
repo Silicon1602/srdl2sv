@@ -58,6 +58,9 @@ read_mux:
       {list_of_cases}
       endcase
       end
+default_mux_case:
+    rtl: |-
+        default: sw_rd_bus = 0;
 list_of_mux_cases:
     rtl: |-
         32'd{}: sw_rd_bus = {};

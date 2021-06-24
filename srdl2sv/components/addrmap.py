@@ -176,18 +176,18 @@ class AddrMap(Component):
                 AddrMap.templ_dict['read_mux'],
                 {'list_of_cases':
                     '\n'.join([
-                        AddrMap.templ_dict['list_of_mux_cases']['rtl']
+                        AddrMap.templ_dict['default_mux_case']['rtl'],
+                        *[AddrMap.templ_dict['list_of_mux_cases']['rtl']
                             .format(x[0][1]+x[1][0],
                                     ''.join(
                                         [x[0][0],
                                          x[1][1]])) for y in self.children.values() \
                                                         for x in y.create_mux_string()
-                        ])
+                        ]
+                    ])
                 }
             )
         )
-
-
 
     def __add_signal_instantiation(self):
         dict_list = [(key, value) for (key, value) in self.get_signals(True).items()]
