@@ -1,10 +1,9 @@
 import re
 import importlib.resources as pkg_resources
-from sys import exit
+import sys
 import yaml
 
 from systemrdl import node
-from systemrdl.node import FieldNode
 
 # Local packages
 from components.component import Component
@@ -69,7 +68,8 @@ class AddrMap(Component):
 
         self.logger.info("Done generating all child-regfiles/registers")
 
-        # Create RTL of all registers
+        # Create RTL of all registers. Registers in regfiles are
+        # already built.
         [x.create_rtl() for x in self.registers.values()]
 
         # Add bus widget ports
@@ -82,12 +82,12 @@ class AddrMap(Component):
         reset_ports_rtl = [
             AddrMap.templ_dict['reset_port']['rtl'].format(
                 name = name)
-            for name in [x for x in self.get_resets()]
+            for name in self.get_resets()
             ]
 
         # Prefetch dictionaries in local array
-        input_dict_list = [(key, value) for (key, value) in self.get_ports('input').items()]
-        output_dict_list = [(key, value) for (key, value) in self.get_ports('output').items()]
+        input_dict_list = self.get_ports('input').items()
+        output_dict_list = self.get_ports('output').items()
 
         input_signal_width = min(
                 max([len(value[0]) for (_, value) in input_dict_list]), 40)
@@ -318,7 +318,7 @@ class AddrMap(Component):
                                 enum_members[var[0]],
                                 "::".join([self.name, key])))
 
-                        exit(1)
+                        sys.exit(1)
 
                     variable_list.append(
                         AddrMap.templ_dict['enum_var_list_item']['rtl'].format(
