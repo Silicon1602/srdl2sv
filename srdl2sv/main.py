@@ -85,4 +85,7 @@ if __name__ == "__main__":
     with open(out_widget_file, 'w') as file:
         file.write(widget_rtl)
 
+    logger.info("Selected, implemented, and copied '{}' widget".format(config['bus']))
+
+    # Print elapsed time
     logger.info("Elapsed time: %f seconds", time.time() - start)

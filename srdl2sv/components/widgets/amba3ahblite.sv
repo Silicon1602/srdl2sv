@@ -1,7 +1,8 @@
 module amba3ahblite_widget
 (
     // Register clock
-    input         reg_clk,
+    input         bus_clk,
+    input         bus_rst_n,
 
     // Outputs to internal logic
     output [31:0] addr,

@@ -6,8 +6,9 @@ module_instantiation:
          ****************************/
         amba3ahblite_widget
         amba3ahblite_widget_inst
-            (// Register clock
-             .reg_clk,
+            (// Clocks & Resets
+             .bus_clk,
+             .bus_rst_n,
 
              // Outputs to internal logic
              .addr,
