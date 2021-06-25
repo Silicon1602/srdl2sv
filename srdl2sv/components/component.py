@@ -126,7 +126,12 @@ class Component():
 
         # Define triggers for which the indentation level will increment or
         # decrement on the next line
-        trigger_re = re.compile(r'.*?((?:\bbegin\b|\{|\bcase\b)|(?:\bend\b|}|\bendcase\b))([^$]*)')
+        trigger_re = re.compile(r"""
+            .*?(
+                (?:\bbegin\b|\{|\bcase\b|<<INDENT>>)|
+                (?:\bend\b|}|\bendcase\b|<<UNINDENT>>)
+            )([^$]*)
+            """, flags=re.VERBOSE)
 
         rtl_indented = []
 
@@ -145,7 +150,7 @@ class Component():
                 matchObj = trigger_re.match(line_split)
 
                 if matchObj:
-                    if matchObj.group(1) in ('begin', '{', 'case'):
+                    if matchObj.group(1) in ('begin', '{', 'case', '<<INDENT>>'):
                         indent_lvl_next += 1
                     else:
                         indent_lvl = indent_lvl_next - 1
@@ -159,7 +164,9 @@ class Component():
                     break
 
             # Add tabs
-            rtl_indented.append("{}{}".format(tab*indent_lvl, line))
+            if line.strip() not in ('<<INDENT>>', '<<UNINDENT>>'):
+                rtl_indented.append("{}{}".format(tab*indent_lvl, line))
+
 
 
         return '\n'.join(rtl_indented)
