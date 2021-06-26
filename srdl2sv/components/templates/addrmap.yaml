@@ -73,9 +73,6 @@ module_declaration:
         input  bus_rst_n,
         {resets} 
 
-        // Bus I/O
-        // TODO
-
         // Inputs
         {inputs}
 

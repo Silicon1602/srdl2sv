@@ -182,6 +182,22 @@ class Register(Component):
             )
         ) for i, x in enumerate(self.name_addr_mappings)]
 
+        # Add combined signal to be used for general access of the register
+        self.rtl_header.append(
+            self.process_yaml(
+                Register.templ_dict['rw_wire_assign_any_alias'],
+                {'path': self.name_addr_mappings[0][0],
+                 'genvars': self.genvars_str,
+                 'sw_rds_w_genvars': ' || '.join(
+                     [''.join([x[0], '_sw_rd', self.genvars_str])
+                         for x in self.name_addr_mappings]),
+                 'sw_wrs_w_genvars': ' || '.join(
+                     [''.join([x[0], '_sw_wr', self.genvars_str])
+                         for x in self.name_addr_mappings])
+                }
+            )
+        )
+
     def __add_signal_instantiations(self):
         # Add wire/register instantiations
         self.rtl_header = [

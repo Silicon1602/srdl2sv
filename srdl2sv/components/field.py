@@ -1,4 +1,5 @@
 import math
+
 import importlib.resources as pkg_resources
 import yaml
 
@@ -47,6 +48,7 @@ class Field(Component):
         self.__add_combo()
 
         self.add_sw_access(obj)
+        self.add_swmod_swacc(obj)
 
     def add_sw_access(self, obj, alias = False):
         access_rtl = dict()
@@ -117,6 +119,9 @@ class Field(Component):
                 else:
                     # If field spans multiple bytes, every byte shall have a seperate enable!
                     for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                        msb_bus = 8*(i+1)-1 if i != self.msbyte else obj.msb
+                        lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
+
                         access_rtl['sw_write'][0].append(
                             self.process_yaml(
                                 Field.templ_dict[str(onwrite)],
@@ -124,10 +129,10 @@ class Field(Component):
                                  'genvars': self.genvars_str,
                                  'i': i,
                                  'width': obj.width,
-                                 'msb_bus': str(8*(i+1)-1 if i != self.msbyte else obj.msb),
-                                 'bus_w': str(8 if i != self.msbyte else obj.width-(8*j)),
-                                 'msb_field': str(8*(j+1)-1 if i != self.msbyte else obj.width-1),
-                                 'field_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                                 'msb_bus': str(msb_bus),
+                                 'lsb_bus': str(lsb_bus),
+                                 'msb_field': str(msb_bus-obj.inst.lsb),
+                                 'lsb_field': str(lsb_bus-obj.inst.lsb),
                                  'field_type': self.field_type}
                             )
                         )
@@ -136,16 +141,19 @@ class Field(Component):
                 # Normal write
                 # If field spans multiple bytes, every byte shall have a seperate enable!
                 for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                    msb_bus = 8*(i+1)-1 if i != self.msbyte else obj.msb
+                    lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
+
                     access_rtl['sw_write'][0].append(
                         self.process_yaml(
                             Field.templ_dict['sw_access_byte'],
                             {'path': self.path_underscored,
                              'genvars': self.genvars_str,
                              'i': i,
-                             'msb_bus': str(8*(i+1)-1 if i != self.msbyte else obj.msb),
-                             'bus_w': str(8 if i != self.msbyte else obj.width-(8*j)),
-                             'msb_field': str(8*(j+1)-1 if i != self.msbyte else obj.width-1),
-                             'field_w': str(8 if i != self.msbyte else obj.width-(8*j)),
+                             'msb_bus': str(msb_bus),
+                             'lsb_bus': str(lsb_bus),
+                             'msb_field': str(msb_bus-obj.inst.lsb),
+                             'lsb_field': str(lsb_bus-obj.inst.lsb),
                              'field_type': self.field_type}
                         )
                     )
@@ -197,6 +205,68 @@ class Field(Component):
         except KeyError:
             self.access_rtl['sw_read'] = [access_rtl['sw_read']]
             self.access_rtl['sw_write'] = [access_rtl['sw_write']]
+
+    def add_swmod_swacc(self, obj):
+        if obj.get_property('swmod'):
+            swmod_assigns = list()
+            swacc_assigns = list()
+
+            # Check if read side-effects are defined. 
+            if obj.get_property('onread'):
+                swmod_assigns.append(
+                    self.process_yaml(
+                        Field.templ_dict['swmod_assign'],
+                        {'path': self.path_underscored,
+                         'path_wo_field': self.path_wo_field,
+                         'genvars': self.genvars_str,
+                         'rd_wr': 'rd',
+                         'msbyte': self.msbyte,
+                         'lsbyte': self.lsbyte,
+                         'swmod_assigns': '\n'.join(swmod_assigns)
+                        }
+                    )
+                )
+
+            # Check if SW has write access to the field
+            if obj.get_property('sw') in (AccessType.rw, AccessType.w):
+                swmod_assigns.append(
+                    self.process_yaml(
+                        Field.templ_dict['swmod_assign'],
+                        {'path': self.path_underscored,
+                         'path_wo_field': self.path_wo_field,
+                         'genvars': self.genvars_str,
+                         'rd_wr': 'wr',
+                         'msbyte': self.msbyte,
+                         'lsbyte': self.lsbyte,
+                         'swmod_assigns': '\n'.join(swmod_assigns)
+                        }
+                    )
+                )
+
+            swmod_props = self.process_yaml(
+                Field.templ_dict['swmod_always_comb'],
+                {'path': self.path_underscored,
+                 'genvars': self.genvars_str,
+                 'swmod_assigns': '\n'.join(swmod_assigns)
+                }
+            )
+        else:
+            swmod_props = ''
+
+        if obj.get_property('swacc') and obj.get_property('sw') in (AccessType.rw, AccessType.r):
+                swacc_props = self.process_yaml(
+                    Field.templ_dict['swacc_assign'],
+                    {'path': self.path_underscored,
+                     'path_wo_field': self.path_wo_field,
+                     'genvars': self.genvars_str,
+                     'msbyte': self.msbyte,
+                     'lsbyte': self.lsbyte,
+                    }
+                )
+        else:
+            swacc_props = ''
+
+        self.rtl_footer = [*self.rtl_footer, swmod_props, swacc_props]
 
     def __add_hw_access(self):
         # Define hardware access (if applicable)

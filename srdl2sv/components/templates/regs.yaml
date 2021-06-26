@@ -1,6 +1,7 @@
 ---
 rw_wire_assign_1_dim:
     rtl: |
+
         // Register-activation for '{path}' {alias}
         assign {path}_accss = addr == {addr};
         assign {path}_sw_wr = {path}_accss && r_vld;
@@ -12,10 +13,9 @@ rw_wire_assign_1_dim:
           signal_type: 'logic'
         - name: '{path}_accss'
           signal_type: 'logic'
-    input_ports:
-    output_ports:
 rw_wire_assign_multi_dim: 
     rtl: |-
+
         // Register-activation for '{path}' {alias}
         assign {path}_accss{genvars} = addr == {addr}+({genvars_sum});
         assign {path}_sw_wr{genvars} = {path}_accss{genvars} && r_vld;
@@ -27,8 +27,18 @@ rw_wire_assign_multi_dim:
           signal_type: 'logic'
         - name: '{path}_accss'
           signal_type: 'logic'
-    input_ports:
-    output_ports:
+rw_wire_assign_any_alias: 
+    rtl: |-
+
+        // Combined register activation. These will become active 
+        // _any_ alias accesses a certain register.
+        assign {path}__any_alias_sw_wr{genvars} = {sw_wrs_w_genvars};
+        assign {path}__any_alias_sw_rd{genvars} = {sw_rds_w_genvars};
+    signals:
+        - name: '{path}__any_alias_sw_wr'
+          signal_type: 'logic'
+        - name: '{path}__any_alias_sw_rd'
+          signal_type: 'logic'
 reg_comment: |-
 
     /*******************************************************************
