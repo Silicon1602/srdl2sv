@@ -46,9 +46,9 @@ class Field(Component):
         self.__add_always_ff()
         self.__add_hw_access()
         self.__add_combo()
+        self.__add_swmod_swacc()
 
         self.add_sw_access(obj)
-        self.add_swmod_swacc(obj)
 
     def add_sw_access(self, obj, alias = False):
         access_rtl = dict()
@@ -206,13 +206,14 @@ class Field(Component):
             self.access_rtl['sw_read'] = [access_rtl['sw_read']]
             self.access_rtl['sw_write'] = [access_rtl['sw_write']]
 
-    def add_swmod_swacc(self, obj):
-        if obj.get_property('swmod'):
+    def __add_swmod_swacc(self):
+        if self.obj.get_property('swmod'):
+            self.logger.debug("Field has swmod property")
+
             swmod_assigns = list()
-            swacc_assigns = list()
 
             # Check if read side-effects are defined. 
-            if obj.get_property('onread'):
+            if self.obj.get_property('onread'):
                 swmod_assigns.append(
                     self.process_yaml(
                         Field.templ_dict['swmod_assign'],
@@ -228,7 +229,7 @@ class Field(Component):
                 )
 
             # Check if SW has write access to the field
-            if obj.get_property('sw') in (AccessType.rw, AccessType.w):
+            if self.obj.get_property('sw') in (AccessType.rw, AccessType.w):
                 swmod_assigns.append(
                     self.process_yaml(
                         Field.templ_dict['swmod_assign'],
@@ -250,19 +251,32 @@ class Field(Component):
                  'swmod_assigns': '\n'.join(swmod_assigns)
                 }
             )
+
+            if not swmod_assigns:
+                self.logger.warning("Field has swmod property but the field is never "\
+                                    "modified by software.")
         else:
             swmod_props = ''
 
-        if obj.get_property('swacc') and obj.get_property('sw') in (AccessType.rw, AccessType.r):
-                swacc_props = self.process_yaml(
-                    Field.templ_dict['swacc_assign'],
-                    {'path': self.path_underscored,
-                     'path_wo_field': self.path_wo_field,
-                     'genvars': self.genvars_str,
-                     'msbyte': self.msbyte,
-                     'lsbyte': self.lsbyte,
-                    }
-                )
+        if self.obj.get_property('swacc') and \
+                self.obj.get_property('sw') in (AccessType.rw, AccessType.r):
+
+            self.logger.debug("Field has swacc property")
+
+            swacc_props = self.process_yaml(
+                Field.templ_dict['swacc_assign'],
+                {'path': self.path_underscored,
+                 'path_wo_field': self.path_wo_field,
+                 'genvars': self.genvars_str,
+                 'msbyte': self.msbyte,
+                 'lsbyte': self.lsbyte,
+                 }
+            )
+        elif self.obj.get_property('swacc'):
+            self.logger.warning("Field has swacc property but the field is never "\
+                                "accessed by software.")
+
+            swacc_props = ''
         else:
             swacc_props = ''
 
