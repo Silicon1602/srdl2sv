@@ -104,14 +104,18 @@ class CliArguments():
 
         # Create dictionary to save config in
         config = dict()
+        config['list_args'] = list()
 
         # Save input file and output directory to dump everything in
         config['input_file'] = args.IN_RDL
         config['output_dir'] = args.out_dir
+        config['list_args'].append('Ouput Directory  : {}'.format(config['output_dir']))
 
         # Map logging level string to integers
         config['stream_log_level'] = logging_map[args.stream_log_level]
         config['file_log_level'] = logging_map[args.file_log_level]
+        config['list_args'].append('Stream Log Level : {}'.format(args.stream_log_level))
+        config['list_args'].append('File Log Level   : {}'.format(args.file_log_level))
 
         # Determine paths to be passed to systemrdl-compiler to search
         # for include files.
@@ -131,13 +135,22 @@ class CliArguments():
         config['real_tabs'] = args.real_tabs
         config['tab_width'] = args.tab_width
 
+        config['list_args'].append('Use Real Tabs    : {}'.format(config['real_tabs']))
+        config['list_args'].append('Tab Width        : {}'.format(config['tab_width']))
+
         # Sanity check related
         config['disable_sanity'] = args.disable_sanity
+        config['list_args'].append('Sanity Disabled  : {}'.format(config['disable_sanity']))
 
         # Set enums
         config['enums'] = not args.disable_enums
+        config['list_args'].append('Enums Enabled    : {}'.format(config['enums']))
 
         # Set bus
         config['bus'] = args.bus
+        config['list_args'].append('Register Bus Type: {}'.format(config['bus']))
+
+        # Set version
+        config['version'] = '0.01'
 
         return config

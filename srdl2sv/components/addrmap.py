@@ -145,6 +145,24 @@ class AddrMap(Component):
             import_package_list.pop()
         except IndexError:
             pass
+        
+        import getpass
+        import socket
+        import time
+        import os
+
+        self.rtl_header.append(
+            AddrMap.templ_dict['header'].format(
+                user = getpass.getuser(),
+                time = time.strftime('%B %d %Y %H:%M:%S', config['ts']),
+                year = time.strftime('%Y', config['ts']),
+                version = config['version'],
+                path = os.getcwd(),
+                rdl_file = config['input_file'],
+                incdirs = '\n *  - '.join(config['search_paths']),
+                config = '\n *  - '.join(config['list_args']),
+                addrmap = self.name.upper(),
+                host = socket.gethostname()))
 
         self.rtl_header.append(
             AddrMap.templ_dict['module_declaration']['rtl'].format(
