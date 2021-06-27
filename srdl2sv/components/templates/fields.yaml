@@ -56,6 +56,17 @@ hw_access_field:
     input_ports:
         - name: '{path}_in'
           signal_type: '{field_type}'
+hw_access_counter:
+    rtl: |-
+        if ({path}_update_cnt{genvars})
+        begin
+        {path}_q{genvars} <= {path}_next{genvars};
+        end
+    signals:
+        - name: '{path}_update_cnt'
+          signal_type: 'logic'
+        - name: '{path}_next'
+          signal_type: '{field_type}'
 end_field_ff: 
     rtl: |-
         end // of {path}'s always_ff
@@ -181,38 +192,91 @@ swmod_assign:
           signal_type: 'logic'
 counter: 
     rtl: |-
+
+        // Combinational logic that implements counter
         always_comb
         begin
         {path}_next{genvars}       = {path}_q{genvars};
         {path}_update_cnt{genvars} = 0;
 
-        {incr_counter}
+        {counter_logic}
 
-        {decr_counter}
         end
+    signals:
+        - name: '{path}_update_cnt'
+          signal_type: 'logic'
+        - name: '{path}_next'
+          signal_type: '{field_type}'
+counter_internal_incr_signal:
+    rtl: |-
+        assign {path}_incr_val{genvars} = {incr_value};
+    signals:
+        - name: '{path}_incr_val'
+          signal_type: 'logic [{incr_width}:0]'
+counter_internal_decr_signal:
+    rtl: |-
+        assign {path}_decr_val{genvars} = {decr_value};
+    signals:
+        - name: '{path}_decr_val'
+          signal_type: 'logic [{decr_width}:0]'
+counter_incr_input:
+    rtl: ''
+    input_ports:
+        - name: '{path}_incr_val'
+          signal_type: 'logic [{incr_width}:0]'
+counter_decr_input:
+    rtl: ''
+    input_ports:
+        - name: '{path}_decr_val'
+          signal_type: 'logic [{decr_width}:0]'
 incr_counter: 
     rtl: |-
-        {incr_counter_condition}
+        if ({path}_incr{genvars})
         begin
-        {path}_next{genvars}      += {path}_{operation_str}_val{genvars}; 
+        if ({incr_sat_counter_condition})
+        begin
+        {path}_next{genvars}      += {path}_incr_val{genvars}; 
         {path}_update_cnt{genvars} = 1;
         end
+        end
+    input_ports:
+        - name: '{path}_incr'
+          signal_type: 'logic'
 decr_counter: 
     rtl: |-
-        {incr_counter_condition}
+        if ({path}_decr{genvars})
         begin
-        {path}_next{genvars}      += {path}_{operation_str}_val{genvars}; 
+        if ({decr_sat_counter_condition})
+        begin
+        {path}_next{genvars}      -= {path}_decr_val{genvars}; 
         {path}_update_cnt{genvars} = 1;
         end
-incr_counter_condition:
+        end
+    input_ports:
+        - name: '{path}_decr'
+          signal_type: 'logic'
+incr_decr_counter: 
     rtl: |-
-        if ({path}_incr{genvars})
+        if ({path}_incr{genvars} || {path}_decr{genvars})
+        begin
+        if ({incr_decr_sat_counter_condition})
+        begin
+        {path}_next{genvars}      += {path}_incr_val{genvars}; 
+        {path}_next{genvars}      -= {path}_decr_val{genvars}; 
+        {path}_update_cnt{genvars} = 1;
+        end
+        end
+    input_ports:
+        - name: '{path}_incr'
+          signal_type: 'logic'
+        - name: '{path}_decr'
+          signal_type: 'logic'
 incr_sat_counter_condition:
     rtl: |-
-        if ({path}_incr{genvars} && {path}_next{genvars} + {path}_incr_val{genvars} <= {sat_value})
-decr_counter_condition:
-    rtl: |-
-        if ({path}_decr{genvars})
+        {path}_next{genvars} + {path}_incr_val{genvars} <= {sat_value}
 decr_sat_counter_condition:
     rtl: |-
-        if ({path}_decr{genvars} && {path}_next{genvars} - {path}_decr_val{genvars} >= {sat_value})
+        {path}_next{genvars} - {path}_decr_val{genvars} >= {sat_value}
+incr_decr_sat_counter_condition:
+    rtl: |-
+        ({path}_next{genvars} + {path}_incr_val{genvars} - {path}_decr_val{genvars} {greater_smaller}= {sat_value})

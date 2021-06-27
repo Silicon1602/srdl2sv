@@ -1,6 +1,7 @@
 import math
 
 import importlib.resources as pkg_resources
+import sys
 import yaml
 
 from systemrdl.node import FieldNode, SignalNode
@@ -47,6 +48,7 @@ class Field(Component):
         self.__add_hw_access()
         self.__add_combo()
         self.__add_swmod_swacc()
+        self.__add_counter()
 
         self.add_sw_access(obj)
 
@@ -206,6 +208,240 @@ class Field(Component):
             self.access_rtl['sw_read'] = [access_rtl['sw_read']]
             self.access_rtl['sw_write'] = [access_rtl['sw_write']]
 
+    def __add_counter(self):
+        if self.obj.get_property('counter'):
+            self.logger.debug("Detected counter property")
+
+            # Determine saturation values
+            if isinstance(self.obj.get_property('incrsaturate'), bool):
+                if self.obj.get_property('incrsaturate'):
+                    incr_sat_value = 2**self.obj.width-1
+                else:
+                    incr_sat_value = False
+            else:
+                incr_sat_value = self.obj.get_property('incrsaturate')
+
+            if isinstance(self.obj.get_property('decrsaturate'), bool):
+                if self.obj.get_property('decrsaturate'):
+                    decr_sat_value = 2**self.obj.width-1
+                else:
+                    decr_sat_value = False
+            else:
+                decr_sat_value = self.obj.get_property('decrsaturate')
+
+            # Determine with what value the counter is incremented
+            # According to the spec, the incrvalue/decrvalue default to '1'
+            obj_incr_value = self.obj.get_property('incrvalue')
+            obj_decr_value = self.obj.get_property('decrvalue')
+            obj_incr_width = self.obj.get_property('incrwidth')
+            obj_decr_width = self.obj.get_property('decrwidth')
+
+            if obj_incr_value == 0:
+                incr_value = None
+                incr_width = 0
+            elif obj_incr_value is None:
+                if obj_incr_width:
+                    # Decrement value is not set. Check if incrwidth is set and use
+                    # that is applicable
+                    incr_value = False
+                    incr_width = obj_incr_width
+
+                    # Doesn't return RTL, only adds input port
+                    self.process_yaml(
+                        Field.templ_dict['counter_incr_input'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width-1
+                        }
+                    )
+                else:
+                    # Otherwise, use default value according to LRM
+                    incr_value = '1'
+                    incr_width = 1
+            elif isinstance(obj_incr_value, int):
+                incr_value = str(obj_incr_value)
+                incr_width = math.floor(math.log2(obj_incr_value)+1)
+
+                if obj_incr_width:
+                    self.logger.error(
+                        "The 'incrwidth' and 'incrvalue' properties are both "\
+                        "defined. This is not legal and the incrwidth property "\
+                        "will be ignored!")
+            else:
+                incr_value = self.get_signal_name(obj_incr_value)
+                incr_width = obj_incr_value.width
+
+                if obj_incr_value.width > self.obj.width:
+                    self.logger.error(
+                        "Width of 'incr_value' signal '{}' is wider than current "\
+                        "counter field. This could potentially cause ugly errors.".format(
+                            obj_incr_value.get_path()))
+
+                if obj_incr_width:
+                    self.logger.error(
+                        "The 'incrwidth' and 'incrvalue' properties are both "\
+                        "defined. This is not legal and the incrwidth property "\
+                        "will be ignored!")
+
+
+            if incr_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_internal_incr_signal'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width-1,
+                         'incr_value': incr_value,
+                        }
+                    )
+                )
+
+            if obj_decr_value == 0:
+                decr_value = None
+                decr_width = 0
+            elif obj_decr_value is None:
+                if obj_decr_width:
+                    # Decrement value is not set. Check if decrwidth is set and use
+                    # that is applicable
+                    decr_value = False
+                    decr_width = obj_decr_width
+
+                    # Doesn't return RTL, only adds input port
+                    self.process_yaml(
+                        Field.templ_dict['counter_decr_input'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'decr_width': decr_width-1
+                        }
+                    )
+                else:
+                    # Otherwise, use default value according to LRM
+                    decr_value = '1'
+                    decr_width = 1
+            elif isinstance(obj_decr_value, int):
+                decr_value = str(obj_decr_value)
+                decr_width = math.floor(math.log2(obj_decr_value)+1)
+
+                if obj_decr_width:
+                    self.logger.error(
+                        "The 'decrwidth' and 'decrvalue' properties are both "\
+                        "defined. This is not legal and the decrwidth property "\
+                        "will be ignored!")
+            else:
+                decr_value = self.get_signal_name(obj_decr_value)
+                decr_width = obj_decr_value.width
+
+                if obj_decr_value.width > self.obj.width:
+                    self.logger.error(
+                        "Width of 'decr_value' signal '{}' is wider than current "\
+                        "counter field. This could potentially cause ugly errors.".format(
+                            obj_decr_value.get_path()))
+
+                if obj_decr_width:
+                    self.logger.error(
+                        "The 'decrwidth' and 'decrvalue' properties are both "\
+                        "defined. This is not legal and the decrwidth property "\
+                        "will be ignored!")
+
+
+            if decr_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_internal_decr_signal'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'decr_width': decr_width-1,
+                         'decr_value': decr_value,
+                        }
+                    )
+                )
+
+            if (incr_width or incr_value) and (decr_width or decr_value):
+                sat_condition = []
+                if incr_sat_value:
+                    sat_condition.append(
+                        self.process_yaml(
+                            Field.templ_dict['incr_decr_sat_counter_condition'],
+                            {'path': self.path_underscored,
+                             'genvars': self.genvars_str,
+                             'greater_smaller': '>',
+                             'sat_value': incr_sat_value
+                            }
+                        )
+                    )
+
+                if decr_sat_value:
+                    if sat_condition:
+                        sat_condition.append(' && ')
+
+                    sat_condition.append(
+                        self.process_yaml(
+                            Field.templ_dict['incr_decr_sat_counter_condition'],
+                            {'path': self.path_underscored,
+                             'genvars': self.genvars_str,
+                             'greater_smaller': '<',
+                             'sat_value': decr_sat_value
+                            }
+                        )
+                    )
+
+                counter_logic = self.process_yaml(
+                    Field.templ_dict['incr_decr_counter'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'incr_decr_sat_counter_condition': ''.join(sat_condition),
+                    }
+                )
+            elif incr_width or incr_value:
+                sat_condition = self.process_yaml(
+                    Field.templ_dict['incr_sat_counter_condition'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'sat_value': incr_sat_value,
+                    }
+                ) if incr_sat_value else '1'
+
+                counter_logic = self.process_yaml(
+                    Field.templ_dict['incr_counter'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'incr_sat_counter_condition': sat_condition,
+                    }
+                )
+            elif decr_width or decr_value:
+                sat_condition = self.process_yaml(
+                    Field.templ_dict['decr_sat_counter_condition'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'sat_value': decr_sat_value,
+                    }
+                ) if decr_sat_value else '1'
+
+                counter_logic = self.process_yaml(
+                    Field.templ_dict['decr_counter'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'decr_sat_counter_condition': sat_condition,
+                    }
+                )
+            else:
+                self.logger.fatal("Illegal counter configuration! Both 'incr_value' "\
+                                  "and 'decr_value' are forced to 0. If you intended "\
+                                  "to use 'incr_width' or 'decr_width', simply don't "\
+                                  "force 'incr_value' or 'decr_value' to any value.")
+                sys.exit(1)
+
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Field.templ_dict['counter'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'counter_logic': counter_logic,
+                     'field_type': self.field_type,
+                    }
+                )
+            )
+
     def __add_swmod_swacc(self):
         if self.obj.get_property('swmod'):
             self.logger.debug("Field has swmod property")
@@ -284,7 +520,17 @@ class Field(Component):
 
     def __add_hw_access(self):
         # Define hardware access (if applicable)
-        if self.obj.get_property('hw') in (AccessType.rw, AccessType.w):
+        if self.obj.get_property('counter'):
+            self.access_rtl['hw_write'] = ([
+                self.process_yaml(
+                    Field.templ_dict['hw_access_counter'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type}
+                )
+            ],
+            False)
+        elif self.obj.get_property('hw') in (AccessType.rw, AccessType.w):
             write_condition = 'hw_access_we_wel' if self.we_or_wel else 'hw_access_no_we_wel'
 
             # if-line of hw-access
