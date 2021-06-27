@@ -39,7 +39,7 @@ class Component():
         self.config = config
 
         # Create logger object
-        self.create_logger("{}.{}".format(self.owning_addrmap, self.path), config)
+        self.create_logger("{}".format(self.full_path), config)
         self.logger.debug('Starting to process {} "{}"'.format(
             self.__class__.__name__,
             obj.inst_name))
