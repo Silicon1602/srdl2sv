@@ -45,6 +45,24 @@ hw_access_we_wel:
 hw_access_no_we_wel: 
     rtl: |-
         // we or wel property not set
+hw_access_hwset:
+    rtl: |-
+        if ({path}_hwset{genvars})
+        begin
+          {path}_q{genvars} <= {{{width}{{1'b1}}}};
+        end
+    input_ports:
+        - name: '{path}_hwset'
+          signal_type: 'logic'
+hw_access_hwclr:
+    rtl: |-
+        if ({path}_hwclr{genvars})
+        begin
+          {path}_q{genvars} <= {{{width}{{1'b0}}}};
+        end
+    input_ports:
+        - name: '{path}_hwclr'
+          signal_type: 'logic'
 hw_access_field: 
     rtl: |-
         begin

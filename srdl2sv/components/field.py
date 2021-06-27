@@ -557,6 +557,30 @@ class Field(Component):
         else:
             self.access_rtl['hw_write'] = ([], False)
 
+        # Check if the hwset or hwclr option is set
+        if self.obj.get_property('hwset'):
+            self.access_rtl['hw_setclr'] = ([
+                self.process_yaml(
+                    Field.templ_dict['hw_access_hwset'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'width': self.obj.width}
+                )
+            ],
+            False)
+        elif self.obj.get_property('hwclr'):
+            self.access_rtl['hw_setclr'] = ([
+                self.process_yaml(
+                    Field.templ_dict['hw_access_hwclr'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'width': self.obj.width}
+                )
+            ],
+            False)
+        else:
+            self.access_rtl['hw_setclr'] = ([], False)
+
         # Hookup flop to output port in case register is readable by hardware
         if self.obj.get_property('hw') in (AccessType.rw, AccessType.r):
             # Connect flops to output port
@@ -581,11 +605,13 @@ class Field(Component):
                 'sw_write',
                 'sw_read',
                 'hw_write',
+                'hw_setclr',
                 'singlepulse'
                 ]
         else:
             order_list = [
                 'hw_write',
+                'hw_setclr',
                 'sw_write',
                 'sw_read',
                 'singlepulse'
