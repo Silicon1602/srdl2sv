@@ -63,4 +63,7 @@ sw_read_assignment_var_name:
           signal_type: 'logic [{accesswidth}:0]'
 sw_read_assignment:
     rtl: |-
-        assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}}};
+       /************************************** 
+        * Assign all fields to signal to Mux *
+        **************************************/
+       assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}}};
