@@ -519,6 +519,37 @@ class Field(Component):
         self.rtl_footer = [*self.rtl_footer, swmod_props, swacc_props]
 
     def __add_hw_access(self):
+        # Mutually exclusive. systemrdl-compiler performs check for this
+        enable_mask_negl = ''
+        enable_mask = False
+
+        if self.obj.get_property('hwenable'):
+            enable_mask = self.obj.get_property('hwenable')
+        elif self.obj.get_property('hwmask'):
+            enable_mask = self.obj.get_property('hwmask')
+            enable_mask_negl = '!'
+
+        if enable_mask:
+            enable_mask_start_rtl = \
+                self.process_yaml(
+                    Field.templ_dict['hw_enable_mask_start'],
+                    {'signal': self.get_signal_name(enable_mask),
+                     'width': self.obj.width,
+                     'negl': enable_mask_negl}
+                )
+
+            enable_mask_end_rtl = \
+                self.process_yaml(
+                    Field.templ_dict['hw_enable_mask_end'],
+                    {'width': self.obj.width}
+                )
+
+            enable_mask_idx = '[idx]'
+        else:
+            enable_mask_start_rtl = '<<SQUASH_NEWLINE>>'
+            enable_mask_end_rtl = '<<SQUASH_NEWLINE>>'
+            enable_mask_idx = ''
+
         # Define hardware access (if applicable)
         if self.obj.get_property('counter'):
             self.access_rtl['hw_write'] = ([
@@ -526,7 +557,10 @@ class Field(Component):
                     Field.templ_dict['hw_access_counter'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'field_type': self.field_type}
+                     'field_type': self.field_type,
+                     'enable_mask_start': enable_mask_start_rtl,
+                     'enable_mask_end': enable_mask_end_rtl,
+                     'idx': enable_mask_idx}
                 )
             ],
             False)
@@ -551,6 +585,9 @@ class Field(Component):
                     Field.templ_dict['hw_access_field'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
+                     'enable_mask_start': enable_mask_start_rtl,
+                     'enable_mask_end': enable_mask_end_rtl,
+                     'idx': enable_mask_idx,
                      'field_type': self.field_type}
                 )
             )
@@ -564,7 +601,12 @@ class Field(Component):
                     Field.templ_dict['hw_access_hwset'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'width': self.obj.width}
+                     'enable_mask_start': enable_mask_start_rtl,
+                     'enable_mask_end': enable_mask_end_rtl,
+                     'idx': enable_mask_idx,
+                     'constant': "{{{}{{1'b1}}}}".format(self.obj.width)
+                        if not enable_mask else "1'b1"
+                    }
                 )
             ],
             False)
@@ -574,7 +616,12 @@ class Field(Component):
                     Field.templ_dict['hw_access_hwclr'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'width': self.obj.width}
+                     'enable_mask_start': enable_mask_start_rtl,
+                     'enable_mask_end': enable_mask_end_rtl,
+                     'idx': enable_mask_idx,
+                     'constant': "{{{}{{1'b0}}}}".format(self.obj.width)
+                        if not enable_mask else "1'b0"
+                    }
                 )
             ],
             False)
@@ -640,6 +687,7 @@ class Field(Component):
                     continue
 
                 order_list_rtl = [*order_list_rtl, *unpacked_access_rtl[0]]
+
                 order_list_rtl.append("else")
 
                 # If the access_rtl entry has an abortion entry, do not print

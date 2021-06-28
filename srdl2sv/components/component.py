@@ -137,8 +137,6 @@ class Component():
 
         # Go through RTL, line by line
         for line in rtl.split('\n', -1):
-            skip_incr_check = False
-
             line_split = line
 
             # This is done because the increment of the indent level must
@@ -164,7 +162,7 @@ class Component():
                     break
 
             # Add tabs
-            if line.strip() not in ('<<INDENT>>', '<<UNINDENT>>'):
+            if line.strip() not in ("<<INDENT>>", "<<UNINDENT>>", "<<SQUASH_NEWLINE>>"):
                 rtl_indented.append("{}{}".format(tab*indent_lvl, line))
 
 

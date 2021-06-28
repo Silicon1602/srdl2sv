@@ -30,12 +30,22 @@ sw_access_field_swwel:
 sw_access_byte: 
     rtl: |-
         if (byte_enable[{i}])
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= sw_wr_bus[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
     signals:
         - name: '{path}_q'
           signal_type: '{field_type}'
+hw_enable_mask_start: 
+    rtl: |-
+        for (int idx = 0; idx < {width}; idx++)
+        begin
+        if ({negl}{signal}[idx])
+        <<INDENT>>
+hw_enable_mask_end: 
+    rtl: |-
+        <<UNINDENT>>
+        end // for (int idx = 0; idx < {width}; idx++)
 hw_access_we_wel: 
     rtl: |-
         if ({negl}{path}_hw_wr{genvars})
@@ -48,26 +58,32 @@ hw_access_no_we_wel:
 hw_access_hwset:
     rtl: |-
         if ({path}_hwset{genvars})
-        begin
-          {path}_q{genvars} <= {{{width}{{1'b1}}}};
-        end
+        <<INDENT>>
+        {enable_mask_start}
+        {path}_q{genvars}{idx} <= {constant};
+        {enable_mask_end}
+        <<UNINDENT>>
     input_ports:
         - name: '{path}_hwset'
           signal_type: 'logic'
 hw_access_hwclr:
     rtl: |-
         if ({path}_hwclr{genvars})
-        begin
-          {path}_q{genvars} <= {{{width}{{1'b0}}}};
-        end
+        <<INDENT>>
+        {enable_mask_start}
+        {path}_q{genvars}{idx} <= {constant};
+        {enable_mask_end}
+        <<UNINDENT>>
     input_ports:
         - name: '{path}_hwclr'
           signal_type: 'logic'
 hw_access_field: 
     rtl: |-
-        begin
-        {path}_q{genvars} <= {path}_in{genvars};
-        end
+        <<INDENT>>
+        {enable_mask_start}
+        {path}_q{genvars}{idx} <= {path}_in{genvars}{idx};
+        {enable_mask_end}
+        <<UNINDENT>>
     signals:
         - name: '{path}_q'
           signal_type: '{field_type}'
@@ -77,9 +93,11 @@ hw_access_field:
 hw_access_counter:
     rtl: |-
         if ({path}_update_cnt{genvars})
-        begin
-        {path}_q{genvars} <= {path}_next{genvars};
-        end
+        <<INDENT>>
+        {enable_mask_start}
+        {path}_q{genvars}{idx} <= {path}_next{genvars}{idx};
+        {enable_mask_end}
+        <<UNINDENT>>
     signals:
         - name: '{path}_update_cnt'
           signal_type: 'logic'
