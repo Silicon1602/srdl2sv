@@ -212,22 +212,30 @@ class Field(Component):
         if self.obj.get_property('counter'):
             self.logger.debug("Detected counter property")
 
-            # Determine saturation values
+            self.rtl_footer.append(Field.templ_dict['counter_comment']['rtl'])
+
+            # Determine saturation values and add appropriate RTL
             if isinstance(self.obj.get_property('incrsaturate'), bool):
                 if self.obj.get_property('incrsaturate'):
                     incr_sat_value = 2**self.obj.width-1
+                    overflow_value = incr_sat_value
                 else:
                     incr_sat_value = False
+                    overflow_value = 2**self.obj.width-1
             else:
                 incr_sat_value = self.obj.get_property('incrsaturate')
+                overflow_value = incr_sat_value
 
             if isinstance(self.obj.get_property('decrsaturate'), bool):
                 if self.obj.get_property('decrsaturate'):
-                    decr_sat_value = 2**self.obj.width-1
+                    decr_sat_value = 0
+                    underflow_value = decr_sat_value
                 else:
                     decr_sat_value = False
+                    underflow_value = 0
             else:
                 decr_sat_value = self.obj.get_property('decrsaturate')
+                underflow_value = decr_sat_value
 
             # Determine with what value the counter is incremented
             # According to the spec, the incrvalue/decrvalue default to '1'
@@ -236,19 +244,23 @@ class Field(Component):
             obj_incr_width = self.obj.get_property('incrwidth')
             obj_decr_width = self.obj.get_property('decrwidth')
 
+            incr_width_input = False
+
             if obj_incr_value == 0:
-                incr_value = None
-                incr_width = 0
+                incr_value = 0
+                incr_width = 1
             elif obj_incr_value is None:
+                # Increment value is not set. Check if incrwidth is set and use
+                # that is applicable
                 if obj_incr_width:
-                    # Decrement value is not set. Check if incrwidth is set and use
-                    # that is applicable
                     incr_value = False
                     incr_width = obj_incr_width
 
+                    incr_width_input = True
+
                     # Doesn't return RTL, only adds input port
                     self.process_yaml(
-                        Field.templ_dict['counter_incr_input'],
+                        Field.templ_dict['counter_incr_val_input'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
                          'incr_width': incr_width-1
@@ -259,6 +271,7 @@ class Field(Component):
                     incr_value = '1'
                     incr_width = 1
             elif isinstance(obj_incr_value, int):
+                # An explicit width is set for the incr_val
                 incr_value = str(obj_incr_value)
                 incr_width = math.floor(math.log2(obj_incr_value)+1)
 
@@ -284,10 +297,12 @@ class Field(Component):
                         "will be ignored!")
 
 
-            if incr_value:
+            # If no input is defined for the increment value, define
+            # an internal signal. It is possible that this is tied to 0.
+            if not incr_width_input:
                 self.rtl_footer.append(
                     self.process_yaml(
-                        Field.templ_dict['counter_internal_incr_signal'],
+                        Field.templ_dict['counter_internal_incr_val_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
                          'incr_width': incr_width-1,
@@ -296,19 +311,24 @@ class Field(Component):
                     )
                 )
 
+            # Handle decrement value
+            decr_width_input = False
+
             if obj_decr_value == 0:
-                decr_value = None
-                decr_width = 0
-            elif obj_decr_value is None:
+                decr_value = 0
+                decr_width = 1
+            elif obj_incr_value is None:
+                # Decrement value is not set. Check if decrwidth is set and use
+                # that is applicable
                 if obj_decr_width:
-                    # Decrement value is not set. Check if decrwidth is set and use
-                    # that is applicable
                     decr_value = False
                     decr_width = obj_decr_width
 
+                    decr_width_input = True
+
                     # Doesn't return RTL, only adds input port
                     self.process_yaml(
-                        Field.templ_dict['counter_decr_input'],
+                        Field.templ_dict['counter_decr_val_input'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
                          'decr_width': decr_width-1
@@ -319,6 +339,7 @@ class Field(Component):
                     decr_value = '1'
                     decr_width = 1
             elif isinstance(obj_decr_value, int):
+                # An explicit width is set for the decr_val
                 decr_value = str(obj_decr_value)
                 decr_width = math.floor(math.log2(obj_decr_value)+1)
 
@@ -344,10 +365,12 @@ class Field(Component):
                         "will be ignored!")
 
 
-            if decr_value:
+            # If no input is defined for the decrement value, define
+            # an internal signal. It is possible that this is tied to 0.
+            if not decr_width_input:
                 self.rtl_footer.append(
                     self.process_yaml(
-                        Field.templ_dict['counter_internal_decr_signal'],
+                        Field.templ_dict['counter_internal_decr_val_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
                          'decr_width': decr_width-1,
@@ -356,91 +379,173 @@ class Field(Component):
                     )
                 )
 
-            if (incr_width or incr_value) and (decr_width or decr_value):
-                sat_condition = []
-                if incr_sat_value:
-                    sat_condition.append(
-                        self.process_yaml(
-                            Field.templ_dict['incr_decr_sat_counter_condition'],
-                            {'path': self.path_underscored,
-                             'genvars': self.genvars_str,
-                             'greater_smaller': '>',
-                             'sat_value': incr_sat_value
-                            }
-                        )
-                    )
-
-                if decr_sat_value:
-                    if sat_condition:
-                        sat_condition.append(' && ')
-
-                    sat_condition.append(
-                        self.process_yaml(
-                            Field.templ_dict['incr_decr_sat_counter_condition'],
-                            {'path': self.path_underscored,
-                             'genvars': self.genvars_str,
-                             'greater_smaller': '<',
-                             'sat_value': decr_sat_value
-                            }
-                        )
-                    )
-
-                counter_logic = self.process_yaml(
-                    Field.templ_dict['incr_decr_counter'],
-                    {'path': self.path_underscored,
-                     'genvars': self.genvars_str,
-                     'incr_decr_sat_counter_condition': ''.join(sat_condition),
-                    }
-                )
-            elif incr_width or incr_value:
-                sat_condition = self.process_yaml(
-                    Field.templ_dict['incr_sat_counter_condition'],
-                    {'path': self.path_underscored,
-                     'genvars': self.genvars_str,
-                     'sat_value': incr_sat_value,
-                    }
-                ) if incr_sat_value else '1'
-
-                counter_logic = self.process_yaml(
-                    Field.templ_dict['incr_counter'],
-                    {'path': self.path_underscored,
-                     'genvars': self.genvars_str,
-                     'incr_sat_counter_condition': sat_condition,
-                    }
-                )
-            elif decr_width or decr_value:
-                sat_condition = self.process_yaml(
-                    Field.templ_dict['decr_sat_counter_condition'],
-                    {'path': self.path_underscored,
-                     'genvars': self.genvars_str,
-                     'sat_value': decr_sat_value,
-                    }
-                ) if decr_sat_value else '1'
-
-                counter_logic = self.process_yaml(
-                    Field.templ_dict['decr_counter'],
-                    {'path': self.path_underscored,
-                     'genvars': self.genvars_str,
-                     'decr_sat_counter_condition': sat_condition,
-                    }
-                )
-            else:
+            # Handle the increment/decrement signals.
+            # If the increment or decrement signal is not set, use an input
+            # if the decrement value is bigger than 0
+            if not incr_value and not decr_value:
                 self.logger.fatal("Illegal counter configuration! Both 'incr_value' "\
                                   "and 'decr_value' are forced to 0. If you intended "\
                                   "to use 'incr_width' or 'decr_width', simply don't "\
                                   "force 'incr_value' or 'decr_value' to any value.")
                 sys.exit(1)
 
+            if incr_value:
+                incr = self.obj.get_property('incr')
+
+                if not incr:
+                    # Will only add input port but not return any RTL
+                    self.process_yaml(
+                        Field.templ_dict['counter_incr_input'],
+                        {'path': self.path_underscored}
+                    )
+                else:
+                    self.rtl_footer.append(
+                        self.process_yaml(
+                            Field.templ_dict['counter_internal_incr_signal'],
+                            {'path': self.path_underscored,
+                             'genvars': self.genvars_str,
+                             'incr': self.get_signal_name(incr)
+                            }
+                        )
+                    )
+
+                    if incr.width > 0:
+                        self.logger.error("Increment signal '{}' is wider than 1-bit. "\
+                                          "This might result in unwanted behavior and "\
+                                          "will also cause Lint-errors.".format(
+                                              incr.inst_name))
+            else:
+                # Tie signal to 0
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_internal_incr_signal'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr': '0'
+                        }
+                    )
+                )
+
+            if decr_value:
+                decr = self.obj.get_property('decr')
+
+                if not self.obj.get_property('decr'):
+                    # Will only add input port but not return any RTL
+                    self.process_yaml(
+                        Field.templ_dict['counter_decr_input'],
+                        {'path': self.path_underscored}
+                    )
+                else:
+                    self.rtl_footer.append(
+                        self.process_yaml(
+                            Field.templ_dict['counter_internal_decr_signal'],
+                            {'path': self.path_underscored,
+                             'genvars': self.genvars_str,
+                             'decr': self.get_signal_name(decr)
+                            }
+                        )
+                    )
+
+                    if decr.width > 0:
+                        self.logger.error("Decrement signal '{}' is wider than 1-bit. "\
+                                          "This might result in unwanted behavior and "\
+                                          "will also cause Lint-errors.".format(
+                                              decr.inst_name))
+            else:
+                # Tie signal to 0
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_internal_decr_signal'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'decr': '0'
+                        }
+                    )
+                )
+
+            # Handle saturation signals
+            if not incr_sat_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_incr_sat_tied'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                        }
+                    )
+                )
+            else:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_incr_sat'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'sat_value': incr_sat_value,
+                        }
+                    )
+                )
+
+            if not decr_sat_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_decr_sat_tied'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                        }
+                    )
+                )
+            else:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_decr_sat'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'sat_value': decr_sat_value,
+                        }
+                    )
+                )
+
+            # Handle overflow & underflow signals
+            if self.obj.get_property('overflow'):
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_overflow'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'overflow_value': overflow_value,
+                        }
+                    )
+                )
+
+            if self.obj.get_property('underflow'):
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_underflow'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'underflow_value': underflow_value,
+                        }
+                    )
+                )
+
+            # Implement actual counter logic
             self.rtl_footer.append(
                 self.process_yaml(
                     Field.templ_dict['counter'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'counter_logic': counter_logic,
-                     'field_type': self.field_type,
                     }
                 )
             )
+
+
 
     def __add_swmod_swacc(self):
         if self.obj.get_property('swmod'):
