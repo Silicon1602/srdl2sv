@@ -344,6 +344,22 @@ counter_decr_sat_tied:
     signals:
         - name: '{path}_decr_sat'
           signal_type: 'logic'
+counter_thr_comment:
+    rtl: |-
+
+        // Define threshold signals (similar to overflow, but for a user specified value)
+counter_incr_thr:
+    rtl: |-
+        assign {path}_incr_thr{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {thr_value};
+    output_ports:
+        - name: '{path}_incr_thr'
+          signal_type: 'logic'
+counter_decr_thr:
+    rtl: |-
+        assign {path}_decr_thr{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {thr_value};
+    output_ports:
+        - name: '{path}_decr_thr'
+          signal_type: 'logic'
 counter_overflow:
     rtl: |-
 

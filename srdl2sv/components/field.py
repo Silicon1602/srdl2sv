@@ -214,7 +214,7 @@ class Field(Component):
 
             self.rtl_footer.append(Field.templ_dict['counter_comment']['rtl'])
 
-            # Determine saturation values and add appropriate RTL
+            # Determine saturation values
             if isinstance(self.obj.get_property('incrsaturate'), bool):
                 if self.obj.get_property('incrsaturate'):
                     incr_sat_value = 2**self.obj.width-1
@@ -236,6 +236,23 @@ class Field(Component):
             else:
                 decr_sat_value = self.obj.get_property('decrsaturate')
                 underflow_value = decr_sat_value
+
+            # Determine threshold values
+            if isinstance(self.obj.get_property('incrthreshold'), bool):
+                if self.obj.get_property('incrthreshold'):
+                    incr_thr_value = 2**self.obj.width-1
+                else:
+                    incr_thr_value = False
+            else:
+                incr_thr_value = self.obj.get_property('incrthreshold')
+
+            if isinstance(self.obj.get_property('decrthreshold'), bool):
+                if self.obj.get_property('decrthreshold'):
+                    decr_thr_value = 2**self.obj.width-1
+                else:
+                    decr_thr_value = False
+            else:
+                decr_thr_value = self.obj.get_property('decrthreshold')
 
             # Determine with what value the counter is incremented
             # According to the spec, the incrvalue/decrvalue default to '1'
@@ -504,6 +521,36 @@ class Field(Component):
                          'incr_width': incr_width,
                          'decr_width': decr_width,
                          'sat_value': decr_sat_value,
+                        }
+                    )
+                )
+
+            # Handle threshold values
+            if incr_thr_value or decr_thr_value:
+                self.rtl_footer.append(Field.templ_dict['counter_thr_comment']['rtl'])
+
+            if incr_thr_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_incr_thr'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'thr_value': incr_thr_value,
+                        }
+                    )
+                )
+
+            if decr_thr_value:
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict['counter_decr_thr'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'incr_width': incr_width,
+                         'decr_width': decr_width,
+                         'thr_value': decr_thr_value,
                         }
                     )
                 )
