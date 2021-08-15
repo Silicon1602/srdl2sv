@@ -25,9 +25,6 @@ class AddrMap(Component):
         # Check if global resets are defined
         glbl_settings = dict()
 
-        (glbl_settings['field_reset'], glbl_settings['cpuif_reset']) = \
-            self.__process_global_resets()
-
         # Set defaults so that some of the common component methods work
         self.total_dimensions = 0
         self.total_array_dimensions = []
@@ -248,44 +245,6 @@ class AddrMap(Component):
             ])
 
         self.rtl_header.append(genvars)
-
-    def __process_global_resets(self):
-        field_reset_list = \
-            [x for x in self.obj.signals() if x.get_property('field_reset')]
-        cpuif_reset_list = \
-            [x for x in self.obj.signals() if x.get_property('cpuif_reset')]
-
-        if field_reset_list:
-            rst_name = field_reset_list[0].inst_name
-            self.logger.info("Found field_reset signal '{}'".format(rst_name))
-
-            # Save to set to generate input
-            self.resets.add(rst_name)
-
-            # Save position 0 of list
-            field_reset_item = field_reset_list[0]
-        else:
-            field_reset_item = None
-
-        if cpuif_reset_list:
-            rst_name = cpuif_reset_list[0].inst_name
-            self.logger.info("Found cpuif_reset signal '{}'".format(rst_name))
-
-            # Save to set to generate input
-            self.resets.add(rst_name)
-
-            # Save position 0 of list
-            cpuif_reset_item = cpuif_reset_list[0]
-        else:
-            cpuif_reset_item = None
-
-        # Method is only called once on a global level. Otherwise, process_reset_signal
-        # is called several times to calculate the dictionary, although it will always
-        # return the same result.
-        field_reset = AddrMap.process_reset_signal(field_reset_item)
-        cpuif_reset = AddrMap.process_reset_signal(cpuif_reset_item)
-
-        return (field_reset, cpuif_reset)
 
     def get_package_names(self) -> set():
         names = set()

@@ -980,15 +980,8 @@ class Field(Component):
 
         # Determine resets. This includes checking for async/sync resets,
         # the reset value, and whether the field actually has a reset
-        self.rst = dict()
-
-        reset_signal = obj.get_property("resetsignal")
-
-        if reset_signal:
-            self.rst = Field.process_reset_signal(reset_signal)
-        else:
-            # Only use global reset (if present) if no local reset is set
-            self.rst = glbl_settings['field_reset']
+        self.rst = Field.process_reset_signal(
+                        obj.get_property("resetsignal"))
 
         self.resets.add(self.rst['name'])
 
