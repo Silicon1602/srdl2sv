@@ -467,11 +467,15 @@ class Field(Component):
                         )
                     )
 
-                    if decr.width > 0:
-                        self.logger.error("Decrement signal '{}' is wider than 1-bit. "\
-                                          "This might result in unwanted behavior and "\
-                                          "will also cause Lint-errors.".format(
-                                              decr.inst_name))
+                    try:
+                        if decr.width > 0:
+                            self.logger.error("Decrement signal '{}' is wider than 1-bit. "\
+                                              "This might result in unwanted behavior and "\
+                                              "will also cause Lint-errors.".format(
+                                                  decr.inst_name))
+                    except AttributeError:
+                        # 'PropRef_underflow' object has no attribute 'width'
+                        pass
             else:
                 # Tie signal to 0
                 self.rtl_footer.append(

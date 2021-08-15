@@ -1,4 +1,5 @@
 import re
+import sys
 from itertools import chain
 from typing import NamedTuple
 from systemrdl import node
@@ -207,6 +208,15 @@ class Component():
         else:
             name.append('_')
             name.append(obj.name)
+
+            # This is a property. Check if the original field actually has this property
+            if not obj.node.get_property(obj.name):
+                self.logger.fatal("Reference to the property '{}' of instance '{}' found. "
+                                  "This instance does hold the reference property! Please "
+                                  "fix this if you want me to do my job properly."
+                    .format(obj.name, obj.node.get_path()))
+
+                sys.exit(1)
 
         name.append(split_name[1])
 
