@@ -740,6 +740,27 @@ class Field(Component):
             write_condition == 'hw_access_no_we_wel') # Abort if no condition is set
 
             # Actual assignment of register
+            if self.obj.get_property('next'):
+                # 'next' property is used
+                self.logger.debug("Found property 'next'")
+
+                assignment = self.get_signal_name(self.obj.get_property('next'))
+
+                if self.we_or_wel:
+                    self.logger.info("This field has a 'we' or 'wel' property and "
+                                     "uses the 'next' property. Make sure this is "
+                                     "is intentional.")
+            else:
+                # No special property. Assign input to register
+                assignment = \
+                    self.process_yaml(
+                        Field.templ_dict['hw_access_field__assignment__input'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                         'idx': enable_mask_idx,
+                         'field_type': self.field_type}
+                    )
+
             self.access_rtl['hw_write'][0].append(
                 self.process_yaml(
                     Field.templ_dict['hw_access_field'],
@@ -747,6 +768,7 @@ class Field(Component):
                      'genvars': self.genvars_str,
                      'enable_mask_start': enable_mask_start_rtl,
                      'enable_mask_end': enable_mask_end_rtl,
+                     'assignment': assignment,
                      'idx': enable_mask_idx,
                      'field_type': self.field_type}
                 )

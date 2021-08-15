@@ -51,7 +51,7 @@ hw_access_we_wel:
         if ({negl}{path}_hw_wr{genvars})
     input_ports:
         - name: '{path}_hw_wr'
-          signal_type: '{field_type}'
+          signal_type: 'logic'
 hw_access_no_we_wel: 
     rtl: |-
         // we or wel property not set
@@ -81,12 +81,18 @@ hw_access_field:
     rtl: |-
         <<INDENT>>
         {enable_mask_start}
-        {path}_q{genvars}{idx} <= {path}_in{genvars}{idx};
+        {path}_q{genvars}{idx} <= {assignment};
         {enable_mask_end}
         <<UNINDENT>>
     signals:
         - name: '{path}_q'
           signal_type: '{field_type}'
+    input_ports:
+        - name: '{path}_in'
+          signal_type: '{field_type}'
+hw_access_field__assignment__input:
+    rtl: |-
+        {path}_in{genvars}{idx}
     input_ports:
         - name: '{path}_in'
           signal_type: '{field_type}'
