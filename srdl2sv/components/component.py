@@ -205,7 +205,7 @@ class Component():
             self.ports['input'][obj.inst_name] =\
                 ("logic" if obj.width == 1 else 'logic [{}:0]'.format(obj.width), [])
         else:
-            name.append('__')
+            name.append('_')
             name.append(obj.name)
 
         name.append(split_name[1])

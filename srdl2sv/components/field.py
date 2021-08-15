@@ -426,11 +426,15 @@ class Field(Component):
                         )
                     )
 
-                    if incr.width > 0:
-                        self.logger.error("Increment signal '{}' is wider than 1-bit. "\
-                                          "This might result in unwanted behavior and "\
-                                          "will also cause Lint-errors.".format(
-                                              incr.inst_name))
+                    try:
+                        if incr.width > 0:
+                            self.logger.error("Increment signal '{}' is wider than 1-bit. "\
+                                              "This might result in unwanted behavior and "\
+                                              "will also cause Lint-errors.".format(
+                                                  incr.inst_name))
+                    except AttributeError:
+                        # 'PropRef_overflow' object has no attribute 'width'
+                        pass
             else:
                 # Tie signal to 0
                 self.rtl_footer.append(
