@@ -124,6 +124,9 @@ class CliArguments():
         else:
             config['search_paths'] = args.search_paths
 
+        if not config['search_paths']:
+            config['search_paths'] = []
+
         # Save timestamp, so that it can be used across the compiler
         config['ts'] = time.localtime()
 
