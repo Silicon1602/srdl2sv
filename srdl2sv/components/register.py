@@ -143,7 +143,7 @@ class Register(Component):
                 for i in self.eval_genvars(vec, 0, self.total_array_dimensions):
                     yield (mux_tuple, i)
             else:
-                yield(mux_tuple, (mux_tuple[1], ''))
+                yield(mux_tuple, (0, ''))
 
     def eval_genvars(self, vec, depth, dimensions):
         for i in range(dimensions[depth]):
