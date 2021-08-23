@@ -66,4 +66,4 @@ sw_read_assignment:
        /************************************** 
         * Assign all fields to signal to Mux *
         **************************************/
-       assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}}};
+       assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}{genvars}}};
