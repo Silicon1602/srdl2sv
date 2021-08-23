@@ -69,8 +69,6 @@ module_declaration:
         <<INDENT>>
         // Clock & Resets
         input  reg_clk,
-        input  bus_clk,
-        input  bus_rst_n,
         {resets} 
 
         // Inputs
@@ -115,13 +113,13 @@ read_mux:
       // Read multiplexer
       always_comb
       begin
-      case(addr)
+      case(b2r.addr)
       {list_of_cases}
       endcase
       end
 default_mux_case:
     rtl: |-
-        default: sw_rd_bus = 0;
+        default: r2b.data = 0;
 list_of_mux_cases:
     rtl: |-
-        32'd{}: sw_rd_bus = {};
+        32'd{}: r2b.data = {};

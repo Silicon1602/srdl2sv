@@ -3,9 +3,9 @@ rw_wire_assign_1_dim:
     rtl: |
 
         // Register-activation for '{path}' {alias}
-        assign {path}_accss = addr == {addr};
-        assign {path}_sw_wr = {path}_accss && r_vld;
-        assign {path}_sw_rd = {path}_accss && w_vld;
+        assign {path}_accss = b2r.addr == {addr};
+        assign {path}_sw_wr = {path}_accss && b2r.r_vld;
+        assign {path}_sw_rd = {path}_accss && b2r.w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'
@@ -17,9 +17,9 @@ rw_wire_assign_multi_dim:
     rtl: |-
 
         // Register-activation for '{path}' {alias}
-        assign {path}_accss{genvars} = addr == {addr}+({genvars_sum});
-        assign {path}_sw_wr{genvars} = {path}_accss{genvars} && r_vld;
-        assign {path}_sw_rd{genvars} = {path}_accss{genvars} && w_vld;
+        assign {path}_accss{genvars} = b2r.addr == {addr}+({genvars_sum});
+        assign {path}_sw_wr{genvars} = {path}_accss{genvars} && b2r.r_vld;
+        assign {path}_sw_rd{genvars} = {path}_accss{genvars} && b2r.w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'

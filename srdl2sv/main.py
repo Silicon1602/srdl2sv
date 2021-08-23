@@ -58,11 +58,12 @@ if __name__ == "__main__":
     out_addrmap_file = "{}/{}.sv".format(config['output_dir'], addrmap.name)
 
     with open(out_addrmap_file, 'w') as file:
-        file.write(
+        print(
             addrmap.get_rtl(
                 tab_width=config['tab_width'],
                 real_tabs=config['real_tabs']
-            )
+            ),
+            file=file
         )
 
         logger.info('Succesfully created "{}"'.format(out_addrmap_file))
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     ).items():
         if value:
             with open('{}/{}_pkg.sv'.format(config['output_dir'], key), 'w') as file:
-                file.write(value)
+                print(value, file=file)
 
     # Copy over widget RTL from widget directory
     widget_rtl = pkg_resources.read_text(widgets, '{}.sv'.format(config['bus']))
@@ -83,9 +84,19 @@ if __name__ == "__main__":
     out_widget_file = "{}/{}.sv".format(config['output_dir'], config['bus'])
 
     with open(out_widget_file, 'w') as file:
-        file.write(widget_rtl)
+        print(widget_rtl, file=file)
 
     logger.info("Selected, implemented, and copied '{}' widget".format(config['bus']))
+
+    # Copy over generic srdl2sv_widget_pkg
+    widget_if_rtl = pkg_resources.read_text(widgets, 'srdl2sv_widget_pkg.sv')
+
+    out_widget_if_file = "{}/srdl2sv_widget_pkg.sv".format(config['output_dir'])
+
+    with open(out_widget_if_file, 'w') as file:
+        print(widget_if_rtl,file=file)
+
+    logger.info("Copied 'srdl2sv_widget_pkg.sv")
 
     # Print elapsed time
     logger.info("Elapsed time: %f seconds", time.time() - start)

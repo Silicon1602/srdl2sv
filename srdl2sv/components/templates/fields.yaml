@@ -29,9 +29,9 @@ sw_access_field_swwel:
         begin
 sw_access_byte: 
     rtl: |-
-        if (byte_enable[{i}])
+        if (b2r.byte_en[{i}])
         <<INDENT>>
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= b2r.data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
     signals:
         - name: '{path}_q'
@@ -114,33 +114,33 @@ end_field_ff:
         end // of {path}'s always_ff
 OnWriteType.woset: 
     rtl: |-
-        if (byte_enable[{i}]) // woset property
+        if (b2r.byte_en[{i}]) // woset property
         begin
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] | sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] | b2r.data[{msb_bus}:{lsb_bus}];
         end
 OnWriteType.woclr: 
     rtl: |-
-        if (byte_enable[{i}]) // woclr property
+        if (b2r.byte_en[{i}]) // woclr property
         begin
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & ~sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & ~b2r.data[{msb_bus}:{lsb_bus}];
         end
 OnWriteType.wot: 
     rtl: |-
-        if (byte_enable[{i}]) // wot property
+        if (b2r.byte_en[{i}]) // wot property
         begin
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ^ sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ^ b2r.data[{msb_bus}:{lsb_bus}];
         end
 OnWriteType.wzs: 
     rtl: |-
-        if (byte_enable[{i}]) // wzs property
+        if (b2r.byte_en[{i}]) // wzs property
         begin
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & b2r.data[{msb_bus}:{lsb_bus}];
         end
 OnWriteType.wzt: 
     rtl: |-
-        if (byte_enable[{i}]) // wzt property
+        if (b2r.byte_en[{i}]) // wzt property
         begin
-        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ~^ sw_wr_bus[{msb_bus}:{lsb_bus}];
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ~^ b2r.data[{msb_bus}:{lsb_bus}];
         end
 OnWriteType.wclr: 
     rtl: |-
@@ -210,7 +210,7 @@ swacc_assign:
     rtl: |-
 
         // Combinational block to generate swacc-output signals
-        assign {path}_swacc{genvars} = ({path_wo_field}__any_alias_sw_wr{genvars} || {path_wo_field}__any_alias_sw_rd{genvars}) && |byte_enable[{msbyte}:{lsbyte}];
+        assign {path}_swacc{genvars} = ({path_wo_field}__any_alias_sw_wr{genvars} || {path_wo_field}__any_alias_sw_rd{genvars}) && |b2r.byte_en[{msbyte}:{lsbyte}];
     output_ports:
         - name: '{path}_swacc'
           signal_type: 'logic'
@@ -228,7 +228,7 @@ swmod_always_comb:
           signal_type: 'logic'
 swmod_assign: 
     rtl: |-
-        {path}_swmod{genvars} |= {path_wo_field}__any_alias_sw_{rd_wr}{genvars} && |byte_enable[{msbyte}:{lsbyte}];
+        {path}_swmod{genvars} |= {path_wo_field}__any_alias_sw_{rd_wr}{genvars} && |b2r.byte_en[{msbyte}:{lsbyte}];
     output_ports:
         - name: '{path}_swmod'
           signal_type: 'logic'

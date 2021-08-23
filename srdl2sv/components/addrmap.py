@@ -130,7 +130,14 @@ class AddrMap(Component):
         # Remove comma from last port entry
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')
 
-        import_package_list = []
+        # Define packages to be included. Always include the
+        # b2w and w2b defines.
+        import_package_list = [
+            AddrMap.templ_dict['import_package']['rtl'].format(
+                name = 'srdl2sv_widget'),
+            '\n'
+            ]
+
         try:
             for x in self.get_package_names():
                 import_package_list.append(
@@ -139,9 +146,10 @@ class AddrMap(Component):
 
                 import_package_list.append('\n')
 
-            import_package_list.pop()
         except IndexError:
             pass
+
+        import_package_list.pop()
         
         import getpass
         import socket

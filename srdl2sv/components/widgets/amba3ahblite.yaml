@@ -1,24 +1,30 @@
 # This file only contains the instantiation of the module
 module_instantiation:
     rtl: |-
-        /****************************
+        /*******************************************************************
          * AMBA 3 AHB Lite Widget
-         ****************************/
+         * ======================
+         * Naming conventions
+         *    - r2b.*     -> Signals from registers to bus
+         *    - b2r.*     -> Signals from bus to registers
+         *    - H*        -> Signals as defined in AMBA3 AHB Lite 
+         *                   specification
+         *    - bus_clk   -> Clock that that drives signals on bus
+         *    - reg_clk   -> Clock that drives register flops
+         *    - bus_rst_n -> Asynchronous reset that resets only the bus (but
+         *                   (not the registers). The deassertion of this
+         *                   reset shall be synchronized to bus_clk
+         *******************************************************************/
         amba3ahblite_widget
         amba3ahblite_widget_inst
-            (// Clocks & Resets
-             .bus_clk,
-             .bus_rst_n,
+            (// Register clock
+             .reg_clk,
 
              // Outputs to internal logic
-             .addr,
-             .w_vld,
-             .r_vld,
-             .byte_enable,
-             .sw_wr_bus,
+             .b2r,
 
              // Inputs from internal logic
-             .sw_rd_bus,
+             .r2b,
  
              // Bus protocol
              .HRESETn,
@@ -29,25 +35,18 @@ module_instantiation:
              .HBURST,
              .HPROT,
              .HTRANS,
-             .HMASTLOCK,
+             .HWDATA,
              .HREADY,
+             .HSEL,
 
              .HREADYOUT,
              .HRESP,
              .HRDATA);
     signals:
-        - name: 'addr'
-          signal_type: 'logic [31:0]'
-        - name: 'w_vld'
-          signal_type: 'logic'
-        - name: 'r_vld'
-          signal_type: 'logic'
-        - name: 'byte_enable'
-          signal_type: 'logic [ 3:0]'
-        - name: 'sw_wr_bus'
-          signal_type: 'logic [31:0]'
-        - name: 'sw_rd_bus'
-          signal_type: 'logic [31:0]'
+        - name: 'b2r'
+          signal_type: 'b2r_t'
+        - name: 'r2b'
+          signal_type: 'r2b_t'
     input_ports:
         - name: 'HRESETn'
           signal_type: ''
@@ -65,9 +64,11 @@ module_instantiation:
           signal_type: '[3:0]'
         - name: 'HTRANS'
           signal_type: '[1:0]'
-        - name: 'HMASTLOCK'
-          signal_type: ''
+        - name: 'HWDATA'
+          signal_type: '[31:0]'
         - name: 'HREADY'
+          signal_type: ''
+        - name: 'HSEL'
           signal_type: ''
     output_ports:
         - name: 'HREADYOUT'
