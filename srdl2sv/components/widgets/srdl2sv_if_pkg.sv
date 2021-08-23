@@ -1,4 +1,4 @@
-package srdl2sv_widget_pkg;
+package srdl2sv_if_pkg;
 
 typedef struct {
     logic [31:0] addr;

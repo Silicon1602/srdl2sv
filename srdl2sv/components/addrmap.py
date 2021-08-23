@@ -134,7 +134,7 @@ class AddrMap(Component):
         # b2w and w2b defines.
         import_package_list = [
             AddrMap.templ_dict['import_package']['rtl'].format(
-                name = 'srdl2sv_widget'),
+                name = 'srdl2sv_if'),
             '\n'
             ]
 
@@ -236,7 +236,7 @@ class AddrMap(Component):
 
     def __get_widget_ports_rtl(self):
         self.widget_templ_dict = yaml.load(
-            pkg_resources.read_text(widgets, '{}.yaml'.format(self.config['bus'])),
+            pkg_resources.read_text(widgets, 'srdl2sv_{}.yaml'.format(self.config['bus'])),
             Loader=yaml.FullLoader)
 
         return self.process_yaml(

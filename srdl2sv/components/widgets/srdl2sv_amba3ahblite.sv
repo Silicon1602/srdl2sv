@@ -23,8 +23,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-module amba3ahblite_widget
-    import srdl2sv_widget_pkg::*;
+module srdl2sv_amba3ahblite
+    import srdl2sv_if_pkg::*;
 #(
     parameter FLOP_IN = 0, // Set to '1' to flop input from the AHB bus. This is meant
                            // to help meet timing. Don't use this to synchronize the input.

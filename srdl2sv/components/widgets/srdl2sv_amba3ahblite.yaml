@@ -15,8 +15,8 @@ module_instantiation:
          *                   (not the registers). The deassertion of this
          *                   reset shall be synchronized to bus_clk
          *******************************************************************/
-        amba3ahblite_widget
-        amba3ahblite_widget_inst
+        srdl2sv_amba3ahblite
+        srdl2sv_amba3ahblite_inst
             (// Register clock
              .reg_clk,
 
