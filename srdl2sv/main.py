@@ -41,6 +41,9 @@ if __name__ == "__main__":
         root = rdlc.elaborate()
     except RDLCompileError:
         sys.exit(1)
+    except FileNotFoundError:
+        logger.fatal("Could not find '{}'".format(input_file))
+        sys.exit(1)
 
     addrmap = AddrMap(root.top, config)
 
