@@ -14,7 +14,7 @@ from . import templates
 class Register(Component):
     # Save YAML template as class variable
     templ_dict = yaml.load(
-        pkg_resources.read_text(templates, 'regs.yaml'),
+        pkg_resources.read_text(templates, 'register.yaml'),
         Loader=yaml.FullLoader)
 
     def __init__(
