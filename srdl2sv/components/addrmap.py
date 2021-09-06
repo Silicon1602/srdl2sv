@@ -194,21 +194,39 @@ class AddrMap(Component):
 
     def __create_mux_string(self):
         # TODO: Add variable for bus width
+        # Define default case
+        list_of_cases = [AddrMap.templ_dict['default_mux_case']['rtl']]
+
+        # Add an entry for each version of a register
+        for child in self.children.values():
+            for mux_entry in child.create_mux_string():
+                # Data structure of mux_entry:
+                # mux_entry[0] --> names of data/rdy/err wire and start addr
+                #   [0] --> data_mux (str)
+                #   [1] --> rdy_mux (str)
+                #   [2] --> err_mux (str)
+                #   [3] --> start_addr (int)
+                # mux_entry[1] --> offsets from start
+                #   [0] --> Offset from start_addr of current entry (int)
+                #   [1] --> String of array index that represents offset (str)
+
+                r2b_data = ''.join([mux_entry[0][0], mux_entry[1][1]])
+                r2b_rdy = ''.join([mux_entry[0][1], mux_entry[1][1]])
+                r2b_err = ''.join([mux_entry[0][2], mux_entry[1][1]])
+                index = mux_entry[0][3] + mux_entry[1][0]
+
+                list_of_cases.append(
+                    AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
+                        index = index,
+                        r2b_data = r2b_data,
+                        r2b_rdy = r2b_rdy,
+                        r2b_err = r2b_err)
+                    )
+
         self.rtl_footer.append(
             self.process_yaml(
                 AddrMap.templ_dict['read_mux'],
-                {'list_of_cases':
-                    '\n'.join([
-                        AddrMap.templ_dict['default_mux_case']['rtl'],
-                        *[AddrMap.templ_dict['list_of_mux_cases']['rtl']
-                            .format(x[0][1]+x[1][0],
-                                    ''.join(
-                                        [x[0][0],
-                                         x[1][1]])) for y in self.children.values() \
-                                                        for x in y.create_mux_string()
-                        ]
-                    ])
-                }
+                {'list_of_cases': '\n'.join(list_of_cases)}
             )
         )
 

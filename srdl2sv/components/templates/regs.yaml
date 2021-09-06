@@ -55,15 +55,40 @@ generate_for_end: |-
     end // of for loop with iterator {dimension}
 signal_declaration: |-
     {type:{signal_width}} {name:{name_width}}{unpacked_dim};
-sw_read_assignment_var_name:
+sw_data_assignment_var_name:
     rtl: |-
-        {path}_rd_mux_in
+        {path}_data_mux_in
     signals:
-        - name: '{path}_rd_mux_in'
+        - name: '{path}_data_mux_in'
           signal_type: 'logic [{accesswidth}:0]'
-sw_read_assignment:
+sw_err_assignment_var_name:
+    rtl: |-
+        {path}_err_mux_in
+    signals:
+        - name: '{path}_err_mux_in'
+          signal_type: 'logic'
+sw_rdy_assignment_var_name:
+    rtl: |-
+        {path}_rdy_mux_in
+    signals:
+        - name: '{path}_rdy_mux_in'
+          signal_type: 'logic'
+sw_err_condition:
+    rtl: |-
+        !((b2r.r_vld && ({rd_byte_list_ored})) || (b2r.w_vld && ({wr_byte_list_ored})))
+sw_data_assignment:
     rtl: |-
        /************************************** 
         * Assign all fields to signal to Mux *
         **************************************/
-       assign {sw_read_assignment_var_name}{genvars} = {{{list_of_fields}{genvars}}};
+       // Assign all fields. Fields that are not readable are tied to 0.
+       assign {sw_data_assignment_var_name}{genvars} = {{{list_of_fields}{genvars}}};
+
+       // Internal registers are ready immediately
+       assign {sw_rdy_assignment_var_name}{genvars} = {rdy_condition};
+
+       // Return an error if *no* read and *no* write wa be succesful.
+       // If some bits cannot be read/write but others are succesful, don't return
+       // an error. Hence, as long as one action can be succesful, no error will be
+       // returned.
+       assign {sw_err_assignment_var_name}{genvars} = {err_condition};

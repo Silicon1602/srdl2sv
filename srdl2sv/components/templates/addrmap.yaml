@@ -119,7 +119,18 @@ read_mux:
       end
 default_mux_case:
     rtl: |-
-        default: r2b.data = 0;
+        default:
+        begin
+        // In case the address is not found, return an error
+        r2b.data = 0;
+        r2b.err  = 1;
+        r2b.rdy  = b2r.r_vld || b2r.w_vld;
+        end
 list_of_mux_cases:
     rtl: |-
-        32'd{}: r2b.data = {};
+        32'd{index}:
+        begin
+        r2b.data = {r2b_data};
+        r2b.err  = {r2b_err};
+        r2b.rdy  = {r2b_rdy};
+        end

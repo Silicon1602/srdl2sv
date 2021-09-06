@@ -68,6 +68,9 @@ class Field(Component):
         access_rtl['sw_write'] = ([], False)
 
         if obj.get_property('sw') in (AccessType.rw, AccessType.w):
+            # Append to list of registers that can write
+            self.writable_by.add(path_wo_field)
+
             swwe = obj.get_property('swwe')
             swwel = obj.get_property('swwel')
 
@@ -1005,8 +1008,9 @@ class Field(Component):
         self.msb = obj.inst.msb
         self.lsb = obj.inst.lsb
 
-        # Set that tells which hierarchies can read this field
+        # Set that tells which hierarchies can read/write this field
         self.readable_by = set()
+        self.writable_by = set()
 
         # Determine resets. This includes checking for async/sync resets,
         # the reset value, and whether the field actually has a reset

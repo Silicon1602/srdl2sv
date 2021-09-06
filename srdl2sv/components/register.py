@@ -73,7 +73,7 @@ class Register(Component):
             self.rtl_footer.append("endgenerate\n")
 
         # Add assignment of read-wires
-        self.__add_sw_read_assignments()
+        self.__add_sw_mux_assignments()
 
         # Add wire instantiation
         if not self.generate_active:
@@ -90,22 +90,36 @@ class Register(Component):
                 *self.rtl_header
             ]
 
-    def __add_sw_read_assignments(self):
+    def __add_sw_mux_assignments(self):
         accesswidth = self.obj.get_property('accesswidth') - 1
         self.rtl_footer.append("")
 
-        for x in self.name_addr_mappings:
+        for na_map in self.name_addr_mappings:
             current_bit = 0
+
+            # Start tracking errors
+
+            # Handle fields
             list_of_fields = []
-            for y in self.children.values():
-                if x[0] in y.readable_by:
-                    empty_bits = y.lsb - current_bit
-                    current_bit = y.msb + 1
+            bytes_read = set()
+            bytes_written = set()
+
+            for field in self.children.values():
+                if na_map[0] in field.readable_by:
+                    empty_bits = field.lsb - current_bit
+                    current_bit = field.msb + 1
 
                     if empty_bits > 0:
                         list_of_fields.append("{}'b0".format(empty_bits))
 
-                    list_of_fields.append("{}_q".format(y.path_underscored))
+                    list_of_fields.append("{}_q".format(field.path_underscored))
+
+                    # Add to appropriate bytes
+                    [bytes_read.add(x) for x in range(field.lsbyte, field.msbyte+1)]
+
+                if na_map[0] in field.writable_by:
+                    # Add to appropriate bytes
+                    [bytes_written.add(x) for x in range(field.lsbyte, field.msbyte+1)]
 
             empty_bits = accesswidth - current_bit + 1
 
@@ -113,28 +127,55 @@ class Register(Component):
                 list_of_fields.append("{}'b0".format(empty_bits))
 
             # Create list of mux-inputs to later be picked up by carrying addrmap
-            self.sw_read_assignment_var_name.append(
+            self.sw_mux_assignment_var_name.append(
                 (
                     self.process_yaml(
-                        Register.templ_dict['sw_read_assignment_var_name'],
-                        {'path': x[0],
+                        Register.templ_dict['sw_data_assignment_var_name'],
+                        {'path': na_map[0],
                          'accesswidth': accesswidth}
                     ),
-                    x[1], # Start addr
+                    self.process_yaml(
+                        Register.templ_dict['sw_rdy_assignment_var_name'],
+                        {'path': na_map[0]}
+                    ),
+                    self.process_yaml(
+                        Register.templ_dict['sw_err_assignment_var_name'],
+                        {'path': na_map[0]}
+                    ),
+                    na_map[1], # Start addr
                 )
             )
 
+            # Return an error if *no* read or *no* write can be succesful.
+            # If some bits cannot be read/write but others are succesful, don't return
+            # an error.
+            bytes_read_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_read))]
+            bytes_written_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_written))]
+
+            sw_err_condition = self.process_yaml(
+                    Register.templ_dict['sw_err_condition'],
+                    {'rd_byte_list_ored':
+                        ' || '.join(bytes_read_format) if bytes_read else "1'b0",
+                     'wr_byte_list_ored':
+                        ' || '.join(bytes_written_format) if bytes_written else "1'b0"}
+                )
+
+            # Assign all values
             self.rtl_footer.append(
                 self.process_yaml(
-                    Register.templ_dict['sw_read_assignment'],
-                    {'sw_read_assignment_var_name': self.sw_read_assignment_var_name[-1][0],
+                    Register.templ_dict['sw_data_assignment'],
+                    {'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[-1][0],
+                     'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[-1][1],
+                     'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[-1][2],
                      'genvars': self.genvars_str,
+                     'rdy_condition': "1'b1",
+                     'err_condition': sw_err_condition,
                      'list_of_fields': ', '.join(reversed(list_of_fields))}
                 )
             )
 
     def create_mux_string(self):
-        for mux_tuple in self.sw_read_assignment_var_name:
+        for mux_tuple in self.sw_mux_assignment_var_name:
             # Loop through lowest dimension and add stride of higher
             # dimension once everything is processed
             if self.total_array_dimensions:
@@ -270,7 +311,7 @@ class Register(Component):
         self.generate_active = glbl_settings['generate_active']
 
         # Empty array for mux-input signals
-        self.sw_read_assignment_var_name = []
+        self.sw_mux_assignment_var_name = []
 
         # Determine dimensions of register
         if obj.is_array:
