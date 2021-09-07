@@ -1068,7 +1068,8 @@ class Field(Component):
         self.rst = Field.process_reset_signal(
                         obj.get_property("resetsignal"))
 
-        self.resets.add(self.rst['name'])
+        if self.rst['name']:
+            self.resets.add(self.rst['name'])
 
         # Value of reset must always be determined on field level
         self.rst['value'] = \
