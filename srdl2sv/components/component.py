@@ -37,7 +37,7 @@ class Component():
         self.create_underscored_path()
 
         # Save config
-        self.config = config
+        self.config = config.copy()
 
         # Create logger object
         self.create_logger("{}".format(self.full_path), config)

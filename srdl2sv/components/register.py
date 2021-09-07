@@ -29,6 +29,8 @@ class Register(Component):
         # Save and/or process important variables
         self.__process_variables(obj, parents_dimensions, parents_stride, glbl_settings)
 
+        self.config['external'] = obj.external
+
         # Create RTL for fields of initial, non-alias register
         for field in obj.fields():
             # Use range to save field in an array. Reason is, names are allowed to
@@ -37,7 +39,7 @@ class Register(Component):
 
             self.children[field_range] = Field(field,
                                                self.total_array_dimensions,
-                                               config,
+                                               self.config,
                                                glbl_settings)
 
             if not config['disable_sanity']:
@@ -45,7 +47,10 @@ class Register(Component):
 
     def create_rtl(self):
         # Create RTL of children
-        [x.create_rtl() for x in self.children.values()]
+        if self.config['external']:
+            [x.create_external_rtl() for x in self.children.values()]
+        else:
+            [x.create_internal_rtl() for x in self.children.values()]
 
         # Create generate block for register and add comment
         if self.dimensions and not self.generate_active:
@@ -123,6 +128,8 @@ class Register(Component):
 
             empty_bits = accesswidth - current_bit + 1
 
+            no_reads = not list_of_fields
+
             if empty_bits > 0:
                 list_of_fields.append("{}'b0".format(empty_bits))
 
@@ -149,16 +156,88 @@ class Register(Component):
             # Return an error if *no* read or *no* write can be succesful.
             # If some bits cannot be read/write but others are succesful, don't return
             # an error.
+            #
+            # Furthermore, consider an error indication that is set for external registers
             bytes_read_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_read))]
             bytes_written_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_written))]
 
-            sw_err_condition = self.process_yaml(
+            sw_err_condition_vec = []
+
+            sw_err_condition_vec.append(self.process_yaml(
                     Register.templ_dict['sw_err_condition'],
                     {'rd_byte_list_ored':
                         ' || '.join(bytes_read_format) if bytes_read else "1'b0",
                      'wr_byte_list_ored':
                         ' || '.join(bytes_written_format) if bytes_written else "1'b0"}
                 )
+            )
+
+            if self.config['external']:
+                if bytes_read:
+                    for field in self.children.values():
+                        sw_err_condition_vec.append(self.process_yaml(
+                                Register.templ_dict['external_err_condition'],
+                                {'path': '__'.join([na_map[0], field.name]),
+                                 'genvars': self.genvars_str,
+                                 'rd_or_wr': 'r'}
+                            )
+                        )
+
+                if bytes_written:
+                    for field in self.children.values():
+                        sw_err_condition_vec.append(self.process_yaml(
+                                Register.templ_dict['external_err_condition'],
+                                {'path': '__'.join([na_map[0], field.name]),
+                                 'genvars': self.genvars_str,
+                                 'rd_or_wr': 'w'}
+                            )
+                        )
+
+            sw_err_condition = ' || '.join(sw_err_condition_vec)
+
+            # If registers are implemented in RTL, they will be ready immediately. However,
+            # if they are defined as 'external', there might be some delay
+            if self.config['external']:
+                if bytes_read:
+                    sw_rdy_condition_vec = ['(']
+
+                    for field in self.children.values():
+                        sw_rdy_condition_vec.append(self.process_yaml(
+                                Register.templ_dict['external_rdy_condition'],
+                                {'path': '__'.join([na_map[0], field.name]),
+                                 'genvars': self.genvars_str,
+                                 'rd_or_wr': 'r'}
+                            )
+                        )
+
+                        sw_rdy_condition_vec.append(' && ')
+
+                    sw_rdy_condition_vec.pop()
+                    sw_rdy_condition_vec.append(' && b2r.r_vld)')
+
+                if bytes_read and bytes_written:
+                    sw_rdy_condition_vec.append(' || ')
+
+                if bytes_written:
+                    sw_rdy_condition_vec.append('(')
+
+                    for field in self.children.values():
+                        sw_rdy_condition_vec.append(self.process_yaml(
+                                Register.templ_dict['external_rdy_condition'],
+                                {'path': '__'.join([na_map[0], field.name]),
+                                 'genvars': self.genvars_str,
+                                 'rd_or_wr': 'w'}
+                            )
+                        )
+
+                        sw_rdy_condition_vec.append(' && ')
+
+                    sw_rdy_condition_vec.pop()
+                    sw_rdy_condition_vec.append(' && b2r.w_vld)')
+
+                sw_rdy_condition = ''.join(sw_rdy_condition_vec)
+            else:
+                sw_rdy_condition = "1'b1"
 
             # Assign all values
             self.rtl_footer.append(
@@ -167,8 +246,8 @@ class Register(Component):
                     {'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[-1][0],
                      'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[-1][1],
                      'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[-1][2],
-                     'genvars': self.genvars_str,
-                     'rdy_condition': "1'b1",
+                     'genvars': self.genvars_str if not no_reads else '',
+                     'rdy_condition': sw_rdy_condition,
                      'err_condition': sw_err_condition,
                      'list_of_fields': ', '.join(reversed(list_of_fields))}
                 )

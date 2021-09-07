@@ -78,6 +78,7 @@ sw_err_condition:
         !((b2r.r_vld && ({rd_byte_list_ored})) || (b2r.w_vld && ({wr_byte_list_ored})))
 sw_data_assignment:
     rtl: |-
+
        /************************************** 
         * Assign all fields to signal to Mux *
         **************************************/
@@ -87,8 +88,37 @@ sw_data_assignment:
        // Internal registers are ready immediately
        assign {sw_rdy_assignment_var_name}{genvars} = {rdy_condition};
 
-       // Return an error if *no* read and *no* write wa be succesful.
-       // If some bits cannot be read/write but others are succesful, don't return
-       // an error. Hence, as long as one action can be succesful, no error will be
-       // returned.
+       // Return an error if *no* read and *no* write was succesful. If some bits
+       // cannot be read/written but others are succesful, don't return and error
+       // Hence, as long as one action can be succesful, no error will be returned.
        assign {sw_err_assignment_var_name}{genvars} = {err_condition};
+external_rtl_wr:
+    rtl: |-
+        // This output will be asserted once a read is requested and will
+        // stay high until '{path}_ext_w_ack' gets set.
+        assign {path}_ext_wr_req{genvars} = reg_ext1_sw_wr{genvars};
+    output_ports:
+        - name: '{path}_ext_wr_req'
+          signal_type: 'logic'
+external_rtl_rd:
+    rtl: |-
+        // This output will be asserted once a read is requested and will
+        // stay high until '{path}_ext_r_ack' gets set.
+        assign {path}_ext_rd_req{genvars} = reg_ext1_sw_rd{genvars};
+    output_ports:
+        - name: '{path}_ext_rd_req'
+          signal_type: 'logic'
+external_rdy_condition:
+    rtl: |-
+        {path}_ext_{rd_or_wr}_ack{genvars}
+    input_ports:
+        - name: '{path}_ext_{rd_or_wr}_ack'
+          signal_type: 'logic'
+external_err_condition:
+    rtl: |-
+        ({path}_ext_{rd_or_wr}_err{genvars} && {path}_ext_{rd_or_wr}_ack{genvars} && b2r.{rd_or_wr}_vld)
+    input_ports:
+        - name: '{path}_ext_{rd_or_wr}_err'
+          signal_type: 'logic'
+        - name: '{path}_ext_{rd_or_wr}_ack'
+          signal_type: 'logic'

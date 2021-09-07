@@ -121,7 +121,7 @@ default_mux_case:
     rtl: |-
         default:
         begin
-        // In case the address is not found, return an error
+        // If the address is not found, return an error
         r2b.data = 0;
         r2b.err  = 1;
         r2b.rdy  = b2r.r_vld || b2r.w_vld;

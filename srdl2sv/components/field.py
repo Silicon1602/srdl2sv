@@ -44,11 +44,12 @@ class Field(Component):
         # HW Access can be handled in __init__ function but SW access
         # must be handled in a seperate method that can be called
         # seperately in case of alias registers
-        self.__add_always_ff()
-        self.__add_hw_access()
-        self.__add_combo()
-        self.__add_swmod_swacc()
-        self.__add_counter()
+        if not self.config['external']:
+            self.__add_always_ff()
+            self.__add_hw_access()
+            self.__add_combo()
+            self.__add_swmod_swacc()
+            self.__add_counter()
 
         self.add_sw_access(obj)
 
@@ -210,6 +211,9 @@ class Field(Component):
         except KeyError:
             self.access_rtl['sw_read'] = [access_rtl['sw_read']]
             self.access_rtl['sw_write'] = [access_rtl['sw_write']]
+
+        self.path_underscored_vec.append(path_underscored)
+        self.path_wo_field_vec.append(path_wo_field)
 
     def __add_counter(self):
         if self.obj.get_property('counter'):
@@ -825,7 +829,51 @@ class Field(Component):
                 )
             )
 
-    def create_rtl(self):
+    def create_external_rtl(self):
+        if self.obj.get_property('sw') in (AccessType.rw, AccessType.w):
+            for i, alias in enumerate(self.path_underscored_vec):
+                # Create bit-wise mask so that outside logic knows what
+                # bits it may change
+                mask = []
+                for j, byte_idx in enumerate(range(self.msbyte, self.lsbyte-1, -1)):
+                    if byte_idx == self.lsbyte:
+                        width = (self.lsbyte+1)*8 - self.lsb
+                    elif byte_idx == self.msbyte:
+                        width = 8 - ((self.msbyte+1)*8-1 - self.msb)
+                    else:
+                        width = 8
+
+                    mask.append(
+                        Field.templ_dict['external_wr_mask_segment']['rtl'].format(
+                            idx = byte_idx,
+                            width = width)
+                        )
+
+                self.rtl_footer.append(self.process_yaml(
+                    Field.templ_dict['external_wr_assignments'],
+                    {'path': alias,
+                     'path_wo_field': self.path_wo_field_vec[i],
+                     'genvars': self.genvars_str,
+                     'msb_bus': self.msb,
+                     'lsb_bus': self.lsb,
+                     'mask': ','.join(mask),
+                     'width': self.obj.width-1,
+                     'field_type': self.field_type
+                    }
+                ))
+
+        if self.obj.get_property('sw') in (AccessType.rw, AccessType.r):
+            for i, alias in enumerate(self.path_underscored_vec):
+                self.rtl_footer.append(self.process_yaml(
+                    Field.templ_dict['external_rd_assignments'],
+                    {'path': alias,
+                     'path_wo_field': self.path_wo_field_vec[i],
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type
+                    }
+                ))
+
+    def create_internal_rtl(self):
         # Not all access types are required and the order might differ
         # depending on what types are defined and what precedence is
         # set. Therefore, first add all RTL into a dictionary and
@@ -990,6 +1038,9 @@ class Field(Component):
         # Create full name
         self.path_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
 
+        self.path_underscored_vec = []
+        self.path_wo_field_vec = []
+
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
         self.total_array_dimensions = array_dimensions
@@ -1051,6 +1102,7 @@ class Field(Component):
                 rst_active = self.rst['active'],
                 rst_type = self.rst['type'],
                 misc_flags = misc_flags if misc_flags else '-',
+                external = self.config['external'],
                 lsb = self.obj.lsb,
                 msb = self.obj.msb,
                 path_wo_field = self.path_wo_field)
