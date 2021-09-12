@@ -117,7 +117,7 @@ class Register(Component):
                     if empty_bits > 0:
                         list_of_fields.append("{}'b0".format(empty_bits))
 
-                    list_of_fields.append("{}_q".format(field.path_underscored))
+                    list_of_fields.append("{}_q{}".format(field.path_underscored, self.genvars_str))
 
                     # Add to appropriate bytes
                     [bytes_read.add(x) for x in range(field.lsbyte, field.msbyte+1)]
