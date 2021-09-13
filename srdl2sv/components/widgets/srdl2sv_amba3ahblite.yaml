@@ -9,18 +9,11 @@ module_instantiation:
          *    - b2r.*     -> Signals from bus to registers
          *    - H*        -> Signals as defined in AMBA3 AHB Lite 
          *                   specification
-         *    - bus_clk   -> Clock that that drives signals on bus
-         *    - reg_clk   -> Clock that drives register flops
-         *    - bus_rst_n -> Asynchronous reset that resets only the bus (but
-         *                   (not the registers). The deassertion of this
-         *                   reset shall be synchronized to bus_clk
+         *    - clk       -> Clock that drives registers and the bus
          *******************************************************************/
         srdl2sv_amba3ahblite
         srdl2sv_amba3ahblite_inst
-            (// Register clock
-             .reg_clk,
-
-             // Outputs to internal logic
+             (// Outputs to internal logic
              .b2r,
 
              // Inputs from internal logic
@@ -28,7 +21,7 @@ module_instantiation:
  
              // Bus protocol
              .HRESETn,
-             .HCLK,
+             .HCLK        (clk),
              .HADDR,
              .HWRITE,
              .HSIZE,
@@ -38,6 +31,7 @@ module_instantiation:
              .HWDATA,
              .HREADY,
              .HSEL,
+             .HMASTLOCK,
 
              .HREADYOUT,
              .HRESP,
@@ -48,9 +42,9 @@ module_instantiation:
         - name: 'r2b'
           signal_type: 'r2b_t'
     input_ports:
-        - name: 'HRESETn'
+        - name: 'clk'
           signal_type: ''
-        - name: 'HCLK'
+        - name: 'HRESETn'
           signal_type: ''
         - name: 'HADDR'
           signal_type: '[31:0]'
@@ -69,6 +63,8 @@ module_instantiation:
         - name: 'HREADY'
           signal_type: ''
         - name: 'HSEL'
+          signal_type: ''
+        - name: 'HMASTLOCK'
           signal_type: ''
     output_ports:
         - name: 'HREADYOUT'
