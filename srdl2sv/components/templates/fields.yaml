@@ -449,10 +449,10 @@ external_wr_assignments:
         assign {path}_ext_w_req{genvars} = {path_wo_field}_sw_wr{genvars};
 
         // Assign value from bus to output
-        assign {path}_ext_w_data = b2r.data[{msb_bus}:{lsb_bus}];
+        assign {path}_ext_w_data{genvars} = b2r.data[{msb_bus}:{lsb_bus}];
 
         // Provide bit-wise mask. Only bits set to 1'b1 shall be written
-        assign {path}_ext_w_mask = {{{mask}}};
+        assign {path}_ext_w_mask{genvars} = {{{mask}}};
     output_ports:
         - name: '{path}_ext_w_req'
           signal_type: 'logic'
