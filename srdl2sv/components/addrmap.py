@@ -264,13 +264,16 @@ class AddrMap(Component):
 
 
     def __append_genvars(self):
-        genvars = ''.join([
-            '\ngenvar ',
-            ', '.join([chr(97+i) for i in range(self.get_max_dim_depth())]),
-            ';\n'
-            ])
+        genvars = ', '.join([chr(97+i) for i in range(self.get_max_dim_depth())])
 
-        self.rtl_header.append(genvars)
+        if genvars:
+            genvars_instantiation = ''.join([
+                '\ngenvar ',
+                genvars,
+                ';\n'
+                ])
+
+            self.rtl_header.append(genvars_instantiation)
 
     def get_package_names(self) -> set():
         names = set()
