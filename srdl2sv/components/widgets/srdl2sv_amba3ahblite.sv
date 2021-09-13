@@ -100,7 +100,7 @@ module srdl2sv_amba3ahblite
     logic [31:0] addr_q;
     OP_t         operation_q;
 
-    wire addr_err = (HADDR % HSIZE) != 0;
+    wire addr_err = (HADDR[2:0] % HSIZE) != 3'b0;
 
     always_ff @ (posedge HCLK)
     begin
