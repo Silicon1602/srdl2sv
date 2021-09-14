@@ -111,7 +111,7 @@ module srdl2sv_amba3ahblite
             begin
                 // When a transfer is extended it has the side-effecxt
                 // of extending the address phase of the next transfer
-                if (r2b.rdy)
+                if (HREADYOUT)
                 begin
                     addr_q      <= HADDR;
                     operation_q <= HWRITE ? WRITE : READ;
@@ -119,7 +119,7 @@ module srdl2sv_amba3ahblite
             end
             SEQ:
             begin
-                if (r2b.rdy)
+                if (HREADYOUT)
                 begin
                     addr_q <= addr_q; // TODO
                 end
