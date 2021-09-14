@@ -1,0 +1,6 @@
+addrmap simple_rw_reg {
+    reg {
+        field {sw=rw; hw=rw;} f1 [15:0];
+        field {sw=rw; hw=rw;} f2 [31:16];
+    } register_0 [2];
+};
