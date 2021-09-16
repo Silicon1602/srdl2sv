@@ -67,8 +67,7 @@ module_declaration:
         <<UNINDENT>>
         (
         <<INDENT>>
-        // Clock & Resets
-        input  reg_clk,
+        // Resets
         {resets} 
 
         // Inputs

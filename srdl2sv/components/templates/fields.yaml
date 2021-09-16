@@ -1,10 +1,10 @@
 ---
 sense_list_rst:
     rtl: |-
-        always_ff @(posedge reg_clk or {rst_edge} {rst_name})
+        always_ff @(posedge clk or {rst_edge} {rst_name})
 sense_list_no_rst: 
     rtl: |-
-        always_ff @(posedge reg_clk)
+        always_ff @(posedge clk)
 rst_field_assign: 
     rtl: |-
         if ({rst_negl}{rst_name})
