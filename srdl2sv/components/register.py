@@ -68,6 +68,9 @@ class Register(Component):
 
         # Fields will be added by get_rtl()
 
+        # Add assignment of read-wires
+        self.__add_sw_mux_assignments()
+
         # Add N layers of for-loop end
         for i in range(self.dimensions-1, -1, -1):
             self.rtl_footer.append(
@@ -75,10 +78,7 @@ class Register(Component):
                     dimension = chr(97+i)))
 
         if self.dimensions and not self.generate_active:
-            self.rtl_footer.append("endgenerate\n")
-
-        # Add assignment of read-wires
-        self.__add_sw_mux_assignments()
+            self.rtl_footer.append("\nendgenerate\n")
 
         # Add wire instantiation
         if not self.generate_active:
