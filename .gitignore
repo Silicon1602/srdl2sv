@@ -1,4 +1,9 @@
-# Grabbed from https://github.com/github/gitignore/blob/master/Python.gitignore on 05/02/2021
+# SRDL2SV specific
+srdl2sv_out
+
+###############################################################################################
+# Grabbed from https://github.com/github/gitignore/blob/master/Python.gitignore on 05/02/2021 #
+###############################################################################################
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -138,4 +143,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-

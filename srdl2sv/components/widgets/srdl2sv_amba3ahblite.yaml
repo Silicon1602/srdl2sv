@@ -12,6 +12,8 @@ module_instantiation:
          *    - clk       -> Clock that drives registers and the bus
          *******************************************************************/
         srdl2sv_amba3ahblite
+             #(.FLOP_REGISTER_IF (0),
+               .BUS_BITS         (32))
         srdl2sv_amba3ahblite_inst
              (// Outputs to internal logic
              .b2r,
@@ -25,13 +27,10 @@ module_instantiation:
              .HADDR,
              .HWRITE,
              .HSIZE,
-             .HBURST,
              .HPROT,
              .HTRANS,
              .HWDATA,
-             .HREADY,
              .HSEL,
-             .HMASTLOCK,
 
              .HREADYOUT,
              .HRESP,
@@ -52,19 +51,13 @@ module_instantiation:
           signal_type: ''
         - name: 'HSIZE'
           signal_type: '[2:0]'
-        - name: 'HBURST'
-          signal_type: '[2:0]'
         - name: 'HPROT'
           signal_type: '[3:0]'
         - name: 'HTRANS'
           signal_type: '[1:0]'
         - name: 'HWDATA'
           signal_type: '[31:0]'
-        - name: 'HREADY'
-          signal_type: ''
         - name: 'HSEL'
-          signal_type: ''
-        - name: 'HMASTLOCK'
           signal_type: ''
     output_ports:
         - name: 'HREADYOUT'

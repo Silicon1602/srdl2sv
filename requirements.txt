@@ -1,1 +1,4 @@
 systemrdl-compiler==1.19.0
+cocotb
+cocotb-bus
+PyYAML
