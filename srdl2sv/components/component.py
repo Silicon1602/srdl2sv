@@ -39,6 +39,10 @@ class Component():
         # Save config
         self.config = config.copy()
 
+        # By default, registers and fields are not interrupt registers
+        self.intr = False
+        self.halt = False
+
         # Create logger object
         self.create_logger("{}".format(self.full_path), config)
         self.logger.debug('Starting to process {} "{}"'.format(
@@ -210,7 +214,9 @@ class Component():
             name.append(obj.name)
 
             # This is a property. Check if the original field actually has this property
-            if not obj.node.get_property(obj.name):
+            if obj.name == "intr" or obj.name == "halt":
+                pass
+            elif not obj.node.get_property(obj.name):
                 self.logger.fatal("Reference to the property '{}' of instance '{}' found. "
                                   "This instance does hold the reference property! Please "
                                   "fix this if you want me to do my job properly."

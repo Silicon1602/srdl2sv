@@ -42,8 +42,12 @@ class Register(Component):
                                                self.config,
                                                glbl_settings)
 
-            if not config['disable_sanity']:
-                self.children[field_range].sanity_checks()
+            # Get certain properties from field that apply to whole register
+            self.intr = self.intr or self.children[field_range].intr
+            self.halt = self.halt or self.children[field_range].halt
+
+            # Perform sanity check
+            self.children[field_range].sanity_checks()
 
     def create_rtl(self):
         # Create RTL of children
@@ -67,6 +71,9 @@ class Register(Component):
         self.__add_address_decoder()
 
         # Fields will be added by get_rtl()
+
+        # Add interrupt logic
+        self.__add_interrupts()
 
         # Add assignment of read-wires
         self.__add_sw_mux_assignments()
@@ -94,6 +101,42 @@ class Register(Component):
                 depth = self.depth),
                 *self.rtl_header
             ]
+
+    def __add_interrupts(self):
+
+        # Semantics on the intr and halt property:
+        #   a) The intr and halt register properties are outputs; they should only 
+        #      occur on the right-hand side of an assignment in SystemRDL.
+        #   b) The intr property shall always be present on a intr register even if
+        #      no mask or enables are specified.
+        #   c) The halt property shall only be present if haltmask or haltenable is 
+        #      specified on at least one field in the register.
+        if self.intr:
+            self.rtl_footer.append(Register.templ_dict['interrupt_comment']['rtl'])
+
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Register.templ_dict['interrupt_intr'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'list': ') || ('.join([
+                         x.itr_masked for x in self.children.values() if x.itr_masked])
+                    }
+                )
+            )
+
+        if self.halt:
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Register.templ_dict['interrupt_halt'],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'list': ') || ('.join([
+                        x.itr_haltmasked for x in self.children.values() if x.itr_haltmasked])
+                    }
+                )
+            )
+
 
     def __add_sw_mux_assignments(self):
         accesswidth = self.obj.get_property('accesswidth') - 1
@@ -382,9 +425,6 @@ class Register(Component):
         self.name_addr_mappings = [
             (self.create_underscored_path_static(obj)[3], obj.absolute_address)
             ]
-
-        # Create full name
-        self.create_underscored_path()
 
         # Gnerate already started?
         self.generate_active = glbl_settings['generate_active']

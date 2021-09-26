@@ -122,3 +122,23 @@ external_err_condition:
           signal_type: 'logic'
         - name: '{path}_ext_{rd_or_wr}_ack'
           signal_type: 'logic'
+interrupt_comment:
+    rtl: |-
+       /************************************** 
+        * Register contains interrupts    *
+        **************************************/
+interrupt_intr:
+    rtl: |-
+        // Register has at least one interrupt field
+        assign {path}_intr{genvars} = ({list});
+    output_ports:
+        - name: '{path}_intr'
+          signal_type: 'logic'
+interrupt_halt:
+    rtl: |-
+
+        // Register has at least one interrupt field with halt property set
+        assign {path}_halt{genvars} = {list};
+    output_ports:
+        - name: '{path}_halt'
+          signal_type: 'logic'

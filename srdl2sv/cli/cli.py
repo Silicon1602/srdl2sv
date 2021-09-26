@@ -52,13 +52,6 @@ class CliArguments():
                   searched recursively.")
 
         self.parser.add_argument(
-            "-x",
-            "--disable_sanity",
-            action="store_true",
-            help="Disable sanity checks or components. This might speed\
-                  up the compiler but is generally not recommended!")
-
-        self.parser.add_argument(
             "-e",
             "--disable_enums",
             action="store_true",
@@ -140,10 +133,6 @@ class CliArguments():
 
         config['list_args'].append('Use Real Tabs    : {}'.format(config['real_tabs']))
         config['list_args'].append('Tab Width        : {}'.format(config['tab_width']))
-
-        # Sanity check related
-        config['disable_sanity'] = args.disable_sanity
-        config['list_args'].append('Sanity Disabled  : {}'.format(config['disable_sanity']))
 
         # Set enums
         config['enums'] = not args.disable_enums

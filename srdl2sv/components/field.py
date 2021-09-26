@@ -47,6 +47,7 @@ class Field(Component):
         if not self.config['external']:
             self.__add_always_ff()
             self.__add_hw_access()
+            self.__add_interrupt()
             self.__add_combo()
             self.__add_swmod_swacc()
             self.__add_counter()
@@ -685,6 +686,47 @@ class Field(Component):
 
         self.rtl_footer = [*self.rtl_footer, swmod_props, swacc_props]
 
+    def __add_interrupt(self):
+        if self.obj.get_property('intr'):
+            self.intr = True
+
+            # Generate masked & enabled version of interrupt to be
+            # picked up by the register at the top level
+            if mask := self.obj.get_property('mask'):
+                self.itr_masked = ' && !'.join([
+                    self.register_name,
+                    self.get_signal_name(mask)
+                ])
+            elif enable := self.obj.get_property('enable'):
+                self.itr_masked = ' && '.join([
+                    self.register_name,
+                    self.get_signal_name(enable)
+                ])
+            else:
+                self.itr_masked = self.register_name
+
+            # Generate haltmasked & haltenabled version of interrupt to be
+            # picked up by the register at the top level
+            if haltmask := self.obj.get_property('haltmask'):
+                self.itr_haltmasked = ' && !'.join([
+                    self.register_name,
+                    self.get_signal_name(haltmask)
+                ])
+
+                self.halt = True
+            elif haltenable := self.obj.get_property('haltenable'):
+                self.itr_haltmasked = ' && '.join([
+                    self.register_name,
+                    self.get_signal_name(haltenable)
+                ])
+
+                self.halt = True
+            else:
+                self.itr_haltmasked = self.register_name
+        else:
+            self.itr_masked = False
+            self.itr_haltmasked = False
+
     def __add_hw_access(self):
         # Mutually exclusive. systemrdl-compiler performs check for this
         enable_mask_negl = ''
@@ -1037,6 +1079,7 @@ class Field(Component):
     def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
         # Create full name
         self.path_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
+        self.register_name = ''.join([self.path_underscored, '_q'])
 
         self.path_underscored_vec = []
         self.path_wo_field_vec = []
@@ -1153,3 +1196,11 @@ class Field(Component):
 
 
             # TODO: Counter & hw=r shouldn't work
+
+        # If hw=ro and the next property is set, throw a fatal
+        if self.obj.get_property('hw') == AccessType.r\
+                and self.obj.get_property('next'):
+            self.logger.error("Hardware property of field is set to read-only "\
+                              "but simultanously, the next property is set. Since "\
+                              "this would reflect wrong behavior in documentation, "\
+                              "the next property is ignored.")

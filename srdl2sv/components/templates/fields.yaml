@@ -54,7 +54,9 @@ hw_access_we_wel:
           signal_type: 'logic'
 hw_access_no_we_wel: 
     rtl: |-
+        <<INDENT>>
         // we or wel property not set
+        <<UNINDENT>>
 hw_access_hwset:
     rtl: |-
         if ({path}_hwset{genvars})
