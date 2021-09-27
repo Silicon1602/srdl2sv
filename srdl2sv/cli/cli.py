@@ -142,6 +142,9 @@ class CliArguments():
         config['bus'] = args.bus
         config['list_args'].append('Register Bus Type: {}'.format(config['bus']))
 
+        if args.bus == 'amba3ahblite':
+            config['addrwidth'] = 32
+
         # Set version
         config['version'] = '0.01'
 

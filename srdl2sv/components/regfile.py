@@ -48,6 +48,7 @@ class RegFile(Component):
         else:
             self.generate_initiated = False
 
+        self.regwidth = 0
 
         # Traverse through children
         for child in obj.children():
@@ -82,6 +83,9 @@ class RegFile(Component):
                             self.total_stride,
                             config,
                             glbl_settings)
+
+            if (regwidth := self.registers[child.inst_name].get_regwidth()) > self.regwidth:
+                self.regwidth = regwidth
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
@@ -269,4 +273,7 @@ class RegFile(Component):
                    }
         else:
             return {None: None}
+
+    def get_regwidth(self) -> int:
+        return self.regwidth
 

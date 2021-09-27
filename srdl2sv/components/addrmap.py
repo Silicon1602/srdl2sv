@@ -37,6 +37,7 @@ class AddrMap(Component):
         # by name (for example, in case of aliases)
         self.registers = dict()
         self.regfiles = dict()
+        self.regwidth = 0
 
         # Traverse through children
         for child in obj.children():
@@ -58,6 +59,16 @@ class AddrMap(Component):
                 else:
                     self.registers[child.inst_name] = \
                         Register(child, [], [], config, glbl_settings)
+
+            try:
+                if (regwidth := self.registers[child.inst_name].get_regwidth()) > self.regwidth:
+                    self.regwidth = regwidth
+            except KeyError:
+                # Simply ignore nodes like SignalNodes
+                pass
+
+        self.logger.info("Detected maximum register width of whole addrmap to be '{}'".format(
+            self.regwidth))
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
@@ -193,7 +204,6 @@ class AddrMap(Component):
         self.rtl_footer.append('endmodule')
 
     def __create_mux_string(self):
-        # TODO: Add variable for bus width
         # Define default case
         list_of_cases = [AddrMap.templ_dict['default_mux_case']['rtl']]
 
@@ -218,6 +228,7 @@ class AddrMap(Component):
                 list_of_cases.append(
                     AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
                         index = index,
+                        bus_width = self.config['addrwidth'],
                         r2b_data = r2b_data,
                         r2b_rdy = r2b_rdy,
                         r2b_err = r2b_err)
@@ -259,7 +270,7 @@ class AddrMap(Component):
 
         return self.process_yaml(
             self.widget_templ_dict['module_instantiation'],
-            # TODO: Add widths
+            {'bus_width': self.regwidth}
         )
 
 
@@ -356,4 +367,5 @@ class AddrMap(Component):
 
         return rtl_return
 
-
+    def get_regwidth(self) -> int:
+        return self.regwidth

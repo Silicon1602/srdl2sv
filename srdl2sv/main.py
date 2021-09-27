@@ -97,7 +97,12 @@ if __name__ == "__main__":
     out_if_file = "{}/srdl2sv_if_pkg.sv".format(config['output_dir'])
 
     with open(out_if_file, 'w') as file:
-        print(widget_if_rtl,file=file)
+        widget_if_rtl_parsed = widget_if_rtl.format(
+            regwidth_bit = addrmap.get_regwidth() - 1,
+            regwidth_byte = int(addrmap.get_regwidth() / 8) - 1,
+            addrwidth = config['addrwidth'] - 1)
+
+        print(widget_if_rtl_parsed,file=file)
 
     logger.info("Copied 'srdl2sv_if_pkg.sv")
 

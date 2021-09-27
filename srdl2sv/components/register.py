@@ -498,3 +498,6 @@ class Register(Component):
         self.genvars_sum_str = ''.join(genvars_sum)
         self.genvars_sum_str_vectorized = ''.join(genvars_sum_vectorized)
 
+    def get_regwidth(self) -> int:
+        return self.obj.get_property('regwidth')
+

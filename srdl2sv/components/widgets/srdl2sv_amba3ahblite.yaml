@@ -13,7 +13,7 @@ module_instantiation:
          *******************************************************************/
         srdl2sv_amba3ahblite
              #(.FLOP_REGISTER_IF (0),
-               .BUS_BITS         (32))
+               .BUS_BITS         ({bus_width}))
         srdl2sv_amba3ahblite_inst
              (// Outputs to internal logic
              .b2r,
@@ -56,7 +56,7 @@ module_instantiation:
         - name: 'HTRANS'
           signal_type: '[1:0]'
         - name: 'HWDATA'
-          signal_type: '[31:0]'
+          signal_type: '[{bus_width}-1:0]'
         - name: 'HSEL'
           signal_type: ''
     output_ports:
@@ -65,4 +65,4 @@ module_instantiation:
         - name: 'HRESP'
           signal_type: ''
         - name: 'HRDATA'
-          signal_type: '[31:0]'
+          signal_type: '[{bus_width}-1:0]'

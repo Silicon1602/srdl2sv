@@ -113,7 +113,7 @@ module srdl2sv_amba3ahblite
                 if (HREADYOUT)
                 begin
                     // Floor address. Sub-register access will be handled by byte-enables
-                    addr_q      <= {HADDR[BUS_BITS-1:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+                    addr_q      <= {HADDR[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
                     operation_q <= HWRITE ? WRITE : READ;
                 end
             end
@@ -121,7 +121,7 @@ module srdl2sv_amba3ahblite
             begin
                 if (HREADYOUT)
                     // Floor address. Sub-register access will be handled by byte-enables
-                    addr_q      <= {HADDR[BUS_BITS-1:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+                    addr_q      <= {HADDR[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
             end
         endcase
     end
@@ -237,10 +237,10 @@ module srdl2sv_amba3ahblite
     /***
      * Determine the number of active bytes
      ***/
-    logic [3:0] HSIZE_bitfielded;
-    logic [3:0] b2r_byte_en_next;
-    logic       b2r_w_vld_next;
-    logic       b2r_r_vld_next;
+    logic [BUS_BYTES-1:0] HSIZE_bitfielded;
+    logic [BUS_BYTES-1:0] b2r_byte_en_next;
+    logic                 b2r_w_vld_next;
+    logic                 b2r_r_vld_next;
 
     always_comb
     begin
