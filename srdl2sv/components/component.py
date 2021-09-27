@@ -228,8 +228,16 @@ class Component():
 
         return ''.join(name)
 
-    def process_yaml(self, yaml_obj, values: dict = {}):
+    def process_yaml(self,
+                     yaml_obj,
+                     values: dict = {},
+                     skip_signals: bool = False,
+                     skip_inputs: bool = False,
+                     skip_outputs: bool = False):
         try:
+            if skip_signals:
+                raise KeyError
+
             for x in yaml_obj['signals']:
                 self.signals[x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),
@@ -238,6 +246,9 @@ class Component():
             pass
 
         try:
+            if skip_inputs:
+                raise KeyError
+
             for x in yaml_obj['input_ports']:
                 self.ports['input'][x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),
@@ -246,6 +257,9 @@ class Component():
             pass
 
         try:
+            if skip_outputs:
+                raise KeyError
+
             for x in yaml_obj['output_ports']:
                 self.ports['output'][x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),

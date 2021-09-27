@@ -138,7 +138,7 @@ interrupt_halt:
     rtl: |-
 
         // Register has at least one interrupt field with halt property set
-        assign {path}_halt{genvars} = {list};
+        assign {path}_halt{genvars} = ({list});
     output_ports:
         - name: '{path}_halt'
           signal_type: 'logic'

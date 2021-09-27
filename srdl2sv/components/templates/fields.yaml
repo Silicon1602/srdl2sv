@@ -469,4 +469,80 @@ external_wr_assignments:
           signal_type: 'logic'
 external_wr_mask_segment:
     rtl: |-
-      {{{width}{{b2r.byte_en[{idx}]}}}}
+        {{{width}{{b2r.byte_en[{idx}]}}}}
+interrupt_trigger_input:
+    rtl: |-
+        {path}_set_intr
+    input_ports:
+        - name: '{path}_set_intr'
+          signal_type: 'logic'
+rst_intr_header: 
+    rtl: |-
+        if ({rst_negl}{rst_name})
+        <<INDENT>>
+        {interrupt_trigger_input}_q{genvars} <= 1'b0;
+        <<UNINDENT>>
+        else
+    signals:
+        - name: '{interrupt_trigger_input}_q'
+          signal_type: 'logic'
+always_ff_block_intr: 
+    rtl: |-
+
+        // Flops to generate appropriate interrupt signal
+        {always_ff_header}
+        {reset_intr_header}
+        <<INDENT>>
+        {interrupt_trigger_input}_q{genvars} <= {interrupt_trigger_input}{genvars};
+        <<UNINDENT>>
+    signals:
+        - name: '{interrupt_trigger_input}_q'
+          signal_type: 'logic'
+InterruptType.posedge:
+    rtl: |-
+
+        // Define signal that causes the interrupt to be set (posedge-type interrupt)
+        assign {path}_intr_latch{genvars} = !{interrupt_trigger_input}_q{genvars} && {interrupt_trigger_input}{genvars};
+    signals:
+        - name: '{path}_intr_latch'
+          signal_type: 'logic'
+InterruptType.negedge:
+    rtl: |-
+
+        // Define signal that causes the interrupt to be set (negedge-type interrupt)
+        assign {path}_intr_latch{genvars} = {interrupt_trigger_input}_q{genvars} && !{interrupt_trigger_input}{genvars};
+    signals:
+        - name: '{path}_intr_latch'
+          signal_type: 'logic'
+InterruptType.bothedge:
+    rtl: |-
+
+        // Define signal that causes the interrupt to be set (bothedge-type interrupt)
+        assign {path}_intr_latch{genvars} = ({interrupt_trigger_input}_q{genvars} && !{interrupt_trigger_input}{genvars}) || (!{interrupt_trigger_input}_q{genvars} && {interrupt_trigger_input}{genvars});
+    signals:
+        - name: '{path}_intr_latch'
+          signal_type: 'logic'
+InterruptType.level:
+    rtl: |-
+
+        // Define signal that causes the interrupt to be set (level-type interrupt)
+        assign {path}_intr_latch{genvars} = {interrupt_trigger_input}{genvars};
+    signals:
+        - name: '{path}_intr_latch'
+          signal_type: 'logic'
+sticky_intr:
+    rtl: |-
+        if ({path}_intr_latch{genvars})
+        begin
+        // Sticky interrupt. Keep value until software clears it
+        {path}_q{genvars} <= 1'b1;
+        end
+    signals:
+        - name: '{path}_intr_latch'
+          signal_type: 'logic'
+nonsticky_intr:
+    rtl: |-
+        begin
+        // Non-sticky interrupt. Only keep value high if source keeps up
+        {path}_q{genvars} <= {assignment};
+        end

@@ -1,0 +1,56 @@
+addrmap interrupts {
+    signal { activelow; async; field_reset;} field_reset_n;
+
+    reg {
+        field {sw=rw; hw=rw; intr;          } intr1 [0:0] = 0;
+        field {sw=rw; hw=rw; bothedge intr; } intr2 [1:1] = 0;
+        field {sw=rw; hw=rw; negedge intr;  } intr3 [2:2] = 0;
+        field {sw=rw; hw=rw; posedge intr;  } intr4 [3:3] = 0;
+        field {sw=rw; hw=rw;                } intr5 [4:4] = 0;
+        field {sw=rw; hw=rw; nonsticky intr;} intr6 [5:5] = 0;
+    } itrs_reg;
+
+    reg {
+        field {sw=rw; hw=r;} intr1 [0:0];
+        field {sw=rw; hw=r;} intr2 [1:1];
+    } itrs_mask;
+
+    reg {
+        field {sw=rw; hw=r;} intr5 [1:1];
+    } itrs_enable;
+
+    reg {
+        field {sw=rw; hw=r;} intr6 [1:1];
+    } itrs_next_assign;
+
+    itrs_reg.intr1->mask = itrs_mask.intr1;
+    itrs_reg.intr2->mask = itrs_mask.intr2;
+    itrs_reg.intr5->enable = itrs_enable.intr5;
+    itrs_reg.intr5->next = itrs_next_assign.intr6;
+
+
+    // HALT REGISTERS
+    reg {
+        field {sw=rw; hw=rw; intr;} intr1 [0:0];
+        field {sw=rw; hw=rw; intr;} intr2 [1:1];
+        field {sw=rw; hw=rw; intr;} intr3 [2:2];
+        field {sw=rw; hw=rw;      } intr4 [3:3];
+        field {sw=rw; hw=rw; intr;} intr5 [4:4];
+    } itrs_halteable_reg;
+
+    reg {
+        field {sw=rw; hw=r;} intr1 [0:0];
+        field {sw=rw; hw=r;} intr2 [1:1];
+    } itrs_halt;
+
+    itrs_halteable_reg.intr1->haltmask = itrs_halt.intr1;
+    itrs_halteable_reg.intr2->haltmask = itrs_halt.intr2;
+
+    // USE INTERRUPT
+    reg {
+        field {sw=rw; hw=rw;} itrs_reg_next [0:0];
+        field {sw=rw; hw=rw;} itrs_halteable_next [1:1];
+    } itrs_next;
+
+    itrs_next.itrs_reg_next->next = itrs_reg->intr;
+};

@@ -6,7 +6,7 @@ import yaml
 
 from systemrdl.node import FieldNode, SignalNode
 from systemrdl.component import Reg, Regfile, Addrmap, Root
-from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType
+from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType, InterruptType
 
 # Local modules
 from components.component import Component, TypeDef
@@ -46,8 +46,11 @@ class Field(Component):
         # seperately in case of alias registers
         if not self.config['external']:
             self.__add_always_ff()
-            self.__add_hw_access()
-            self.__add_interrupt()
+
+            # Only add normal hardware access if field is not an interrupt field
+            if not self.__add_interrupt():
+                self.__add_hw_access()
+
             self.__add_combo()
             self.__add_swmod_swacc()
             self.__add_counter()
@@ -125,7 +128,7 @@ class Field(Component):
                     )
                 else:
                     # If field spans multiple bytes, every byte shall have a seperate enable!
-                    for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                    for i in range(self.lsbyte, self.msbyte+1):
                         msb_bus = 8*(i+1)-1 if i != self.msbyte else obj.msb
                         lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
 
@@ -690,6 +693,81 @@ class Field(Component):
         if self.obj.get_property('intr'):
             self.intr = True
 
+            # Determine what causes the interrupt to get set, i.e.,
+            # is it a trigger that is passed to the module through an
+            # input or is it an internal signal
+            if next_val := self.obj.get_property('next'):
+                intr_trigger = self.get_signal_name(next_val)
+            else:
+                intr_trigger = \
+                    self.process_yaml(
+                        Field.templ_dict['interrupt_trigger_input'],
+                        {'path': self.path_underscored}
+                    )
+
+            if self.obj.get_property('stickybit'): 
+                self.access_rtl['hw_write'] = ([
+                    self.process_yaml(
+                        Field.templ_dict['sticky_intr'],
+                        {'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                        }
+                    )
+                ],
+                False)
+
+                # Create logic that contains condition for trigger
+                if self.obj.get_property('intr type') != InterruptType.level:
+                    if self.rst['name']:
+                        reset_intr_header = \
+                            self.process_yaml(
+                                Field.templ_dict['rst_intr_header'],
+                                {'interrupt_trigger_input': intr_trigger,
+                                 'rst_name': self.rst['name'],
+                                 'rst_negl':  "!" if self.rst['active'] == "active_low" else "",
+                                 'genvars': self.genvars_str,
+                                }
+                            )
+                    else:
+                        reset_intr_header = ""
+
+                    self.rtl_footer.append(
+                        self.process_yaml(
+                            Field.templ_dict['always_ff_block_intr'],
+                            {'interrupt_trigger_input': intr_trigger,
+                             'always_ff_header': self.always_ff_header,
+                             'reset_intr_header': reset_intr_header,
+                             'genvars': self.genvars_str,
+                            }
+                        )
+                    )
+
+                # This should be implemented as a match case statement later,
+                # but for now use the old if/elif/else construct to ensure
+                # compatibility with Python versions before 2021
+                self.rtl_footer.append(
+                    self.process_yaml(
+                        Field.templ_dict[str(self.obj.get_property('intr type'))],
+                        {'interrupt_trigger_input': intr_trigger,
+                         'path': self.path_underscored,
+                         'genvars': self.genvars_str,
+                        }
+                    )
+                )
+
+
+            else:
+                self.access_rtl['hw_write'] = ([
+                    self.process_yaml(
+                        Field.templ_dict['nonsticky_intr'],
+                        {'path': self.path_underscored,
+                         'assignment': intr_trigger,
+                         'genvars': self.genvars_str,
+                        }
+                    )
+                ],
+                False)
+
             # Generate masked & enabled version of interrupt to be
             # picked up by the register at the top level
             if mask := self.obj.get_property('mask'):
@@ -726,6 +804,8 @@ class Field(Component):
         else:
             self.itr_masked = False
             self.itr_haltmasked = False
+
+        return self.intr
 
     def __add_hw_access(self):
         # Mutually exclusive. systemrdl-compiler performs check for this
@@ -795,11 +875,15 @@ class Field(Component):
 
                 assignment = self.get_signal_name(self.obj.get_property('next'))
 
+                skip_inputs = True
+
                 if self.we_or_wel:
                     self.logger.info("This field has a 'we' or 'wel' property and "
                                      "uses the 'next' property. Make sure this is "
                                      "is intentional.")
             else:
+                skip_inputs = False
+
                 # No special property. Assign input to register
                 assignment = \
                     self.process_yaml(
@@ -819,7 +903,8 @@ class Field(Component):
                      'enable_mask_end': enable_mask_end_rtl,
                      'assignment': assignment,
                      'idx': enable_mask_idx,
-                     'field_type': self.field_type}
+                     'field_type': self.field_type},
+                    skip_inputs = skip_inputs
                 )
             )
         else:
@@ -952,10 +1037,13 @@ class Field(Component):
                 break
 
             # Check if there is a list that shall be unlooped
-            if isinstance(self.access_rtl[i], tuple):
-                access_rtl = [self.access_rtl[i]]
-            else:
-                access_rtl = self.access_rtl[i]
+            try:
+                if isinstance(self.access_rtl[i], tuple):
+                    access_rtl = [self.access_rtl[i]]
+                else:
+                    access_rtl = self.access_rtl[i]
+            except KeyError:
+                continue
 
             for unpacked_access_rtl in access_rtl:
                 if len(unpacked_access_rtl[0]) == 0:
@@ -1113,10 +1201,17 @@ class Field(Component):
 
         if self.rst['name']:
             self.resets.add(self.rst['name'])
+        elif obj.get_property("reset") is not None:
+            self.logger.warning("Field has a reset value, but no reset "\
+                                "signal was defined and connected to the "\
+                                "field. Note that explicit connecting this "\
+                                "is not required if a field_reset was defined.")
 
         # Value of reset must always be determined on field level
+        # Don't use 'not obj.get_property("reset"), since the value
+        # could (and will often be) be '0'
         self.rst['value'] = \
-            '\'x' if not obj.get_property("reset") else\
+            '\'x' if obj.get_property("reset") == None else\
                      obj.get_property('reset')
 
         # Define dict that holds all RTL
@@ -1155,13 +1250,14 @@ class Field(Component):
         # Handle always_ff
         sense_list = 'sense_list_rst' if self.rst['async'] else 'sense_list_no_rst'
 
-        self.rtl_header.append(
+        self.always_ff_header = \
             self.process_yaml(
                 Field.templ_dict[sense_list],
                 {'rst_edge': self.rst['edge'],
                  'rst_name': self.rst['name']}
             )
-        )
+
+        self.rtl_header.append(self.always_ff_header)
 
         # Add actual reset line
         if self.rst['name']:
@@ -1179,9 +1275,6 @@ class Field(Component):
 
         self.rtl_header.append("begin")
 
-        # Add name of actual field to Signal field
-        # TODO
-
     def sanity_checks(self):
         # If hw=rw/sw=[r]w and hw has no we/wel, sw will never be able to write
         if not self.we_or_wel and\
@@ -1194,8 +1287,6 @@ class Field(Component):
                                 "write property useless since hardware will "\
                                 "write every cycle.")
 
-
-            # TODO: Counter & hw=r shouldn't work
 
         # If hw=ro and the next property is set, throw a fatal
         if self.obj.get_property('hw') == AccessType.r\
