@@ -200,25 +200,23 @@ class RegFile(Component):
 
         return names
 
-    def get_package_rtl(self, tab_width: int = 4, real_tabs = False) -> dict():
+    def get_package_rtl(self) -> dict():
         if not self.config['enums']:
             return None
 
         # First go through all registers in this scope to generate a package
         package_rtl = []
-        enum_rtl = []
+        enum_rtl = dict()
         rtl_return = list()
 
         # Need to keep track of enum names since they shall be unique
         # per scope
         enum_members = dict()
-        enum_found = False
 
         for i in self.registers.values():
             for key, value in i.get_typedefs().items():
-                if not enum_found:
-                    enum_found = True
-                    scope = value.scope
+                if value.scope not in enum_rtl:
+                    enum_rtl[value.scope] = []
 
                 variable_list = []
 
@@ -241,7 +239,7 @@ class RegFile(Component):
                             "Exiting...".format(
                                 var[0],
                                 enum_members[var[0]],
-                                "::".join([self.name, key])))
+                                "::".join([value.scope, key])))
 
                         sys.exit(1)
 
@@ -252,27 +250,13 @@ class RegFile(Component):
                             max_name_width = max_name_width,
                             name = var[0]))
 
-                enum_rtl.append(
+                enum_rtl[value.scope].append(
                     RegFile.templ_dict['enum_declaration']['rtl'].format(
                         width=value.width-1,
                         name = key,
                         enum_var_list = ',\n'.join(variable_list)))
 
-        if enum_found:
-            package_rtl =\
-                RegFile.templ_dict['package_declaration']['rtl'].format(
-                    name = scope,
-                    pkg_content = '\n\n'.join(enum_rtl))
-
-
-            return {scope:
-                    RegFile.add_tabs(
-                        package_rtl,
-                        tab_width,
-                        real_tabs)
-                   }
-        else:
-            return {None: None}
+        return enum_rtl
 
     def get_regwidth(self) -> int:
         return self.regwidth

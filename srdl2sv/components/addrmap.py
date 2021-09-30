@@ -303,11 +303,12 @@ class AddrMap(Component):
 
         # First go through all registers in this scope to generate a package
         package_rtl = []
-        enum_rtl = []
         rtl_return = dict()
 
         # Need to keep track of enum names since they shall be unique
         # per scope
+        enum_rtl = dict()
+        enum_rtl[self.name] = []
         enum_members = dict()
 
         for i in self.registers.values():
@@ -344,26 +345,33 @@ class AddrMap(Component):
                             max_name_width = max_name_width,
                             name = var[0]))
 
-                enum_rtl.append(
+                enum_rtl[self.name].append(
                     AddrMap.templ_dict['enum_declaration']['rtl'].format(
                         width=value.width-1,
                         name = key,
                         enum_var_list = ',\n'.join(variable_list)))
 
-        package_rtl =\
-            AddrMap.templ_dict['package_declaration']['rtl'].format(
-                name = self.name,
-                pkg_content = '\n\n'.join(enum_rtl))
-
-
-        rtl_return[self.name] = AddrMap.add_tabs(
-            package_rtl,
-            tab_width,
-            real_tabs)
 
         # Invoke get_package_rtl method from regfiles
-        [rtl_return.update(x.get_package_rtl(tab_width, real_tabs))
-            for x in self.regfiles.values()]
+        for regfile in self.regfiles.values():
+            for key, value in regfile.get_package_rtl().items():
+                if key in enum_rtl:
+                    enum_rtl[key] = [*enum_rtl[key], *value]
+                else:
+                    enum_rtl[key] = value
+
+        # Create RTL to return
+        for key, value in enum_rtl.items():
+            package_rtl =\
+                AddrMap.templ_dict['package_declaration']['rtl'].format(
+                    name = key,
+                    pkg_content = '\n\n'.join(enum_rtl[key]))
+
+
+            rtl_return[key] = AddrMap.add_tabs(
+                package_rtl,
+                tab_width,
+                real_tabs)
 
         return rtl_return
 
