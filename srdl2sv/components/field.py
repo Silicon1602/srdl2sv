@@ -1189,7 +1189,7 @@ class Field(Component):
         self.total_dimensions = len(self.total_array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]
+        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]
         self.genvars_str = ''.join(genvars)
 
         # Write enable

@@ -275,7 +275,8 @@ class AddrMap(Component):
 
 
     def __append_genvars(self):
-        genvars = ', '.join([chr(97+i) for i in range(self.get_max_dim_depth())])
+        genvars = ', '.join([''.join(['gv_', chr(97+i)])
+                    for i in range(self.get_max_dim_depth())])
 
         if genvars:
             genvars_instantiation = ''.join([

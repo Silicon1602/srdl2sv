@@ -64,7 +64,7 @@ class Register(Component):
         for i in range(self.dimensions):
             self.rtl_header.append(
                 Register.templ_dict['generate_for_start'].format(
-                    iterator = chr(97+i+self.parents_depths),
+                    iterator = ''.join(['gv_', chr(97+i+self.parents_depths)]),
                     limit = self.array_dimensions[i]))
 
         # Add decoders for all registers & aliases
@@ -82,7 +82,7 @@ class Register(Component):
         for i in range(self.dimensions-1, -1, -1):
             self.rtl_footer.append(
                 Register.templ_dict['generate_for_end'].format(
-                    dimension = chr(97+i)))
+                    dimension = ''.join(['gv_', chr(97+i)])))
 
         if self.dimensions and not self.generate_active:
             self.rtl_footer.append("\nendgenerate\n")
@@ -524,7 +524,7 @@ class Register(Component):
         self.dimensions = len(self.array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(self.total_dimensions)]
+        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(self.total_dimensions)]
         self.genvars_str = ''.join(genvars)
 
         # Determine value to compare address with
@@ -532,7 +532,7 @@ class Register(Component):
         genvars_sum_vectorized = []
         try:
             for i, stride in enumerate(self.total_stride):
-                genvars_sum.append(chr(97+i))
+                genvars_sum.append(''.join(['gv_', chr(97+i)]))
                 genvars_sum.append("*")
                 genvars_sum.append(str(stride))
                 genvars_sum.append("+")

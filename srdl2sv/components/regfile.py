@@ -120,7 +120,7 @@ class RegFile(Component):
             self.rtl_footer.append(
                 self.process_yaml(
                     RegFile.templ_dict['generate_for_end'],
-                    {'dimension':  chr(97+i)}
+                    {'dimension':  ''.join(['gv_', chr(97+i)])}
                 )
             )
 
@@ -128,7 +128,7 @@ class RegFile(Component):
             self.rtl_header.append(
                 self.process_yaml(
                     RegFile.templ_dict['generate_for_start'],
-                    {'iterator': chr(97+i+self.parents_depths),
+                    {'iterator': ''.join(['gv_', chr(97+i+self.parents_depths)]),
                      'limit': self.array_dimensions[i]}
                 )
             )
@@ -174,7 +174,7 @@ class RegFile(Component):
         self.dimensions = len(self.array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[{}]'.format(chr(97+i)) for i in range(self.dimensions)]
+        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(self.dimensions)]
         self.genvars_str = ''.join(genvars)
 
     def create_mux_string(self):
