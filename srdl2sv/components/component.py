@@ -40,8 +40,16 @@ class Component():
         self.config = config.copy()
 
         # By default, registers and fields are not interrupt registers
-        self.intr = False
-        self.halt = False
+        self.properties = {
+            'intr': False,
+            'halt': False,
+            'swmod': False,
+            'swacc': False,
+            'sw_rd': False,
+            'sw_wr': False,
+            'sw_rd_wire': False,
+            'sw_wr_wire': False,
+        }
 
         # Create logger object
         self.create_logger("{}".format(self.full_path), config)

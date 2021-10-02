@@ -76,6 +76,10 @@ class Field(Component):
             # Append to list of registers that can write
             self.writable_by.add(path_wo_field)
 
+            # This will need a wire to indicate that a write is taking place
+            self.properties['sw_wr_wire'] = True
+            self.properties['sw_wr'] = True
+
             swwe = obj.get_property('swwe')
             swwel = obj.get_property('swwel')
 
@@ -114,7 +118,7 @@ class Field(Component):
 
             if onwrite:
                 if onwrite == OnWriteType.wuser:
-                    self.logger.warning("The OnReadType.wuser is not yet supported!")
+                    self.logger.warning("The OnWriteType.wuser is not yet supported!")
                 elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
                     access_rtl['sw_write'][0].append(
                         self.process_yaml(
@@ -177,10 +181,14 @@ class Field(Component):
             # Append to list of registers that can read
             self.readable_by.add(path_wo_field)
 
+            self.properties['sw_wr'] = True
+
             # Set onread properties
             if onread == OnReadType.ruser:
                 self.logger.error("The OnReadType.ruser is not yet supported!")
             elif onread:
+                self.properties['sw_rd_wire'] = True
+
                 access_rtl['sw_read'][0].append(
                     self.process_yaml(
                         Field.templ_dict[str(onread)],
@@ -636,7 +644,7 @@ class Field(Component):
                 )
 
             # Check if SW has write access to the field
-            if self.obj.get_property('sw') in (AccessType.rw, AccessType.w):
+            if self.properties['sw_wr']:
                 swmod_assigns.append(
                     self.process_yaml(
                         Field.templ_dict['swmod_assign'],
@@ -666,9 +674,12 @@ class Field(Component):
             swmod_props = ''
 
         if self.obj.get_property('swacc') and \
-                self.obj.get_property('sw') in (AccessType.rw, AccessType.r):
-
+                (self.properties['sw_rd'] or self.properties['sw_wr']):
             self.logger.debug("Field has swacc property")
+
+            self.properties['swacc'] = True
+            self.properties['sw_wr_wire'] = True
+            self.properties['sw_rd_wire'] = True
 
             swacc_props = self.process_yaml(
                 Field.templ_dict['swacc_assign'],
@@ -691,7 +702,7 @@ class Field(Component):
 
     def __add_interrupt(self):
         if self.obj.get_property('intr'):
-            self.intr = True
+            self.properties['intr'] = True
 
             # Determine what causes the interrupt to get set, i.e.,
             # is it a trigger that is passed to the module through an
@@ -791,21 +802,21 @@ class Field(Component):
                     self.get_signal_name(haltmask)
                 ])
 
-                self.halt = True
+                self.properties['halt'] = True
             elif haltenable := self.obj.get_property('haltenable'):
                 self.itr_haltmasked = ' && '.join([
                     self.register_name,
                     self.get_signal_name(haltenable)
                 ])
 
-                self.halt = True
+                self.properties['halt'] = True
             else:
                 self.itr_haltmasked = self.register_name
         else:
             self.itr_masked = False
             self.itr_haltmasked = False
 
-        return self.intr
+        return self.properties['intr']
 
     def __add_hw_access(self):
         # Mutually exclusive. systemrdl-compiler performs check for this
@@ -957,7 +968,7 @@ class Field(Component):
             )
 
     def create_external_rtl(self):
-        if self.obj.get_property('sw') in (AccessType.rw, AccessType.w):
+        if self.properties['sw_wr']:
             for i, alias in enumerate(self.path_underscored_vec):
                 # Create bit-wise mask so that outside logic knows what
                 # bits it may change
@@ -989,7 +1000,7 @@ class Field(Component):
                     }
                 ))
 
-        if self.obj.get_property('sw') in (AccessType.rw, AccessType.r):
+        if self.properties['sw_rd']:
             for i, alias in enumerate(self.path_underscored_vec):
                 self.rtl_footer.append(self.process_yaml(
                     Field.templ_dict['external_rd_assignments'],

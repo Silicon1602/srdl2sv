@@ -42,9 +42,9 @@ class Register(Component):
                                                self.config,
                                                glbl_settings)
 
-            # Get certain properties from field that apply to whole register
-            self.intr = self.intr or self.children[field_range].intr
-            self.halt = self.halt or self.children[field_range].halt
+            # Get properties from field that apply to whole register
+            for key in self.properties:
+                self.properties[key] |= self.children[field_range].properties[key]
 
             # Perform sanity check
             self.children[field_range].sanity_checks()
@@ -111,7 +111,7 @@ class Register(Component):
         #      no mask or enables are specified.
         #   c) The halt property shall only be present if haltmask or haltenable is 
         #      specified on at least one field in the register.
-        if self.intr:
+        if self.properties['intr']:
             self.rtl_footer.append(Register.templ_dict['interrupt_comment']['rtl'])
 
             self.rtl_footer.append(
@@ -125,7 +125,7 @@ class Register(Component):
                 )
             )
 
-        if self.halt:
+        if self.properties['halt']:
             self.rtl_footer.append(
                 self.process_yaml(
                     Register.templ_dict['interrupt_halt'],
@@ -328,38 +328,100 @@ class Register(Component):
         self.obj.current_idx = [0]
 
         if self.total_dimensions:
-            rw_wire_assign_field = 'rw_wire_assign_multi_dim'
+            access_wire_assign_field = 'access_wire_assign_multi_dim'
         else:
-            rw_wire_assign_field = 'rw_wire_assign_1_dim'
+            access_wire_assign_field = 'access_wire_assign_1_dim'
 
-        [self.rtl_header.append(
-            self.process_yaml(
-                Register.templ_dict[rw_wire_assign_field],
-                {'path': x[0],
-                 'addr': x[1],
-                 'alias': '(alias)' if i > 0 else '',
-                 'genvars': self.genvars_str,
-                 'genvars_sum': self.genvars_sum_str,
-                 'depth': self.depth,
-                 'field_type': self.field_type}
+        for i, x in enumerate(self.name_addr_mappings):
+            self.rtl_header.append(
+                self.process_yaml(
+                    Register.templ_dict['access_wire_comment'],
+                    {'path': x[0],
+                     'alias': '(alias)' if i > 0 else '',
+                    }
+                )
             )
-        ) for i, x in enumerate(self.name_addr_mappings)]
+
+            self.rtl_header.append(
+                self.process_yaml(
+                    Register.templ_dict[access_wire_assign_field],
+                    {'path': x[0],
+                     'addr': x[1],
+                     'genvars': self.genvars_str,
+                     'genvars_sum': self.genvars_sum_str,
+                     'depth': self.depth,
+                    }
+                )
+            )
+
+            # A wire that indicates a read is required
+            if self.properties['sw_rd_wire']:
+                # Check if a read is actually possible. Otherwise provide a wire
+                # that is tied to 1'b0
+                if self.properties['sw_rd']:
+                    self.rtl_header.append(
+                        self.process_yaml(
+                            Register.templ_dict['read_wire_assign'],
+                            {'path': x[0],
+                             'addr': x[1],
+                             'genvars': self.genvars_str,
+                             'genvars_sum': self.genvars_sum_str,
+                             'depth': self.depth,
+                            }
+                        )
+                    )
+                else:
+                    self.rtl_header.append(
+                        self.process_yaml(
+                            Register.templ_dict['read_wire_assign_0'],
+                            {'path': x[0],
+                             'genvars': self.genvars_str,
+                            }
+                        )
+                    )
+
+            # A wire that indicates a write is required
+            if self.properties['sw_wr_wire']:
+                # Check if a write is actually possible. Otherwise provide a wire
+                # that is tied to 1'b0
+                if self.properties['sw_wr']:
+                    self.rtl_header.append(
+                        self.process_yaml(
+                            Register.templ_dict['write_wire_assign'],
+                            {'path': x[0],
+                             'addr': x[1],
+                             'genvars': self.genvars_str,
+                             'genvars_sum': self.genvars_sum_str,
+                             'depth': self.depth,
+                            }
+                        )
+                    )
+                else:
+                    self.rtl_header.append(
+                        self.process_yaml(
+                            Register.templ_dict['write_wire_assign_0'],
+                            {'path': x[0],
+                             'genvars': self.genvars_str,
+                            }
+                        )
+                    )
 
         # Add combined signal to be used for general access of the register
-        self.rtl_header.append(
-            self.process_yaml(
-                Register.templ_dict['rw_wire_assign_any_alias'],
-                {'path': self.name_addr_mappings[0][0],
-                 'genvars': self.genvars_str,
-                 'sw_rds_w_genvars': ' || '.join(
-                     [''.join([x[0], '_sw_rd', self.genvars_str])
-                         for x in self.name_addr_mappings]),
-                 'sw_wrs_w_genvars': ' || '.join(
-                     [''.join([x[0], '_sw_wr', self.genvars_str])
-                         for x in self.name_addr_mappings])
-                }
+        if self.properties['swacc']:
+            self.rtl_header.append(
+                self.process_yaml(
+                    Register.templ_dict['rw_wire_assign_any_alias'],
+                    {'path': self.name_addr_mappings[0][0],
+                     'genvars': self.genvars_str,
+                     'sw_rds_w_genvars': ' || '.join(
+                         [''.join([x[0], '_sw_rd', self.genvars_str])
+                             for x in self.name_addr_mappings]),
+                     'sw_wrs_w_genvars': ' || '.join(
+                         [''.join([x[0], '_sw_wr', self.genvars_str])
+                             for x in self.name_addr_mappings])
+                    }
+                )
             )
-        )
 
     def __add_signal_instantiations(self):
         # Add wire/register instantiations
