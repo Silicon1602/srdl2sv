@@ -89,9 +89,6 @@ hw_access_field:
     signals:
         - name: '{path}_q'
           signal_type: '{field_type}'
-    input_ports:
-        - name: '{path}_in'
-          signal_type: '{field_type}'
 hw_access_field__assignment__input:
     rtl: |-
         {path}_in{genvars}{idx}
@@ -470,22 +467,22 @@ external_wr_assignments:
 external_wr_mask_segment:
     rtl: |-
         {{{width}{{b2r.byte_en[{idx}]}}}}
-interrupt_trigger_input:
+trigger_input:
     rtl: |-
-        {path}_set_intr
+        {path}_in
     input_ports:
-        - name: '{path}_set_intr'
-          signal_type: 'logic'
+        - name: '{path}_in'
+          signal_type: '{field_type}'
 rst_intr_header: 
     rtl: |-
         if ({rst_negl}{rst_name})
         <<INDENT>>
-        {interrupt_trigger_input}_q{genvars} <= 1'b0;
+        {trigger_signal}_q{genvars} <= 1'b0;
         <<UNINDENT>>
         else
     signals:
-        - name: '{interrupt_trigger_input}_q'
-          signal_type: 'logic'
+        - name: '{trigger_signal}_q'
+          signal_type: '{field_type}'
 always_ff_block_intr: 
     rtl: |-
 
@@ -493,53 +490,68 @@ always_ff_block_intr:
         {always_ff_header}
         {reset_intr_header}
         <<INDENT>>
-        {interrupt_trigger_input}_q{genvars} <= {interrupt_trigger_input}{genvars};
+        {trigger_signal}_q{genvars} <= {trigger_signal}{genvars};
         <<UNINDENT>>
     signals:
-        - name: '{interrupt_trigger_input}_q'
-          signal_type: 'logic'
+        - name: '{trigger_signal}_q'
+          signal_type: '{field_type}'
 InterruptType.posedge:
     rtl: |-
 
         // Define signal that causes the interrupt to be set (posedge-type interrupt)
-        assign {path}_intr_latch{genvars} = !{interrupt_trigger_input}_q{genvars} && {interrupt_trigger_input}{genvars};
+        assign {path}_sticky_latch{genvars} = !{trigger_signal}_q{genvars} & {trigger_signal}{genvars};
     signals:
-        - name: '{path}_intr_latch'
-          signal_type: 'logic'
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
 InterruptType.negedge:
     rtl: |-
 
         // Define signal that causes the interrupt to be set (negedge-type interrupt)
-        assign {path}_intr_latch{genvars} = {interrupt_trigger_input}_q{genvars} && !{interrupt_trigger_input}{genvars};
+        assign {path}_sticky_latch{genvars} = {trigger_signal}_q{genvars} & !{trigger_signal}{genvars};
     signals:
-        - name: '{path}_intr_latch'
-          signal_type: 'logic'
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
 InterruptType.bothedge:
     rtl: |-
 
         // Define signal that causes the interrupt to be set (bothedge-type interrupt)
-        assign {path}_intr_latch{genvars} = ({interrupt_trigger_input}_q{genvars} && !{interrupt_trigger_input}{genvars}) || (!{interrupt_trigger_input}_q{genvars} && {interrupt_trigger_input}{genvars});
+        assign {path}_sticky_latch{genvars} = ({trigger_signal}_q{genvars} & !{trigger_signal}{genvars}) | (!{trigger_signal}_q{genvars} & {trigger_signal}{genvars});
     signals:
-        - name: '{path}_intr_latch'
-          signal_type: 'logic'
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
 InterruptType.level:
     rtl: |-
 
         // Define signal that causes the interrupt to be set (level-type interrupt)
-        assign {path}_intr_latch{genvars} = {interrupt_trigger_input}{genvars};
+        assign {path}_sticky_latch{genvars} = {trigger_signal}{genvars};
     signals:
-        - name: '{path}_intr_latch'
-          signal_type: 'logic'
-sticky_intr:
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
+sticky:
     rtl: |-
-        if ({path}_intr_latch{genvars})
+        if (|{path}_sticky_latch{genvars} && !(|{path}_q{genvars}))
         begin
-        // Sticky interrupt. Keep value until software clears it
-        {path}_q{genvars} <= 1'b1;
+        // Sticky. Keep value until software clears it
+        {path}_q{genvars} <= {trigger_signal};
         end
     signals:
-        - name: '{path}_intr_latch'
-          signal_type: 'logic'
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
+stickybit:
+    rtl: |-
+        begin
+        for (int i = 0; i < {width}; i++)
+        begin
+        if ({path}_sticky_latch{genvars}[i])
+        begin
+        // Stickybit. Keep value until software clears it
+        {path}_q{genvars}[i] <= 1'b1;
+        end
+        end
+        end
+    signals:
+        - name: '{path}_sticky_latch'
+          signal_type: '{field_type}'
 nonsticky_intr:
     rtl: |-
         begin

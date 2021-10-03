@@ -103,7 +103,6 @@ class Register(Component):
             ]
 
     def __add_interrupts(self):
-
         # Semantics on the intr and halt property:
         #   a) The intr and halt register properties are outputs; they should only 
         #      occur on the right-hand side of an assignment in SystemRDL.
@@ -119,7 +118,7 @@ class Register(Component):
                     Register.templ_dict['interrupt_intr'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'list': ') || ('.join([
+                     'list': ') || |('.join([
                          x.itr_masked for x in self.children.values() if x.itr_masked])
                     }
                 )
@@ -131,7 +130,7 @@ class Register(Component):
                     Register.templ_dict['interrupt_halt'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
-                     'list': ') || ('.join([
+                     'list': ') || |('.join([
                         x.itr_haltmasked for x in self.children.values() if x.itr_haltmasked])
                     }
                 )

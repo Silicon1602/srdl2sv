@@ -700,43 +700,100 @@ class Field(Component):
 
         self.rtl_footer = [*self.rtl_footer, swmod_props, swacc_props]
 
-    def __add_interrupt(self):
-        if self.obj.get_property('intr'):
-            self.properties['intr'] = True
+    def __add_sticky(self, latch_signal: str, force_trigger_generation: bool = False):
+        bit_type = None
+        trigger_signal = None
 
-            # Determine what causes the interrupt to get set, i.e.,
-            # is it a trigger that is passed to the module through an
-            # input or is it an internal signal
+        if self.obj.get_property('stickybit'):
+            bit_type = 'stickybit'
+        elif self.obj.get_property('sticky'):
+            bit_type = 'sticky'
+
+        # Determine what causes the interrupt to get set, i.e.,
+        # is it a trigger that is passed to the module through an
+        # input or is it an internal signal
+        if bit_type or force_trigger_generation:
             if next_val := self.obj.get_property('next'):
-                intr_trigger = self.get_signal_name(next_val)
+                trigger_signal = self.get_signal_name(next_val)
             else:
-                intr_trigger = \
+                trigger_signal =\
                     self.process_yaml(
-                        Field.templ_dict['interrupt_trigger_input'],
-                        {'path': self.path_underscored}
-                    )
-
-            if self.obj.get_property('stickybit'): 
-                self.access_rtl['hw_write'] = ([
-                    self.process_yaml(
-                        Field.templ_dict['sticky_intr'],
+                        Field.templ_dict['trigger_input'],
                         {'path': self.path_underscored,
-                         'genvars': self.genvars_str,
+                         'field_type': self.field_type,
                         }
                     )
-                ],
-                False)
 
-                # Create logic that contains condition for trigger
-                if self.obj.get_property('intr type') != InterruptType.level:
+        if bit_type:
+            self.access_rtl['hw_write'] = ([
+                self.process_yaml(
+                    Field.templ_dict[bit_type],
+                    {'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'width': self.obj.width,
+                     'field_type': self.field_type,
+                     'trigger_signal': trigger_signal,
+                    }
+                )
+            ],
+            False)
+
+            self.rtl_footer.append(
+                self.process_yaml(
+                    Field.templ_dict[str(latch_signal)],
+                    {'trigger_signal': trigger_signal,
+                     'path': self.path_underscored,
+                     'genvars': self.genvars_str,
+                     'field_type': self.field_type,
+                    }
+                )
+            )
+
+        return (bit_type, trigger_signal)
+
+
+    def __add_interrupt(self):
+        if self.obj.get_property('intr'):
+
+            self.properties['intr'] = True
+
+            intr_type = self.obj.get_property('intr type')
+
+            # Check if it is a sticky(bit) interrupt and generate logic
+            sticky_type, trigger_signal = self.__add_sticky(
+                latch_signal = intr_type,
+                force_trigger_generation = True)
+
+            # Interrupts can have special types of sticky bits: posedge, negedge, bothedge.
+            # Normal fields with the sticky(bit) property are always level.
+            #
+            # The actual sticky field already got generated in __add_sticky()
+            if sticky_type:
+                if self.obj.width > 1 \
+                        and sticky_type == 'sticky' \
+                        and intr_type in \
+                            (InterruptType.posedge,
+                             InterruptType.negedge,
+                             InterruptType.bothedge):
+
+                    self.logger.info(
+                        f"Found '{intr_type}' property for interrupt field that is "\
+                         "wider than 1-bit and has the sticky (rather than the "\
+                         "stickybit property. In this case, the value will be "\
+                         "latched if _any_ bit in the signal changes according to "\
+                         "'{intr_type}'"
+                    )
+
+                if intr_type != InterruptType.level:
                     if self.rst['name']:
                         reset_intr_header = \
                             self.process_yaml(
                                 Field.templ_dict['rst_intr_header'],
-                                {'interrupt_trigger_input': intr_trigger,
+                                {'trigger_signal': trigger_signal,
                                  'rst_name': self.rst['name'],
                                  'rst_negl':  "!" if self.rst['active'] == "active_low" else "",
                                  'genvars': self.genvars_str,
+                                 'field_type': self.field_type,
                                 }
                             )
                     else:
@@ -745,26 +802,14 @@ class Field(Component):
                     self.rtl_footer.append(
                         self.process_yaml(
                             Field.templ_dict['always_ff_block_intr'],
-                            {'interrupt_trigger_input': intr_trigger,
+                            {'trigger_signal': trigger_signal,
                              'always_ff_header': self.always_ff_header,
                              'reset_intr_header': reset_intr_header,
                              'genvars': self.genvars_str,
+                             'field_type': self.field_type,
                             }
                         )
                     )
-
-                # This should be implemented as a match case statement later,
-                # but for now use the old if/elif/else construct to ensure
-                # compatibility with Python versions before 2021
-                self.rtl_footer.append(
-                    self.process_yaml(
-                        Field.templ_dict[str(self.obj.get_property('intr type'))],
-                        {'interrupt_trigger_input': intr_trigger,
-                         'path': self.path_underscored,
-                         'genvars': self.genvars_str,
-                        }
-                    )
-                )
 
 
             else:
@@ -772,7 +817,7 @@ class Field(Component):
                     self.process_yaml(
                         Field.templ_dict['nonsticky_intr'],
                         {'path': self.path_underscored,
-                         'assignment': intr_trigger,
+                         'assignment': trigger_signal,
                          'genvars': self.genvars_str,
                         }
                     )
@@ -782,12 +827,12 @@ class Field(Component):
             # Generate masked & enabled version of interrupt to be
             # picked up by the register at the top level
             if mask := self.obj.get_property('mask'):
-                self.itr_masked = ' && !'.join([
+                self.itr_masked = ' & ~'.join([
                     self.register_name,
                     self.get_signal_name(mask)
                 ])
             elif enable := self.obj.get_property('enable'):
-                self.itr_masked = ' && '.join([
+                self.itr_masked = ' & '.join([
                     self.register_name,
                     self.get_signal_name(enable)
                 ])
@@ -797,14 +842,14 @@ class Field(Component):
             # Generate haltmasked & haltenabled version of interrupt to be
             # picked up by the register at the top level
             if haltmask := self.obj.get_property('haltmask'):
-                self.itr_haltmasked = ' && !'.join([
+                self.itr_haltmasked = ' & ~'.join([
                     self.register_name,
                     self.get_signal_name(haltmask)
                 ])
 
                 self.properties['halt'] = True
             elif haltenable := self.obj.get_property('haltenable'):
-                self.itr_haltmasked = ' && '.join([
+                self.itr_haltmasked = ' & ~'.join([
                     self.register_name,
                     self.get_signal_name(haltenable)
                 ])
@@ -851,7 +896,11 @@ class Field(Component):
             enable_mask_idx = ''
 
         # Define hardware access (if applicable)
-        if self.obj.get_property('counter'):
+        sticky, _ = self.__add_sticky(latch_signal = InterruptType.level)
+
+        if sticky:
+            self.logger.info(f"Found {sticky} property.")
+        elif self.obj.get_property('counter'):
             self.access_rtl['hw_write'] = ([
                 self.process_yaml(
                     Field.templ_dict['hw_access_counter'],
@@ -1022,14 +1071,14 @@ class Field(Component):
             order_list = [
                 'sw_write',
                 'sw_read',
-                'hw_write',
                 'hw_setclr',
+                'hw_write',
                 'singlepulse'
                 ]
         else:
             order_list = [
-                'hw_write',
                 'hw_setclr',
+                'hw_write',
                 'sw_write',
                 'sw_read',
                 'singlepulse'
@@ -1306,3 +1355,10 @@ class Field(Component):
                               "but simultanously, the next property is set. Since "\
                               "this would reflect wrong behavior in documentation, "\
                               "the next property is ignored.")
+
+        # If a stick(bit) is defined, the counter property will be ignored
+        if (self.obj.get_property('stickybit') or self.obj.get_property('sticky')) \
+                and self.obj.get_property('counter'):
+            self.logger.error("It's not possible to combine the sticky(bit) "\
+                              "property with the counter property. The counter property "\
+                              "will be ignored.")
