@@ -96,7 +96,8 @@ module srdl2sv_amba3ahblite
     /****************************
      * Determine current address
      ****************************/
-    logic [31:0] addr_q;
+    logic [31:0] HADDR_q;
+    logic [2:0]  HSIZE_q;
     OP_t         operation_q;
 
     wire addr_err = HADDR % (32'b1 << HSIZE) != 32'b0; 
@@ -112,16 +113,18 @@ module srdl2sv_amba3ahblite
                 // of extending the address phase of the next transfer
                 if (HREADYOUT)
                 begin
-                    // Floor address. Sub-register access will be handled by byte-enables
-                    addr_q      <= {HADDR[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+                    HADDR_q     <= HADDR;
+                    HSIZE_q     <= HSIZE;
                     operation_q <= HWRITE ? WRITE : READ;
                 end
             end
             SEQ:
             begin
                 if (HREADYOUT)
-                    // Floor address. Sub-register access will be handled by byte-enables
-                    addr_q      <= {HADDR[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+                begin
+                    HADDR_q     <= HADDR;
+                    HSIZE_q     <= HSIZE;
+                end
             end
         endcase
     end
@@ -129,14 +132,25 @@ module srdl2sv_amba3ahblite
     /****************************
      * Statemachine
      ****************************/
-    fsm_t fsm_next, fsm_q;
+    logic [BUS_BITS-1:0] HRDATA_temp;
+    fsm_t                fsm_next, fsm_q;
 
     always_comb
     begin
         // Defaults
         HREADYOUT = 1'b1;
         HRESP     = 1'b0;
-        HRDATA    = r2b.data;
+
+        // When reading back, the data of the bit that was accessed over the bus
+        // should be at byte 0 of the HRDATA bus and bits that were not accessed
+        // should be masked with 0s.
+        HRDATA_temp = r2b.data >> (8*HADDR_q[BUS_BYTES_W-1:0]);
+
+        for (int i = 0; i < BUS_BYTES; i++)
+            if (i < (1 << HSIZE_q))
+                HRDATA[8*(i+1)-1 -: 8] = HRDATA_temp[8*(i+1)-1 -: 8];
+            else
+                HRDATA[8*(i+1)-1 -: 8] = 8'b0;
 
         b2r_w_vld_next = 0;
         b2r_r_vld_next = 0;
@@ -245,10 +259,10 @@ module srdl2sv_amba3ahblite
     always_comb
     begin
         for (int i = 0; i < BUS_BYTES; i++)
-            HSIZE_bitfielded[i] = i < (1 << HSIZE);
+            HSIZE_bitfielded[i] = i < (1 << HSIZE_q);
 
         // Shift if not the full bus is accessed
-        b2r_byte_en_next = HSIZE_bitfielded << (HADDR % BUS_BYTES);
+        b2r_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
     end
 
     /***
@@ -271,8 +285,8 @@ module srdl2sv_amba3ahblite
 
         always_ff @ (posedge HCLK)
         begin
-            b2r.addr    <= addr_q;
-            b2r.data    <= HWDATA << HADDR[BUS_BYTES_W-1:0];
+            b2r.addr    <= {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+            b2r.data    <= HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
             b2r.byte_en <= b2r_byte_en_next;
         end
     end
@@ -280,8 +294,8 @@ module srdl2sv_amba3ahblite
     begin
         assign b2r.w_vld   = b2r_w_vld_next;
         assign b2r.r_vld   = b2r_r_vld_next;
-        assign b2r.addr    = addr_q;
-        assign b2r.data    = HWDATA << HADDR[BUS_BYTES_W-1:0];
+        assign b2r.addr    = {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+        assign b2r.data    = HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
         assign b2r.byte_en = b2r_byte_en_next;
     end
     endgenerate
