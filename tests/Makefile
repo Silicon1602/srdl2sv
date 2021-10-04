@@ -1,5 +1,8 @@
 ALL_COCOTB_TESTS = $(shell ls cocotb_tests/test_*.py | sed -E 's|.*?/test_(.*?).py|\1|g')
 
+.PHONY: clean
+.PRECIOUS: build_dirs/%/compile.f
+
 default: $(ALL_COCOTB_TESTS)
 
 # This target will always rebuild, which is fine since we want to be sure to execute any
@@ -31,15 +34,13 @@ default: $(ALL_COCOTB_TESTS)
 	@echo "##############################################################################"
 	@echo "##############################################################################"
 	
-build_dirs/%/*.sv: systemrdl/%.rdl
+build_dirs/%/compile.f: systemrdl/%.rdl 
 	../srdl2sv/main.py $? --out_dir $(shell dirname $@) --file_log_level DEBUG --stream_log_level DEBUG
 
-build_dirs/%/compile.f: build_dirs/%/*.sv 
 	ls $(PWD)/$(@D)/*_pkg.sv > $@
 	ls $(PWD)/$(@D)/*amba*.sv >> $@
 	ls $(PWD)/$(@D)/*.sv | grep -v '.*_pkg.sv$$' | grep -v '.*amba.*' >> $@
 
-.PHONY: clean
 
 clean:
 	rm -rf build_dirs
