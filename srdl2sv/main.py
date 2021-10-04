@@ -47,15 +47,6 @@ if __name__ == "__main__":
 
     addrmap = AddrMap(root.top, config)
 
-    # Create output directory
-    try:
-        os.makedirs(config['output_dir'])
-        logger.info('Succesfully created directory "{}"'.format(
-            config['output_dir']))
-    except FileExistsError:
-        logger.info('Directory "{}" does already exist'.format(
-            config['output_dir']))
-
     # Save RTL to file
     # Start out with addrmap
     out_addrmap_file = "{}/{}.sv".format(config['output_dir'], addrmap.name)

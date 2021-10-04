@@ -104,6 +104,12 @@ class CliArguments():
         config['output_dir'] = args.out_dir
         config['list_args'].append('Ouput Directory  : {}'.format(config['output_dir']))
 
+        # Create output directory
+        try:
+            os.makedirs(config['output_dir'])
+        except FileExistsError:
+            pass
+
         # Map logging level string to integers
         config['stream_log_level'] = logging_map[args.stream_log_level]
         config['file_log_level'] = logging_map[args.file_log_level]
@@ -125,7 +131,7 @@ class CliArguments():
 
         # Determine name of file to hold logs
         ts = time.strftime('%Y%m%d_%H%M%S', config['ts'])
-        config['file_log_location'] = "srdl2sv_{}.log".format(ts)
+        config['file_log_location'] = "/".join([config['output_dir'], "srdl2sv_{}.log".format(ts)])
 
         # Tab style
         config['real_tabs'] = args.real_tabs
