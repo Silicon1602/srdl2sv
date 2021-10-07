@@ -270,7 +270,7 @@ class AddrMap(Component):
 
         return self.process_yaml(
             self.widget_templ_dict['module_instantiation'],
-            {'bus_width': self.regwidth-1}
+            {'bus_width': self.regwidth}
         )
 
 
