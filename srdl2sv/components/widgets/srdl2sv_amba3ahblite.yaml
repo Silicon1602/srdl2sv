@@ -56,7 +56,7 @@ module_instantiation:
         - name: 'HTRANS'
           signal_type: '[1:0]'
         - name: 'HWDATA'
-          signal_type: '[{bus_width}-1:0]'
+          signal_type: '[{bus_width}:0]'
         - name: 'HSEL'
           signal_type: ''
     output_ports:
@@ -65,4 +65,4 @@ module_instantiation:
         - name: 'HRESP'
           signal_type: ''
         - name: 'HRDATA'
-          signal_type: '[{bus_width}-1:0]'
+          signal_type: '[{bus_width}:0]'

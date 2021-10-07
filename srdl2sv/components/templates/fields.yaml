@@ -420,9 +420,9 @@ external_rd_assignments:
         - name: '{path}_ext_r_data'
           signal_type: '{field_type}'
         - name: '{path}_ext_r_ack'
-          signal_type: 'logic'
+          signal_type: ''
         - name: '{path}_ext_r_err'
-          signal_type: 'logic'
+          signal_type: ''
     output_ports:
         - name: '{path}_ext_r_req'
           signal_type: 'logic'
@@ -461,9 +461,9 @@ external_wr_assignments:
           signal_type: 'logic [{width}:0]'
     input_ports:
         - name: '{path}_ext_w_ack'
-          signal_type: 'logic'
+          signal_type: ''
         - name: '{path}_ext_w_err'
-          signal_type: 'logic'
+          signal_type: ''
 external_wr_mask_segment:
     rtl: |-
         {{{width}{{b2r.byte_en[{idx}]}}}}

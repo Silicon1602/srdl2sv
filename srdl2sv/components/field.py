@@ -72,13 +72,12 @@ class Field(Component):
         # Define software access (if applicable)
         access_rtl['sw_write'] = ([], False)
 
-        if obj.get_property('sw') in (AccessType.rw, AccessType.w):
+        if self.properties['sw_wr']:
             # Append to list of registers that can write
             self.writable_by.add(path_wo_field)
 
             # This will need a wire to indicate that a write is taking place
             self.properties['sw_wr_wire'] = True
-            self.properties['sw_wr'] = True
 
             swwe = obj.get_property('swwe')
             swwel = obj.get_property('swwel')
@@ -1231,6 +1230,10 @@ class Field(Component):
 
         self.path_underscored_vec = []
         self.path_wo_field_vec = []
+
+        # Set some properties that always must be known
+        self.properties['sw_wr'] = obj.get_property('sw') in (AccessType.rw, AccessType.w)
+        self.properties['sw_rd'] = obj.get_property('sw') in (AccessType.rw, AccessType.r)
 
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
