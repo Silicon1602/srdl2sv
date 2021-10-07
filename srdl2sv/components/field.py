@@ -1235,6 +1235,10 @@ class Field(Component):
         self.properties['sw_wr'] = obj.get_property('sw') in (AccessType.rw, AccessType.w)
         self.properties['sw_rd'] = obj.get_property('sw') in (AccessType.rw, AccessType.r)
 
+        # In case of an external register, a wire to indicate a read
+        # is always required
+        self.properties['sw_rd_wire'] = self.config['external'] and self.properties['sw_rd']
+
         # Save dimensions of unpacked dimension
         self.array_dimensions = array_dimensions
         self.total_array_dimensions = array_dimensions
