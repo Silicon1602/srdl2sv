@@ -3,8 +3,14 @@ import math
 import cocotb
 from cocotb.triggers import Timer, RisingEdge
 
-# TODO: Does not yet implement HREADY_OUT == 0
-# TODO: Add support for HRESP (and throw error if HRESP occurs)
+class BusErrorResponse(Exception):
+    pass
+
+class WrongErrorSequence(Exception):
+    pass
+
+class WrongHREADYOUTSequence(Exception):
+    pass
 
 class HTRANS(Enum):
     IDLE = 0
@@ -59,24 +65,47 @@ class AMBA3AHBLiteDriver:
         await RisingEdge(self._dut.clk)
 
         while True:
-            # Save address from previous phase
-            previous_address = hex(self._dut.HADDR.value)
+            if self._dut.HREADYOUT.value:
+                # Save address from previous phase
+                previous_address = int(self._dut.HADDR.value)
 
-            # Set data for dataphase
-            self._dut.HWDATA <= (value >> (nbytes_cnt * 8))
+                # Set data for dataphase
+                self._dut.HWDATA <= (value >> (nbytes_cnt * 8))
 
-            # Check if we are done in next phase
-            if (nbytes_cnt := nbytes_cnt + step_size) >= nbytes:
-                self._dut.HTRANS <= HTRANS.IDLE.value
+                # Check if we are done in next phase
+                if (nbytes_cnt := nbytes_cnt + step_size) >= nbytes:
+                    self._dut.HTRANS <= HTRANS.IDLE.value
+                else:
+                    # Update address
+                    self._dut.HADDR <= self._dut.HADDR.value + step_size
+
+                # Wait for next clock cycle
+                await RisingEdge(self._dut.clk)
+
+                # Save into dictionary
+                write_dict[previous_address] = int(self._dut.HWDATA.value)
+
+            # If HREADYOUT == 0 immediately after the first address phase
+            # this is illegal
+            elif nbytes_cnt == 0:
+                raise WrongHREADYOUTSequence
+            # If the slave is not yet ready, just wait
             else:
-                # Update address
-                self._dut.HADDR <= self._dut.HADDR.value + step_size
+                await RisingEdge(self._dut.clk)
+                continue
 
-            # Wait for next clock cycle
-            await RisingEdge(self._dut.clk)
+            # Check for error condition
+            if self._dut.HRESP.value:
+                if self._dut.HREADYOUT.value:
+                    raise WrongErrorSequence
 
-            # Save into dictionary
-            write_dict[previous_address] = hex(self._dut.HWDATA.value)
+                await RisingEdge(self._dut.clk)
+
+                if self._dut.HREADYOUT.value:
+                    raise BusErrorResponse
+
+                raise WrongErrorSequence
+
 
             if nbytes_cnt >= nbytes:
                 break
@@ -113,21 +142,42 @@ class AMBA3AHBLiteDriver:
         await RisingEdge(self._dut.clk)
 
         while True:
-            # Save address from previous phase
-            previous_address = hex(self._dut.HADDR.value)
+            if self._dut.HREADYOUT.value:
+                # Save address from previous phase
+                previous_address = int(self._dut.HADDR.value)
 
-            # Check if we are done in next phase
-            if (nbytes_cnt := nbytes_cnt + step_size) >= nbytes:
-                self._dut.HTRANS <= HTRANS.IDLE.value
+                # Check if we are done in next phase
+                if (nbytes_cnt := nbytes_cnt + step_size) >= nbytes:
+                    self._dut.HTRANS <= HTRANS.IDLE.value
+                else:
+                    # Update address
+                    self._dut.HADDR <= self._dut.HADDR.value + step_size
+
+                # Wait for next clock cycle
+                await RisingEdge(self._dut.clk)
+
+                # Save into dictionary
+                read_dict[previous_address] = int(self._dut.HRDATA.value)
+            # If HREADYOUT == 0 immediately after the first address phase
+            # this is illegal
+            elif nbytes_cnt == 0:
+                raise WrongHREADYOUTSequence
+            # If the slave is not yet ready, just wait
             else:
-                # Update address
-                self._dut.HADDR <= self._dut.HADDR.value + step_size
+                await RisingEdge(self._dut.clk)
+                continue
 
-            # Wait for next clock cycle
-            await RisingEdge(self._dut.clk)
+            # Check for error condition
+            if self._dut.HRESP.value:
+                if self._dut.HREADYOUT.value:
+                    raise WrongErrorSequence
 
-            # Save into dictionary
-            read_dict[previous_address] = hex(self._dut.HRDATA.value)
+                await RisingEdge(self._dut.clk)
+
+                if self._dut.HREADYOUT.value:
+                    raise BusErrorResponse
+
+                raise WrongErrorSequence
 
             if nbytes_cnt >= nbytes:
                 break
