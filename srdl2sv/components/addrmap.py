@@ -32,6 +32,14 @@ class AddrMap(Component):
         # Use global settings to define whether a component is already in a generate block
         glbl_settings['generate_active'] = False
 
+        # Save whether 0, 1, or x must be set for reserved bits
+        if obj.get_property('rsvdset'):
+            glbl_settings['rsvd_val'] = "1"
+        elif obj.get_property('rsvdsetX'):
+            glbl_settings['rsvd_val'] = "x"
+        else:
+            glbl_settings['rsvd_val'] = "0"
+
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)

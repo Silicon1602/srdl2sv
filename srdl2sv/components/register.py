@@ -157,7 +157,8 @@ class Register(Component):
                     current_bit = field.msb + 1
 
                     if empty_bits > 0:
-                        list_of_fields.append("{}'b0".format(empty_bits))
+                        list_of_fields.append(
+                            f"{{{empty_bits}{{1'b{self.glbl_settings['rsvd_val']}}}}}")
 
                     list_of_fields.append("{}_q{}".format(field.path_underscored, self.genvars_str))
 
@@ -173,7 +174,8 @@ class Register(Component):
             no_reads = not list_of_fields
 
             if empty_bits > 0:
-                list_of_fields.append("{}'b0".format(empty_bits))
+                list_of_fields.append(
+                    f"{{{empty_bits}{{1'b{self.glbl_settings['rsvd_val']}}}}}")
 
             # Create list of mux-inputs to later be picked up by carrying addrmap
             self.sw_mux_assignment_var_name.append(
@@ -482,12 +484,15 @@ class Register(Component):
         self.obj.current_idx = [0]
         self.name = obj.inst_name
 
+        # Save global settings
+        self.glbl_settings = glbl_settings
+
         # Create mapping between (alias-) name and address
         self.name_addr_mappings = [
             (self.create_underscored_path_static(obj)[3], obj.absolute_address)
             ]
 
-        # Gnerate already started?
+        # Geneate already started?
         self.generate_active = glbl_settings['generate_active']
 
         # Empty array for mux-input signals
