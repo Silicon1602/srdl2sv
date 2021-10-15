@@ -371,10 +371,14 @@ class AddrMap(Component):
 
         # Create RTL to return
         for key, value in enum_rtl.items():
+            if not value:
+                # Skip if package wouldn't contain any enums
+                continue
+
             package_rtl =\
                 AddrMap.templ_dict['package_declaration']['rtl'].format(
                     name = key,
-                    pkg_content = '\n\n'.join(enum_rtl[key]))
+                    pkg_content = '\n\n'.join(value))
 
 
             rtl_return[key] = AddrMap.add_tabs(
