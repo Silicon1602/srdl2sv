@@ -171,6 +171,12 @@ field_comment:
         // flags      : {misc_flags}
         // external   : {external}
         //-----------------------------------------------
+field_desc: 
+    rtl: |-
+
+        /********************DESCRIPTION*****************
+        {desc}
+        /************************************************/
 combo_operation_comment: 
     rtl: |-
 

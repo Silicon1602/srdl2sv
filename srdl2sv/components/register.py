@@ -93,6 +93,12 @@ class Register(Component):
             # regfile which create a generate
             self.__add_signal_instantiations()
 
+        # Add description, if applicable
+        self.rtl_header = [
+                self.get_description(),
+                *self.rtl_header
+            ]
+
         # Create comment and provide user information about register he/she is looking at
         self.rtl_header = [
             Register.templ_dict['reg_comment'].format(
@@ -567,3 +573,12 @@ class Register(Component):
     def get_regwidth(self) -> int:
         return self.obj.get_property('regwidth')
 
+    def get_description(self):
+        if self.config['descriptions']['register']:
+            if desc := self.obj.get_property('desc'):
+                return self.process_yaml(
+                        Register.templ_dict['reg_desc'],
+                        {'desc': desc},
+                )
+
+        return ''

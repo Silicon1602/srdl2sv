@@ -318,3 +318,4 @@ class Component():
         path_underscored = path.replace('.', '__')
 
         return (owning_addrmap, full_path, path, path_underscored)
+

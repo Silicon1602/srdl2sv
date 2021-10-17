@@ -103,6 +103,12 @@ class RegFile(Component):
             self.rtl_header.append("")
             self.rtl_header.append("generate")
 
+        # Add description, if applicable
+        self.rtl_header = [
+                self.get_description(),
+                *self.rtl_header
+            ]
+
         # Create comment and provide user information about register he/she
         # is looking at.
         self.rtl_header = [
@@ -261,3 +267,12 @@ class RegFile(Component):
     def get_regwidth(self) -> int:
         return self.regwidth
 
+    def get_description(self):
+        if self.config['descriptions']['regfile']:
+            if desc := self.obj.get_property('desc'):
+                return self.process_yaml(
+                        RegFile.templ_dict['regfile_desc'],
+                        {'desc': desc},
+                )
+
+        return ''

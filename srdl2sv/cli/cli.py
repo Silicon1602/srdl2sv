@@ -85,6 +85,13 @@ class CliArguments():
             help="Define how many tabs or spaces will be contained\
                   in one level of indentation. (default: %(default)s)")
 
+        self.parser.add_argument(
+            "-i",
+            "--include_desc",
+            type=int,
+            default=0,
+            help="Include descriptions of addrmaps (+8), regfiles (+4), registers \
+                  (+2), and fields (+1) in RTL. This is a bitfield.")
 
         self.parser.add_argument(
             "IN_RDL",
@@ -97,12 +104,12 @@ class CliArguments():
 
         # Create dictionary to save config in
         config = dict()
-        config['list_args'] = list()
+        config['list_args'] = []
 
         # Save input file and output directory to dump everything in
         config['input_file'] = args.IN_RDL
         config['output_dir'] = args.out_dir
-        config['list_args'].append('Ouput Directory  : {}'.format(config['output_dir']))
+        config['list_args'].append(f"Ouput Directory  : {config['output_dir']}")
 
         # Create output directory
         try:
@@ -113,8 +120,8 @@ class CliArguments():
         # Map logging level string to integers
         config['stream_log_level'] = logging_map[args.stream_log_level]
         config['file_log_level'] = logging_map[args.file_log_level]
-        config['list_args'].append('Stream Log Level : {}'.format(args.stream_log_level))
-        config['list_args'].append('File Log Level   : {}'.format(args.file_log_level))
+        config['list_args'].append(f"Stream Log Level : {args.stream_log_level}")
+        config['list_args'].append(f"File Log Level   : {args.file_log_level}")
 
         # Determine paths to be passed to systemrdl-compiler to search
         # for include files.
@@ -131,25 +138,34 @@ class CliArguments():
 
         # Determine name of file to hold logs
         ts = time.strftime('%Y%m%d_%H%M%S', config['ts'])
-        config['file_log_location'] = "/".join([config['output_dir'], "srdl2sv_{}.log".format(ts)])
+        config['file_log_location'] = "/".join([config['output_dir'], f"srdl2sv_{ts}.log"])
 
         # Tab style
         config['real_tabs'] = args.real_tabs
         config['tab_width'] = args.tab_width
 
-        config['list_args'].append('Use Real Tabs    : {}'.format(config['real_tabs']))
-        config['list_args'].append('Tab Width        : {}'.format(config['tab_width']))
+        config['list_args'].append(f"Use Real Tabs    : {config['real_tabs']}")
+        config['list_args'].append(f"Tab Width        : {config['tab_width']}")
 
         # Set enums
         config['enums'] = not args.disable_enums
-        config['list_args'].append('Enums Enabled    : {}'.format(config['enums']))
+        config['list_args'].append(f"Enums Enabled    : {config['enums']}")
 
         # Set bus
         config['bus'] = args.bus
-        config['list_args'].append('Register Bus Type: {}'.format(config['bus']))
+        config['list_args'].append(f"Register Bus Type: {config['bus']}")
 
         if args.bus == 'amba3ahblite':
             config['addrwidth'] = 32
+
+        # Set location where descirptions shall be set
+        # Comparison to 1 to get a Python bool
+        config['descriptions'] = {}
+        config['descriptions']['addrmap'] = (args.include_desc >> 3) & 1 == 1
+        config['descriptions']['regfile'] = (args.include_desc >> 2) & 1 == 1
+        config['descriptions']['field'] = (args.include_desc >> 1) & 1 == 1
+        config['descriptions']['register'] = (args.include_desc >> 0) & 1 == 1
+        config['list_args'].append(f"Descriptions     : {config['descriptions']}")
 
         # Set version
         config['version'] = '0.01'

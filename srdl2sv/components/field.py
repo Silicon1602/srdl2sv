@@ -41,6 +41,9 @@ class Field(Component):
         # Print a summary
         self.rtl_header.append(self.summary())
 
+        # Add description
+        self.rtl_header.append(self.get_description())
+
         # HW Access can be handled in __init__ function but SW access
         # must be handled in a seperate method that can be called
         # seperately in case of alias registers
@@ -1369,3 +1372,13 @@ class Field(Component):
             self.logger.error("It's not possible to combine the sticky(bit) "\
                               "property with the counter property. The counter property "\
                               "will be ignored.")
+
+    def get_description(self):
+        if self.config['descriptions']['field']:
+            if desc := self.obj.get_property('desc'):
+                return self.process_yaml(
+                        Field.templ_dict['field_desc'],
+                        {'desc': desc},
+                )
+
+        return ''

@@ -196,6 +196,9 @@ class AddrMap(Component):
                 inputs = '\n'.join(input_ports_rtl),
                 outputs = '\n'.join(output_ports_rtl)))
 
+        # Add description, if applicable
+        self.rtl_header.append(self.get_description())
+
         # Add wire/register instantiations
         self.__add_signal_instantiation()
 
@@ -390,3 +393,13 @@ class AddrMap(Component):
 
     def get_regwidth(self) -> int:
         return self.regwidth
+
+    def get_description(self):
+        if self.config['descriptions']['addrmap']:
+            if desc := self.obj.get_property('desc'):
+                return self.process_yaml(
+                        AddrMap.templ_dict['addrmap_desc'],
+                        {'desc': desc},
+                )
+
+        return ''
