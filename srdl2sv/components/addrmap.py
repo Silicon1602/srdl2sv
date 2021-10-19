@@ -9,6 +9,7 @@ from systemrdl import node
 from components.component import Component
 from components.regfile import RegFile
 from components.register import Register
+from components.memory import Memory
 from . import templates
 from . import widgets
 
@@ -45,6 +46,7 @@ class AddrMap(Component):
         # by name (for example, in case of aliases)
         self.registers = dict()
         self.regfiles = dict()
+        self.mems = dict()
         self.regwidth = 0
 
         # Traverse through children
@@ -55,8 +57,11 @@ class AddrMap(Component):
                 self.logger.info('Found hierarchical addrmap. Entering it...')
                 self.logger.error('Child addrmaps are not implemented yet!')
             elif isinstance(child, node.RegfileNode):
-                self.regfiles[child.inst_name] = \
-                    RegFile(child, [], [], config, glbl_settings)
+                new_child = RegFile(child, [], [], config, glbl_settings)
+                self.regfiles[child.inst_name] = new_child
+            elif isinstance(child, node.MemNode):
+                new_child = Memory(child, [], [], config, glbl_settings)
+                self.mems[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
@@ -65,11 +70,11 @@ class AddrMap(Component):
                     self.registers[child.inst.alias_primary_inst.inst_name]\
                         .add_alias(child)
                 else:
-                    self.registers[child.inst_name] = \
-                        Register(child, [], [], config, glbl_settings)
+                    new_child = Register(child, [], [], config, glbl_settings)
+                    self.registers[child.inst_name] = new_child
 
             try:
-                if (regwidth := self.registers[child.inst_name].get_regwidth()) > self.regwidth:
+                if (regwidth := new_child.get_regwidth()) > self.regwidth:
                     self.regwidth = regwidth
             except KeyError:
                 # Simply ignore nodes like SignalNodes
@@ -80,12 +85,12 @@ class AddrMap(Component):
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
-        self.children = {**self.regfiles, **self.registers}
+        self.children = {**self.regfiles, **self.registers, **self.mems}
 
         self.logger.info("Done generating all child-regfiles/registers")
 
         # Create RTL of all registers. Registers in regfiles are
-        # already built.
+        # already built and so are memories.
         [x.create_rtl() for x in self.registers.values()]
 
         # Add bus widget ports
@@ -119,6 +124,7 @@ class AddrMap(Component):
 
 
         # Input ports
+        # Yay for unreadable code....
         input_ports_rtl = [
             AddrMap.templ_dict['input_port']['rtl'].format(
                 name = key,
@@ -169,7 +175,7 @@ class AddrMap(Component):
             pass
 
         import_package_list.pop()
-        
+
         import getpass
         import socket
         import time
@@ -215,6 +221,9 @@ class AddrMap(Component):
         self.rtl_footer.append('endmodule')
 
     def __create_mux_string(self):
+        #TODO: For optimal synthesis results, think about using 1B offsets rather than awkard 4B.
+        #      for byte-access, byte-enables are used anyway
+
         # Define default case
         list_of_cases = [AddrMap.templ_dict['default_mux_case']['rtl']]
 
@@ -234,12 +243,17 @@ class AddrMap(Component):
                 r2b_data = ''.join([mux_entry[0][0], mux_entry[1][1]])
                 r2b_rdy = ''.join([mux_entry[0][1], mux_entry[1][1]])
                 r2b_err = ''.join([mux_entry[0][2], mux_entry[1][1]])
-                index = mux_entry[0][3] + mux_entry[1][0]
+
+                if child.__class__.__name__ == "Memory":
+                    index = \
+                        f"[{self.config['addrwidth']}'d{mux_entry[0][3][0]}:"\
+                        f"{self.config['addrwidth']}'d{mux_entry[0][3][1]}]"
+                else:
+                    index = f"{self.config['addrwidth']}'d{mux_entry[0][3] + mux_entry[1][0]}"
 
                 list_of_cases.append(
                     AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
                         index = index,
-                        bus_width = self.config['addrwidth'],
                         r2b_data = r2b_data,
                         r2b_rdy = r2b_rdy,
                         r2b_err = r2b_err)
@@ -393,13 +407,3 @@ class AddrMap(Component):
 
     def get_regwidth(self) -> int:
         return self.regwidth
-
-    def get_description(self):
-        if self.config['descriptions']['addrmap']:
-            if desc := self.obj.get_property('desc'):
-                return self.process_yaml(
-                        AddrMap.templ_dict['addrmap_desc'],
-                        {'desc': desc},
-                )
-
-        return ''

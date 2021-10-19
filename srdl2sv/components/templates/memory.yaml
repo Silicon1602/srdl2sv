@@ -1,0 +1,169 @@
+---
+mem_comment:
+    rtl: |-
+        /*******************************************************************
+         *******************************************************************
+         * MEMORY INSTANCE NAME  : {inst_name}
+         * MEMORY TYPE           : {type_name}
+         * MEMORY WIDTH          : {memory_width}
+         * MEMORY DEPTH          : {memory_depth}
+         * RDL DIMENSION         : {dimensions}
+         * DEPTHS (per dimension): {depth}
+         *******************************************************************
+         *******************************************************************/
+description: 
+    rtl: |-
+
+      /**MEMORY DESCRIPTION***********************************************
+      {desc}
+      /*******************************************************************/
+generate_for_start: 
+    rtl: |-
+        for ({iterator} = 0; {iterator} < {limit}; {iterator}++)
+        begin
+generate_for_end: 
+    rtl: |-
+        end // of for loop with iterator {dimension}
+memory_adr_assignments:
+    rtl: |-
+
+        /**********************************
+         * Address of memory              *
+         **********************************
+         * This interface provides the address of a read/write,
+         * relative to the start of the memory instance.
+         *
+         * The address is divided so that byte-addresses are
+         * translated full memory entries
+         */
+        assign {path}_mem_address = (b2r.addr - {lower_bound}) / {bytes_w};
+        assign {path}_mem_active = {path}_mem_address >= {lower_bound} && {path}_mem_address < {upper_bound};
+
+    signals:
+        - name: '{path}_mem_active'
+          signal_type: 'logic'
+          no_unpacked: True
+    output_ports:
+        - name: '{path}_mem_address'
+          signal_type: 'logic [{addr_w}:0]'
+          no_unpacked: True
+memory_rd_assignments:
+    rtl: |-
+
+        /**********************************
+         * Handle memory read interface *
+         **********************************
+         * The '{path}_mem_r_req' output will be asserted once a read
+         * is requested by the bus and will stay high until '{path}_mem_r_ack' 
+         * gets set. During a read, byte-enables will be ignored.
+         *
+         * '{path}_mem_r_ack' shall be held 1'b1 until all fields in the register
+         * acknowledged the read. In practice, this means until '{path}_mem_r_req'
+         * goes back to 1'b0.
+         *
+         * If '{path}_mem_r_err' gets set, it must also be held during the
+         * complete time '{path}_mem_r_ack' is high.
+         */
+        // Request read signal
+        assign {path}_mem_r_req = {path}_mem_active && b2r.r_vld;
+    input_ports:
+        - name: '{path}_mem_r_data'
+          signal_type: '[{data_w}:0]'
+          no_unpacked: True
+        - name: '{path}_mem_r_ack'
+          signal_type: ''
+          no_unpacked: True
+        - name: '{path}_mem_r_err'
+          signal_type: ''
+          no_unpacked: True
+    output_ports:
+        - name: '{path}_mem_r_req'
+          signal_type: 'logic'
+          no_unpacked: True
+memory_wr_assignments:
+    rtl: |-
+
+        /***********************************
+         * Handle memory write interface *
+         ***********************************
+         * The '{path}_mem_w_req' output will be asserted once a write
+         * is requested by the bus and will stay high until '{path}_mem_w_ack' 
+         * gets set. During a write, hardware shall not touch any bits that
+         * are not defined in '{path}_mem_w_mask'.
+         *
+         * '{path}_mem_w_ack' shall be held 1'b1 until all fields in the register
+         * acknowledged the read. In practice, this means until '{path}_mem_w_req'
+         * goes back to 1'b0.
+         *
+         * If '{path}_mem_w_err' gets set, it must also be held during the
+         * complete time '{path}_mem_w_ack' is high.
+         */
+        // Write request
+        assign {path}_mem_w_req = {path}_mem_active && b2r.w_vld;
+
+        // Assign value from bus to output
+        assign {path}_mem_w_data = b2r.data;
+    output_ports:
+        - name: '{path}_mem_w_req'
+          signal_type: 'logic'
+          no_unpacked: True
+        - name: '{path}_mem_w_data'
+          signal_type: 'logic [{data_w}:0]'
+          no_unpacked: True
+    input_ports:
+        - name: '{path}_mem_w_ack'
+          signal_type: ''
+          no_unpacked: True
+        - name: '{path}_mem_w_err'
+          signal_type: ''
+          no_unpacked: True
+signal_declaration: |-
+    {type:{signal_width}} {name:{name_width}}{unpacked_dim};
+sw_data_assignment_var_name:
+    rtl: |-
+        {path}_data_mux_in
+    signals:
+        - name: '{path}_data_mux_in'
+          signal_type: 'logic [{accesswidth}:0]'
+          no_unpacked: True
+sw_err_assignment_var_name:
+    rtl: |-
+        {path}_err_mux_in
+    signals:
+        - name: '{path}_err_mux_in'
+          signal_type: 'logic'
+          no_unpacked: True
+sw_rdy_assignment_var_name:
+    rtl: |-
+        {path}_rdy_mux_in
+    signals:
+        - name: '{path}_rdy_mux_in'
+          signal_type: 'logic'
+          no_unpacked: True
+sw_data_assignment_ro:
+    rtl: |-
+
+       /************************************** 
+        * Assign memory to Mux               *
+        **************************************/
+       assign {sw_data_assignment_var_name} = {path}_mem_r_data;
+       assign {sw_rdy_assignment_var_name} = {path}_mem_r_ack;
+       assign {sw_err_assignment_var_name} = {path}_mem_r_err;
+sw_data_assignment_wo:
+    rtl: |-
+
+       /************************************** 
+        * Assign memory to Mux               *
+        **************************************/
+       assign {sw_data_assignment_var_name} = {{{width}{{{default_val}}};
+       assign {sw_rdy_assignment_var_name} = {path}_mem_w_ack;
+       assign {sw_err_assignment_var_name} = {path}_mem_w_err;
+sw_data_assignment_rw:
+    rtl: |-
+
+       /************************************** 
+        * Assign memory to Mux               *
+        **************************************/
+       assign {sw_data_assignment_var_name} = {path}_mem_r_data;
+       assign {sw_rdy_assignment_var_name} = {path}_mem_r_ack || {path}_mem_w_ack;
+       assign {sw_err_assignment_var_name} = ({path}_mem_r_err && {path}_mem_r_ack) || ({path}_mem_w_err && {path}_mem_w_ack);

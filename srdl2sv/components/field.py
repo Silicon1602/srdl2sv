@@ -1372,13 +1372,3 @@ class Field(Component):
             self.logger.error("It's not possible to combine the sticky(bit) "\
                               "property with the counter property. The counter property "\
                               "will be ignored.")
-
-    def get_description(self):
-        if self.config['descriptions']['field']:
-            if desc := self.obj.get_property('desc'):
-                return self.process_yaml(
-                        Field.templ_dict['field_desc'],
-                        {'desc': desc},
-                )
-
-        return ''

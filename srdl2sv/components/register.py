@@ -572,13 +572,3 @@ class Register(Component):
 
     def get_regwidth(self) -> int:
         return self.obj.get_property('regwidth')
-
-    def get_description(self):
-        if self.config['descriptions']['register']:
-            if desc := self.obj.get_property('desc'):
-                return self.process_yaml(
-                        Register.templ_dict['reg_desc'],
-                        {'desc': desc},
-                )
-
-        return ''

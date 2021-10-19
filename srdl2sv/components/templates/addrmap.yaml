@@ -120,7 +120,7 @@ read_mux:
       // Read multiplexer
       always_comb
       begin
-      case(b2r.addr)
+      case (b2r.addr) inside
       {list_of_cases}
       endcase
       end
@@ -135,7 +135,7 @@ default_mux_case:
         end
 list_of_mux_cases:
     rtl: |-
-        {bus_width}'d{index}:
+        {index}:
         begin
         r2b.data = {r2b_data};
         r2b.err  = {r2b_err};

@@ -60,13 +60,13 @@ class RegFile(Component):
             elif isinstance(child, node.RegfileNode):
                 self.obj.current_idx = [0]
 
-                self.regfiles[child.inst_name] = \
-                    RegFile(
+                new_child = RegFile(
                         child,
                         self.total_array_dimensions,
                         self.total_stride,
                         config,
                         glbl_settings)
+                self.regfiles[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
@@ -76,16 +76,20 @@ class RegFile(Component):
                         .add_alias(child)
                 else:
                     self.obj.current_idx = [0]
-                    self.registers[child.inst_name] = \
-                        Register(
+                    new_child = Register(
                             child,
                             self.total_array_dimensions,
                             self.total_stride,
                             config,
                             glbl_settings)
+                    self.registers[child.inst_name] = new_child
 
-            if (regwidth := self.registers[child.inst_name].get_regwidth()) > self.regwidth:
-                self.regwidth = regwidth
+            try:
+                if (regwidth := new_child.get_regwidth()) > self.regwidth:
+                    self.regwidth = regwidth
+            except KeyError:
+                # Simply ignore nodes like SignalNodes
+                pass
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
@@ -266,13 +270,3 @@ class RegFile(Component):
 
     def get_regwidth(self) -> int:
         return self.regwidth
-
-    def get_description(self):
-        if self.config['descriptions']['regfile']:
-            if desc := self.obj.get_property('desc'):
-                return self.process_yaml(
-                        RegFile.templ_dict['regfile_desc'],
-                        {'desc': desc},
-                )
-
-        return ''

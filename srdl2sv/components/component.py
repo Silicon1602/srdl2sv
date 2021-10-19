@@ -247,9 +247,14 @@ class Component():
                 raise KeyError
 
             for x in yaml_obj['signals']:
+                try:
+                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                except KeyError:
+                    array_dimensions = self.total_array_dimensions
+
                 self.signals[x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),
-                         self.total_array_dimensions)
+                         array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -258,9 +263,14 @@ class Component():
                 raise KeyError
 
             for x in yaml_obj['input_ports']:
+                try:
+                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                except KeyError:
+                    array_dimensions = self.total_array_dimensions
+
                 self.ports['input'][x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),
-                         self.total_array_dimensions)
+                         array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -269,9 +279,14 @@ class Component():
                 raise KeyError
 
             for x in yaml_obj['output_ports']:
+                try:
+                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                except KeyError:
+                    array_dimensions = self.total_array_dimensions
+
                 self.ports['output'][x['name'].format(**values)] =\
                          (x['signal_type'].format(**values),
-                         self.total_array_dimensions)
+                         array_dimensions)
         except (TypeError, KeyError):
             pass
 
@@ -319,3 +334,12 @@ class Component():
 
         return (owning_addrmap, full_path, path, path_underscored)
 
+    def get_description(self):
+        if self.config['descriptions'][self.__class__.__name__]:
+            if desc := self.obj.get_property('desc'):
+                return self.process_yaml(
+                        self.templ_dict['description'],
+                        {'desc': desc},
+                )
+
+        return ''
