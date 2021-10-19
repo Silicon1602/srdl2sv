@@ -86,12 +86,19 @@ class CliArguments():
                   in one level of indentation. (default: %(default)s)")
 
         self.parser.add_argument(
-            "-i",
-            "--include_desc",
+            "-c",
+            "--descriptions",
             type=int,
             default=0,
-            help="Include descriptions of addrmaps (+8), regfiles (+4), registers \
-                  (+2), and fields (+1) in RTL. This is a bitfield.")
+            help="Include descriptions of addrmaps (+16), regfiles (+8), memories (+4) \
+                  registers (+2), and fields (+1) in RTL. This is a bitfield.")
+
+        self.parser.add_argument(
+            "--no_byte_enable",
+            action="store_true",
+            help="If this flag gets set, byte-enables get disabled. At that point, it \
+                  is only possible to address whole registers, not single bytes within \
+                  these registers anymore.")
 
         self.parser.add_argument(
             "IN_RDL",
@@ -158,13 +165,18 @@ class CliArguments():
         if args.bus == 'amba3ahblite':
             config['addrwidth'] = 32
 
+        # Byte enables?
+        config['no_byte_enable'] = args.no_byte_enable
+        config['list_args'].append(f"Byte enables     : {not config['no_byte_enable']}")
+
         # Set location where descirptions shall be set
         # Comparison to 1 to get a Python bool
         config['descriptions'] = {}
-        config['descriptions']['addrmap'] = (args.include_desc >> 3) & 1 == 1
-        config['descriptions']['regfile'] = (args.include_desc >> 2) & 1 == 1
-        config['descriptions']['field'] = (args.include_desc >> 1) & 1 == 1
-        config['descriptions']['register'] = (args.include_desc >> 0) & 1 == 1
+        config['descriptions']['AddrMap'] = (args.descriptions >> 4) & 1 == 1
+        config['descriptions']['RegFile'] = (args.descriptions >> 3) & 1 == 1
+        config['descriptions']['Memory'] = (args.descriptions >> 2) & 1 == 1
+        config['descriptions']['Register'] = (args.descriptions >> 1) & 1 == 1
+        config['descriptions']['Field'] = (args.descriptions >> 0) & 1 == 1
         config['list_args'].append(f"Descriptions     : {config['descriptions']}")
 
         # Set version

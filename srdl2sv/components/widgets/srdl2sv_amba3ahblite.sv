@@ -27,7 +27,8 @@ module srdl2sv_amba3ahblite
     import srdl2sv_if_pkg::*;
 #(
     parameter bit FLOP_REGISTER_IF = 0,
-    parameter     BUS_BITS         = 32
+    parameter     BUS_BITS         = 32,
+    parameter     NO_BYTE_ENABLE   = 0
 )
 (
     // Outputs to internal logic
@@ -256,13 +257,21 @@ module srdl2sv_amba3ahblite
     logic                 b2r_w_vld_next;
     logic                 b2r_r_vld_next;
 
-    always_comb
+    generate
+    if (NO_BYTE_ENABLE)
     begin
-        for (int i = 0; i < BUS_BYTES; i++)
-            HSIZE_bitfielded[i] = i < (1 << HSIZE_q);
+        assign b2r_byte_en_next = {BUS_BYTES{1'b1}}; 
+    end
+    else
+    begin
+        always_comb
+        begin
+            for (int i = 0; i < BUS_BYTES; i++)
+                HSIZE_bitfielded[i] = i < (1 << HSIZE_q);
 
-        // Shift if not the full bus is accessed
-        b2r_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
+            // Shift if not the full bus is accessed
+            b2r_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
+        end
     end
 
     /***
