@@ -11,7 +11,7 @@ regfile_comment:
 regfile_desc: 
     rtl: |-
 
-      /**REGISTER DESCRIPTION*********************************************
+      /**REGFILE DESCRIPTION**********************************************
       {desc}
       /*******************************************************************/
 generate_for_start: 
