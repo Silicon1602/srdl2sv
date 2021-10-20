@@ -108,9 +108,6 @@ class Memory(Component):
                               f"it is now defined as '{self.memwidth}'")
             sys.exit(1)
 
-        # Geneate already started?
-        self.generate_active = glbl_settings['generate_active']
-
         # Determine dimensions of register
         if obj.is_array:
             self.total_array_dimensions = [*parents_dimensions, *self.obj.array_dimensions]
@@ -138,7 +135,7 @@ class Memory(Component):
 
     def __add_sw_mux_assignments(self):
         # Create list of mux-inputs to later be picked up by carrying addrmap
-        self.sw_mux_assignment_var_name = [
+        self.sw_mux_assignment_var_name = \
             (
                 self.process_yaml(
                     Memory.templ_dict['sw_data_assignment_var_name'],
@@ -153,9 +150,8 @@ class Memory(Component):
                     Memory.templ_dict['sw_err_assignment_var_name'],
                     {'path': self.path_underscored}
                 ),
-                (self.obj.absolute_address, self.obj.absolute_address + self.obj.total_size)
+                f"{self.path_underscored}_mem_active"
             )
-        ]
 
         if self.obj.get_property('sw') == AccessType.rw:
             access_type = 'sw_data_assignment_rw'
@@ -168,17 +164,16 @@ class Memory(Component):
             self.process_yaml(
                 self.templ_dict[access_type],
                 {'path': self.path_underscored,
-                 'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[0][0],
-                 'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[0][1],
-                 'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[0][2],
+                 'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[0],
+                 'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[1],
+                 'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[2],
                 }
             ),
             ''
         ]
 
     def create_mux_string(self):
-        for mux_tuple in self.sw_mux_assignment_var_name:
-            yield(mux_tuple, (0, ''))
+        yield(self.sw_mux_assignment_var_name, '')
 
     def get_regwidth(self) -> int:
         return self.memwidth

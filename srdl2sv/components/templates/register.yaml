@@ -5,19 +5,19 @@ access_wire_comment:
         // Register-activation for '{path}' {alias}
 access_wire_assign_1_dim:
     rtl: |-
-        assign {path}_accss = b2r.addr == {addr};
+        assign {path}_active = b2r.addr == {addr};
     signals:
-        - name: '{path}_accss'
+        - name: '{path}_active'
           signal_type: 'logic'
 access_wire_assign_multi_dim:
     rtl: |-
-        assign {path}_accss{genvars} = b2r.addr == {addr}+({genvars_sum});
+        assign {path}_active{genvars} = b2r.addr == {addr}+({genvars_sum});
     signals:
-        - name: '{path}_accss'
+        - name: '{path}_active'
           signal_type: 'logic'
 read_wire_assign: 
     rtl: |-
-        assign {path}_sw_rd{genvars} = {path}_accss{genvars} && b2r.r_vld;
+        assign {path}_sw_rd{genvars} = {path}_active{genvars} && b2r.r_vld;
     signals:
         - name: '{path}_sw_rd'
           signal_type: 'logic'
@@ -29,7 +29,7 @@ read_wire_assign_0:
           signal_type: 'logic'
 write_wire_assign: 
     rtl: |-
-        assign {path}_sw_wr{genvars} = {path}_accss{genvars} && b2r.w_vld;
+        assign {path}_sw_wr{genvars} = {path}_active{genvars} && b2r.w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'

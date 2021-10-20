@@ -224,8 +224,7 @@ class AddrMap(Component):
         #TODO: For optimal synthesis results, think about using 1B offsets rather than awkard 4B.
         #      for byte-access, byte-enables are used anyway
 
-        # Define default case
-        list_of_cases = [AddrMap.templ_dict['default_mux_case']['rtl']]
+        list_of_cases = []
 
         # Add an entry for each version of a register
         for child in self.children.values():
@@ -235,29 +234,24 @@ class AddrMap(Component):
                 #   [0] --> data_mux (str)
                 #   [1] --> rdy_mux (str)
                 #   [2] --> err_mux (str)
-                #   [3] --> start_addr (int)
-                # mux_entry[1] --> offsets from start
-                #   [0] --> Offset from start_addr of current entry (int)
-                #   [1] --> String of array index that represents offset (str)
+                #   [3] --> activate_wire (str)
+                # mux_entry[1] --> String of array index that represents offset (str)
 
-                r2b_data = ''.join([mux_entry[0][0], mux_entry[1][1]])
-                r2b_rdy = ''.join([mux_entry[0][1], mux_entry[1][1]])
-                r2b_err = ''.join([mux_entry[0][2], mux_entry[1][1]])
-
-                if child.__class__.__name__ == "Memory":
-                    index = \
-                        f"[{self.config['addrwidth']}'d{mux_entry[0][3][0]}:"\
-                        f"{self.config['addrwidth']}'d{mux_entry[0][3][1]}]"
-                else:
-                    index = f"{self.config['addrwidth']}'d{mux_entry[0][3] + mux_entry[1][0]}"
+                r2b_data = ''.join([mux_entry[0][0], mux_entry[1]])
+                r2b_rdy = ''.join([mux_entry[0][1], mux_entry[1]])
+                r2b_err = ''.join([mux_entry[0][2], mux_entry[1]])
+                activate_wire = ''.join([mux_entry[0][3], mux_entry[1]])
 
                 list_of_cases.append(
                     AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
-                        index = index,
+                        activate_wire = activate_wire, 
                         r2b_data = r2b_data,
                         r2b_rdy = r2b_rdy,
                         r2b_err = r2b_err)
                     )
+
+        # Define default case
+        list_of_cases.append(AddrMap.templ_dict['default_mux_case']['rtl'])
 
         self.rtl_footer.append(
             self.process_yaml(

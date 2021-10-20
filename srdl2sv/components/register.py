@@ -184,6 +184,7 @@ class Register(Component):
                     f"{{{empty_bits}{{1'b{self.glbl_settings['rsvd_val']}}}}}")
 
             # Create list of mux-inputs to later be picked up by carrying addrmap
+            # TODO: Create class
             self.sw_mux_assignment_var_name.append(
                 (
                     self.process_yaml(
@@ -199,7 +200,7 @@ class Register(Component):
                         Register.templ_dict['sw_err_assignment_var_name'],
                         {'path': na_map[0]}
                     ),
-                    na_map[1], # Start addr
+                    f"{na_map[0]}_active", # Start addr
                 )
             )
 
@@ -313,20 +314,16 @@ class Register(Component):
                 for i in self.eval_genvars(vec, 0, self.total_array_dimensions):
                     yield (mux_tuple, i)
             else:
-                yield(mux_tuple, (0, ''))
+                yield(mux_tuple, '')
 
     def eval_genvars(self, vec, depth, dimensions):
         for i in range(dimensions[depth]):
             vec[depth] = i
 
             if depth == len(dimensions) - 1:
-                yield (
-                        eval(self.genvars_sum_str_vectorized),
-                        '[{}]'.format(']['.join(map(str, vec)))
-                      )
+                yield '[{}]'.format(']['.join(map(str, vec)))
             else:
                 yield from self.eval_genvars(vec, depth+1, dimensions)
-
 
         vec[depth] = 0
 
