@@ -135,7 +135,7 @@ default_mux_case:
         end
 list_of_mux_cases:
     rtl: |-
-        {activate_wire}:
+        {active_wire}:
         begin
         r2b.data = {r2b_data};
         r2b.err  = {r2b_err};

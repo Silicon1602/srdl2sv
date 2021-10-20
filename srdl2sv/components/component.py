@@ -3,6 +3,7 @@ import sys
 from itertools import chain
 from typing import NamedTuple
 from systemrdl import node
+from dataclasses import dataclass
 
 # Local modules
 from log.log import create_logger
@@ -12,6 +13,18 @@ class TypeDef(NamedTuple):
     scope: str
     width: int
     members: tuple
+
+@dataclass
+class SWMuxEntry:
+    data_wire: str
+    rdy_wire: str
+    err_wire: str
+    active_wire: str
+
+@dataclass
+class SWMuxEntryDimensioned():
+    mux_entry: SWMuxEntry
+    dim: str
 
 class Component():
     def __init__(self, obj, config):

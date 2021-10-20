@@ -7,7 +7,7 @@ import itertools
 from systemrdl import node
 
 # Local modules
-from components.component import Component
+from components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
 from components.field import Field
 from . import templates
 
@@ -184,23 +184,22 @@ class Register(Component):
                     f"{{{empty_bits}{{1'b{self.glbl_settings['rsvd_val']}}}}}")
 
             # Create list of mux-inputs to later be picked up by carrying addrmap
-            # TODO: Create class
             self.sw_mux_assignment_var_name.append(
-                (
-                    self.process_yaml(
+                SWMuxEntry(
+                    data_wire = self.process_yaml(
                         Register.templ_dict['sw_data_assignment_var_name'],
                         {'path': na_map[0],
                          'accesswidth': accesswidth}
                     ),
-                    self.process_yaml(
+                    rdy_wire = self.process_yaml(
                         Register.templ_dict['sw_rdy_assignment_var_name'],
                         {'path': na_map[0]}
                     ),
-                    self.process_yaml(
+                    err_wire = self.process_yaml(
                         Register.templ_dict['sw_err_assignment_var_name'],
                         {'path': na_map[0]}
                     ),
-                    f"{na_map[0]}_active", # Start addr
+                    active_wire = f"{na_map[0]}_active",
                 )
             )
 
@@ -294,9 +293,9 @@ class Register(Component):
             self.rtl_footer.append(
                 self.process_yaml(
                     Register.templ_dict['sw_data_assignment'],
-                    {'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[-1][0],
-                     'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[-1][1],
-                     'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[-1][2],
+                    {'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[-1].data_wire,
+                     'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[-1].rdy_wire,
+                     'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[-1].err_wire,
                      'genvars': self.genvars_str if not no_reads else '',
                      'rdy_condition': sw_rdy_condition,
                      'err_condition': sw_err_condition,
@@ -305,25 +304,36 @@ class Register(Component):
             )
 
     def create_mux_string(self):
-        for mux_tuple in self.sw_mux_assignment_var_name:
+        for mux_entry in self.sw_mux_assignment_var_name:
             # Loop through lowest dimension and add stride of higher
             # dimension once everything is processed
             if self.total_array_dimensions:
                 vec = [0]*len(self.total_array_dimensions)
 
-                for i in self.eval_genvars(vec, 0, self.total_array_dimensions):
-                    yield (mux_tuple, i)
+                for dimension in Register.eval_genvars(vec, 0, self.total_array_dimensions):
+                    yield (
+                        SWMuxEntryDimensioned(
+                            mux_entry = mux_entry,
+                            dim = dimension
+                        )
+                    )
             else:
-                yield(mux_tuple, '')
+                yield (
+                    SWMuxEntryDimensioned(
+                        mux_entry = mux_entry,
+                        dim = ''
+                    )
+                )
 
-    def eval_genvars(self, vec, depth, dimensions):
+    @staticmethod
+    def eval_genvars(vec, depth, dimensions):
         for i in range(dimensions[depth]):
             vec[depth] = i
 
             if depth == len(dimensions) - 1:
                 yield '[{}]'.format(']['.join(map(str, vec)))
             else:
-                yield from self.eval_genvars(vec, depth+1, dimensions)
+                yield from Register.eval_genvars(vec, depth+1, dimensions)
 
         vec[depth] = 0
 

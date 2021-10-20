@@ -9,7 +9,7 @@ from systemrdl.node import FieldNode
 from systemrdl.rdltypes import AccessType
 
 # Local packages
-from components.component import Component
+from components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
 from . import templates
 
 
@@ -136,21 +136,21 @@ class Memory(Component):
     def __add_sw_mux_assignments(self):
         # Create list of mux-inputs to later be picked up by carrying addrmap
         self.sw_mux_assignment_var_name = \
-            (
-                self.process_yaml(
+            SWMuxEntry (
+                data_wire = self.process_yaml(
                     Memory.templ_dict['sw_data_assignment_var_name'],
                     {'path': self.path_underscored,
                      'accesswidth': self.memwidth - 1}
                 ),
-                self.process_yaml(
+                rdy_wire = self.process_yaml(
                     Memory.templ_dict['sw_rdy_assignment_var_name'],
                     {'path': self.path_underscored}
                 ),
-                self.process_yaml(
+                err_wire = self.process_yaml(
                     Memory.templ_dict['sw_err_assignment_var_name'],
                     {'path': self.path_underscored}
                 ),
-                f"{self.path_underscored}_mem_active"
+                active_wire = f"{self.path_underscored}_mem_active"
             )
 
         if self.obj.get_property('sw') == AccessType.rw:
@@ -164,16 +164,21 @@ class Memory(Component):
             self.process_yaml(
                 self.templ_dict[access_type],
                 {'path': self.path_underscored,
-                 'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[0],
-                 'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[1],
-                 'sw_err_assignment_var_name': self.sw_mux_assignment_var_name[2],
+                 'sw_data_assignment_var_name': self.sw_mux_assignment_var_name.data_wire,
+                 'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name.rdy_wire,
+                 'sw_err_assignment_var_name': self.sw_mux_assignment_var_name.err_wire,
                 }
             ),
             ''
         ]
 
     def create_mux_string(self):
-        yield(self.sw_mux_assignment_var_name, '')
+        yield(
+            SWMuxEntryDimensioned(
+                mux_entry = self.sw_mux_assignment_var_name,
+                dim = ''
+            )
+        )
 
     def get_regwidth(self) -> int:
         return self.memwidth

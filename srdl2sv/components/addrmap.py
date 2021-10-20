@@ -221,30 +221,20 @@ class AddrMap(Component):
         self.rtl_footer.append('endmodule')
 
     def __create_mux_string(self):
-        #TODO: For optimal synthesis results, think about using 1B offsets rather than awkard 4B.
-        #      for byte-access, byte-enables are used anyway
-
         list_of_cases = []
 
         # Add an entry for each version of a register
         for child in self.children.values():
-            for mux_entry in child.create_mux_string():
+            for mux_entry_dim in child.create_mux_string():
                 # Data structure of mux_entry:
-                # mux_entry[0] --> names of data/rdy/err wire and start addr
-                #   [0] --> data_mux (str)
-                #   [1] --> rdy_mux (str)
-                #   [2] --> err_mux (str)
-                #   [3] --> activate_wire (str)
-                # mux_entry[1] --> String of array index that represents offset (str)
-
-                r2b_data = ''.join([mux_entry[0][0], mux_entry[1]])
-                r2b_rdy = ''.join([mux_entry[0][1], mux_entry[1]])
-                r2b_err = ''.join([mux_entry[0][2], mux_entry[1]])
-                activate_wire = ''.join([mux_entry[0][3], mux_entry[1]])
+                r2b_data = ''.join([mux_entry_dim.mux_entry.data_wire, mux_entry_dim.dim])
+                r2b_rdy = ''.join([mux_entry_dim.mux_entry.rdy_wire, mux_entry_dim.dim])
+                r2b_err = ''.join([mux_entry_dim.mux_entry.err_wire, mux_entry_dim.dim])
+                active_wire = ''.join([mux_entry_dim.mux_entry.active_wire, mux_entry_dim.dim])
 
                 list_of_cases.append(
                     AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
-                        activate_wire = activate_wire, 
+                        active_wire = active_wire,
                         r2b_data = r2b_data,
                         r2b_rdy = r2b_rdy,
                         r2b_err = r2b_err)
