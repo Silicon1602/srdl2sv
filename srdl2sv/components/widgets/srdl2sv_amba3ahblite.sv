@@ -273,6 +273,7 @@ module srdl2sv_amba3ahblite
             b2r_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
         end
     end
+    endgenerate
 
     /***
      * Drive interface to registers
