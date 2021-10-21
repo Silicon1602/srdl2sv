@@ -28,13 +28,12 @@ class CliArguments():
                   communicate with the registers. (default: %(default)s)")
 
         self.parser.add_argument(
-            "-o",
-            "--out_dir",
-            type=str,
-            default="./srdl2sv_out",
-            help="Define output directory to dump files.\
-                  If directory is non-existent, it will be created.\
-                  (default: %(default)s)")
+            "-c",
+            "--descriptions",
+            type=int,
+            default=0,
+            help="Include descriptions of addrmaps (+16), regfiles (+8), memories (+4) \
+                  registers (+2), and fields (+1) in RTL. This is a bitfield.")
 
         self.parser.add_argument(
             "-d",
@@ -45,19 +44,19 @@ class CliArguments():
                   be searched for RDL files.")
 
         self.parser.add_argument(
-            "-r",
-            "--recursive_search",
-            action="store_true",
-            help="If set, the dependency directories will be\
-                  searched recursively.")
-
-        self.parser.add_argument(
             "-e",
             "--disable_enums",
             action="store_true",
             help="Disable enumeration generation. This will prevent the\
                   compiler from generating packages and it will prevent\
                   it from using enums in the port list.")
+
+        self.parser.add_argument(
+            "--file_log_level",
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
+            default='INFO',
+            help="Set verbosity level of output to log-file. When set to 'NONE',\
+                  nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
             "--stream_log_level",
@@ -67,11 +66,27 @@ class CliArguments():
                   nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
-            "--file_log_level",
-            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
-            default='INFO',
-            help="Set verbosity level of output to log-file. When set to 'NONE',\
-                  nothing will be printed to the shell. (default: %(default)s)")
+            "--no_byte_enable",
+            action="store_true",
+            help="If this flag gets set, byte-enables get disabled. At that point, it \
+                  is only possible to address whole registers, not single bytes within \
+                  these registers anymore.")
+
+        self.parser.add_argument(
+            "-o",
+            "--out_dir",
+            type=str,
+            default="./srdl2sv_out",
+            help="Define output directory to dump files.\
+                  If directory is non-existent, it will be created.\
+                  (default: %(default)s)")
+
+        self.parser.add_argument(
+            "-r",
+            "--recursive_search",
+            action="store_true",
+            help="If set, the dependency directories will be\
+                  searched recursively.")
 
         self.parser.add_argument(
             "--real_tabs",
@@ -84,21 +99,6 @@ class CliArguments():
             default=4,
             help="Define how many tabs or spaces will be contained\
                   in one level of indentation. (default: %(default)s)")
-
-        self.parser.add_argument(
-            "-c",
-            "--descriptions",
-            type=int,
-            default=0,
-            help="Include descriptions of addrmaps (+16), regfiles (+8), memories (+4) \
-                  registers (+2), and fields (+1) in RTL. This is a bitfield.")
-
-        self.parser.add_argument(
-            "--no_byte_enable",
-            action="store_true",
-            help="If this flag gets set, byte-enables get disabled. At that point, it \
-                  is only possible to address whole registers, not single bytes within \
-                  these registers anymore.")
 
         self.parser.add_argument(
             "IN_RDL",
