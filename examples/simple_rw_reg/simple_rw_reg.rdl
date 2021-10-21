@@ -1,0 +1,27 @@
+// This RDL file contains 4 simple types of registers:
+//      - A 1-dimensional register
+//      - A 2-dimensional register
+//      - A 3-dimensional register
+//
+// Note that no reset is defined, so none of the registers will be
+// resetable.
+
+addrmap simple_rw_reg {
+    // 1-D register
+    reg {
+        field {sw=rw; hw=rw; we;} f1 [15:0];
+        field {sw=rw; hw=rw; we;} f2 [31:16];
+    } register_1d;
+
+    // 2-D register
+    reg {
+        field {sw=rw; hw=rw; we;} f1 [15:0];
+        field {sw=rw; hw=rw; we;} f2 [31:16];
+    } register_2d[2];
+
+    // 3-D register
+    reg {
+        field {sw=rw; hw=rw; we;} f1 [15:0];
+        field {sw=rw; hw=rw; we;} f2 [31:16];
+    } register_3d[2][2];
+};
