@@ -1,4 +1,3 @@
-import re
 import importlib.resources as pkg_resources
 import sys
 import math
@@ -35,8 +34,8 @@ class RegFile(Component):
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
-        self.registers = dict()
-        self.regfiles = dict()
+        self.registers = {}
+        self.regfiles = {}
 
         # Set object to 0 for easy addressing
         self.obj.current_idx = [0]
@@ -216,12 +215,12 @@ class RegFile(Component):
 
         # First go through all registers in this scope to generate a package
         package_rtl = []
-        enum_rtl = dict()
-        rtl_return = list()
+        enum_rtl = {}
+        rtl_return = []
 
         # Need to keep track of enum names since they shall be unique
         # per scope
-        enum_members = dict()
+        enum_members = {}
 
         for i in self.registers.values():
             for key, value in i.get_typedefs().items():

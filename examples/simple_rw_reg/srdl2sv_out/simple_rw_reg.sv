@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 20 2021 22:32:15
+ *  - Time     : October 20 2021 23:49:07
  *  - Path     : /home/dpotter/srdl2sv_second_repo/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -30,7 +30,7 @@
  *
  * Commandline arguments to srdl2sv:
  *  - Ouput Directory  : ./srdl2sv_out
- *  - Stream Log Level : WARNING
+ *  - Stream Log Level : INFO
  *  - File Log Level   : INFO
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
@@ -175,7 +175,7 @@ assign register_1d_sw_wr = register_1d_active && b2r.w_vld;
 // access     : hw = rw  
 //              sw = rw (precedence)
 // reset      : - / -
-// flags      : {'we', 'sw'}
+// flags      : ['sw', 'we']
 // external   : False
 //-----------------------------------------------
 
@@ -203,7 +203,7 @@ assign register_1d__f1_r = register_1d__f1_q;
 // access     : hw = rw  
 //              sw = rw (precedence)
 // reset      : - / -
-// flags      : {'we', 'sw'}
+// flags      : ['sw', 'we']
 // external   : False
 //-----------------------------------------------
 
@@ -270,7 +270,7 @@ begin
     // access     : hw = rw  
     //              sw = rw (precedence)
     // reset      : - / -
-    // flags      : {'we', 'sw'}
+    // flags      : ['sw', 'we']
     // external   : False
     //-----------------------------------------------
     
@@ -298,7 +298,7 @@ begin
     // access     : hw = rw  
     //              sw = rw (precedence)
     // reset      : - / -
-    // flags      : {'we', 'sw'}
+    // flags      : ['sw', 'we']
     // external   : False
     //-----------------------------------------------
     
@@ -371,7 +371,7 @@ begin
         // access     : hw = rw  
         //              sw = rw (precedence)
         // reset      : - / -
-        // flags      : {'we', 'sw'}
+        // flags      : ['sw', 'we']
         // external   : False
         //-----------------------------------------------
         
@@ -399,7 +399,7 @@ begin
         // access     : hw = rw  
         //              sw = rw (precedence)
         // reset      : - / -
-        // flags      : {'we', 'sw'}
+        // flags      : ['sw', 'we']
         // external   : False
         //-----------------------------------------------
         

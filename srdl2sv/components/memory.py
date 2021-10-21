@@ -1,11 +1,9 @@
-import re
 import importlib.resources as pkg_resources
 import sys
 import math
 import yaml
 
 from systemrdl import node
-from systemrdl.node import FieldNode
 from systemrdl.rdltypes import AccessType
 
 # Local packages
@@ -24,7 +22,7 @@ class Memory(Component):
             obj: node.RegfileNode,
             parents_dimensions: list,
             parents_stride: list,
-            config: dict, 
+            config: dict,
             glbl_settings: dict):
         super().__init__(obj, config)
 
@@ -70,10 +68,10 @@ class Memory(Component):
                 )
             )
 
-        # Assign variables that go to register bus multiplexer 
+        # Assign variables that go to register bus multiplexer
         self.__add_sw_mux_assignments()
 
-        # We can/should only do this if there is no encapsulating 
+        # We can/should only do this if there is no encapsulating
         # regfile which create a generate
         self.__add_signal_instantiations()
 
@@ -192,10 +190,8 @@ class Memory(Component):
             ]
 
     def get_signal_instantiations_list(self):
-        dict_list = [(key, value) for (key, value) in self.get_signals().items()]
-
+        dict_list = list(self.get_signals().items())
         signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
-
         name_width = min(max([len(key) for (key, _) in dict_list]), 40)
 
         return [Memory.templ_dict['signal_declaration'].format(

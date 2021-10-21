@@ -2,7 +2,6 @@ import importlib.resources as pkg_resources
 import math
 import sys
 import yaml
-import itertools
 
 from systemrdl import node
 
@@ -52,9 +51,11 @@ class Register(Component):
     def create_rtl(self):
         # Create RTL of children
         if self.config['external']:
-            [x.create_external_rtl() for x in self.children.values()]
+            for child in self.children.values():
+                child.create_external_rtl()
         else:
-            [x.create_internal_rtl() for x in self.children.values()]
+            for child in self.children.values():
+                child.create_internal_rtl()
 
         # Create generate block for register and add comment
         if self.dimensions and not self.generate_active:
@@ -89,7 +90,7 @@ class Register(Component):
 
         # Add wire instantiation
         if not self.generate_active:
-            # We can/should only do this if there is no encapsulating 
+            # We can/should only do this if there is no encapsulating
             # regfile which create a generate
             self.__add_signal_instantiations()
 
@@ -110,11 +111,11 @@ class Register(Component):
 
     def __add_interrupts(self):
         # Semantics on the intr and halt property:
-        #   a) The intr and halt register properties are outputs; they should only 
+        #   a) The intr and halt register properties are outputs; they should only
         #      occur on the right-hand side of an assignment in SystemRDL.
         #   b) The intr property shall always be present on a intr register even if
         #      no mask or enables are specified.
-        #   c) The halt property shall only be present if haltmask or haltenable is 
+        #   c) The halt property shall only be present if haltmask or haltenable is
         #      specified on at least one field in the register.
         if self.properties['intr']:
             self.rtl_footer.append(Register.templ_dict['interrupt_comment']['rtl'])
@@ -166,14 +167,16 @@ class Register(Component):
                         list_of_fields.append(
                             f"{{{empty_bits}{{1'b{self.glbl_settings['rsvd_val']}}}}}")
 
-                    list_of_fields.append("{}_q{}".format(field.path_underscored, self.genvars_str))
+                    list_of_fields.append(f"{field.path_underscored}_q{self.genvars_str}")
 
                     # Add to appropriate bytes
-                    [bytes_read.add(x) for x in range(field.lsbyte, field.msbyte+1)]
+                    for byte in range(field.lsbyte, field.msbyte+1):
+                        bytes_read.add(byte)
 
                 if na_map[0] in field.writable_by:
                     # Add to appropriate bytes
-                    [bytes_written.add(x) for x in range(field.lsbyte, field.msbyte+1)]
+                    for byte in range(field.lsbyte, field.msbyte+1):
+                        bytes_written.add(byte)
 
             empty_bits = accesswidth - current_bit + 1
 
@@ -208,8 +211,8 @@ class Register(Component):
             # an error.
             #
             # Furthermore, consider an error indication that is set for external registers
-            bytes_read_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_read))]
-            bytes_written_format = ["b2r.byte_en[{}]".format(x) for x in list(map(str, bytes_written))]
+            bytes_read_format = [f"b2r.byte_en[{x}]" for x in list(map(str, bytes_read))]
+            bytes_written_format = [f"b2r.byte_en[{x}]" for x in list(map(str, bytes_written))]
 
             sw_err_condition_vec = []
 
@@ -331,7 +334,7 @@ class Register(Component):
             vec[depth] = i
 
             if depth == len(dimensions) - 1:
-                yield '[{}]'.format(']['.join(map(str, vec)))
+                yield f"[{']['.join(map(str, vec))}]"
             else:
                 yield from Register.eval_genvars(vec, depth+1, dimensions)
 
@@ -346,11 +349,11 @@ class Register(Component):
         else:
             access_wire_assign_field = 'access_wire_assign_1_dim'
 
-        for i, x in enumerate(self.name_addr_mappings):
+        for i, name_addr_map in enumerate(self.name_addr_mappings):
             self.rtl_header.append(
                 self.process_yaml(
                     Register.templ_dict['access_wire_comment'],
-                    {'path': x[0],
+                    {'path': name_addr_map[0],
                      'alias': '(alias)' if i > 0 else '',
                     }
                 )
@@ -359,8 +362,8 @@ class Register(Component):
             self.rtl_header.append(
                 self.process_yaml(
                     Register.templ_dict[access_wire_assign_field],
-                    {'path': x[0],
-                     'addr': x[1],
+                    {'path': name_addr_map[0],
+                     'addr': name_addr_map[1],
                      'genvars': self.genvars_str,
                      'genvars_sum': self.genvars_sum_str,
                      'depth': self.depth,
@@ -376,8 +379,8 @@ class Register(Component):
                     self.rtl_header.append(
                         self.process_yaml(
                             Register.templ_dict['read_wire_assign'],
-                            {'path': x[0],
-                             'addr': x[1],
+                            {'path': name_addr_map[0],
+                             'addr': name_addr_map[1],
                              'genvars': self.genvars_str,
                              'genvars_sum': self.genvars_sum_str,
                              'depth': self.depth,
@@ -388,7 +391,7 @@ class Register(Component):
                     self.rtl_header.append(
                         self.process_yaml(
                             Register.templ_dict['read_wire_assign_0'],
-                            {'path': x[0],
+                            {'path': name_addr_map[0],
                              'genvars': self.genvars_str,
                             }
                         )
@@ -402,8 +405,8 @@ class Register(Component):
                     self.rtl_header.append(
                         self.process_yaml(
                             Register.templ_dict['write_wire_assign'],
-                            {'path': x[0],
-                             'addr': x[1],
+                            {'path': name_addr_map[0],
+                             'addr': name_addr_map[1],
                              'genvars': self.genvars_str,
                              'genvars_sum': self.genvars_sum_str,
                              'depth': self.depth,
@@ -414,7 +417,7 @@ class Register(Component):
                     self.rtl_header.append(
                         self.process_yaml(
                             Register.templ_dict['write_wire_assign_0'],
-                            {'path': x[0],
+                            {'path': name_addr_map[0],
                              'genvars': self.genvars_str,
                             }
                         )
@@ -446,7 +449,7 @@ class Register(Component):
             ]
 
     def get_signal_instantiations_list(self):
-        dict_list = [(key, value) for (key, value) in self.get_signals().items()]
+        dict_list = list(self.get_signals().items())
 
         signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
 
@@ -472,13 +475,12 @@ class Register(Component):
             try:
                 self.children[field_range].add_sw_access(field, alias=True)
             except KeyError:
-                self.logger.fatal("Range of field '{}' in alias register '{}' does "
-                                  "not correspond to range of field in original "
-                                  "register '{}'. This is illegal according to 10.5.1 b)"
-                                  "of the SystemRDL 2.0 LRM.". format(
-                                      field.inst_name,
-                                      obj.inst_name,
-                                      self.name))
+                self.logger.fatal(
+                    f"Range of field '{field.inst_name}' in alias register "
+                    f"'{obj.inst_name}' does not correspond to range of field "
+                    f"in original register '{self.name}'. This is illegal "
+                     "according to 10.5.1 b) of the SystemRDL 2.0 LRM.")
+
                 sys.exit(1)
 
         # Add name to list
@@ -520,7 +522,7 @@ class Register(Component):
             # Merge parent's stride with stride of this regfile. Before doing so, the
             # respective stride of the different dimensions shall be calculated
             self.total_stride = [
-                *parents_stride, 
+                *parents_stride,
                 *[math.prod(self.array_dimensions[i+1:])
                     *self.obj.array_stride
                         for i, _ in enumerate(self.array_dimensions)]
@@ -541,7 +543,7 @@ class Register(Component):
         self.dimensions = len(self.array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(self.total_dimensions)]
+        genvars = [f"[gv_{chr(97+i)}]" for i in range(self.total_dimensions)]
         self.genvars_str = ''.join(genvars)
 
         # Determine value to compare address with
@@ -564,9 +566,9 @@ class Register(Component):
             genvars_sum_vectorized.pop()
 
             self.logger.debug(
-                "Multidimensional with dimensions '{}' and stride '{}'".format(
-                    self.total_array_dimensions,
-                    self.total_stride))
+                f"Multidimensional with dimensions '{self.total_array_dimensions}' "
+                f"and stride '{self.total_stride}'")
+
         except TypeError:
             self.logger.debug(
                 "Caught expected TypeError because self.total_stride is empty")

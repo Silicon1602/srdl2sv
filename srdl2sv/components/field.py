@@ -5,7 +5,7 @@ import sys
 import yaml
 
 from systemrdl.node import FieldNode, SignalNode
-from systemrdl.component import Reg, Regfile, Addrmap, Root
+from systemrdl.component import Reg, Regfile
 from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType, InterruptType
 
 # Local modules
@@ -61,7 +61,7 @@ class Field(Component):
         self.add_sw_access(obj)
 
     def add_sw_access(self, obj, alias = False):
-        access_rtl = dict()
+        access_rtl = {}
 
         if alias:
             owning_addrmap, full_path, path, path_underscored =\
@@ -156,7 +156,7 @@ class Field(Component):
             else:
                 # Normal write
                 # If field spans multiple bytes, every byte shall have a seperate enable!
-                for j, i in enumerate(range(self.lsbyte, self.msbyte+1)):
+                for i in range(self.lsbyte, self.msbyte+1):
                     msb_bus = 8*(i+1)-1 if i != self.msbyte else obj.msb
                     lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
 
@@ -315,8 +315,8 @@ class Field(Component):
 
                 if obj_incr_width:
                     self.logger.error(
-                        "The 'incrwidth' and 'incrvalue' properties are both "\
-                        "defined. This is not legal and the incrwidth property "\
+                        "The 'incrwidth' and 'incrvalue' properties are both "
+                        "defined. This is not legal and the incrwidth property "
                         "will be ignored!")
             else:
                 incr_value = self.get_signal_name(obj_incr_value)
@@ -324,14 +324,14 @@ class Field(Component):
 
                 if obj_incr_value.width > self.obj.width:
                     self.logger.error(
-                        "Width of 'incr_value' signal '{}' is wider than current "\
-                        "counter field. This could potentially cause ugly errors.".format(
-                            obj_incr_value.get_path()))
+                        f"Width of 'incr_value' signal '{obj_incr_value.get_path()}' is "
+                         "wider than current counter field. This could potentiall cause "
+                         "ugly errors.")
 
                 if obj_incr_width:
                     self.logger.error(
-                        "The 'incrwidth' and 'incrvalue' properties are both "\
-                        "defined. This is not legal and the incrwidth property "\
+                        "The 'incrwidth' and 'incrvalue' properties are both "
+                        "defined. This is not legal and the incrwidth property "
                         "will be ignored!")
 
 
@@ -383,8 +383,8 @@ class Field(Component):
 
                 if obj_decr_width:
                     self.logger.error(
-                        "The 'decrwidth' and 'decrvalue' properties are both "\
-                        "defined. This is not legal and the decrwidth property "\
+                        "The 'decrwidth' and 'decrvalue' properties are both "
+                        "defined. This is not legal and the decrwidth property "
                         "will be ignored!")
             else:
                 decr_value = self.get_signal_name(obj_decr_value)
@@ -392,14 +392,14 @@ class Field(Component):
 
                 if obj_decr_value.width > self.obj.width:
                     self.logger.error(
-                        "Width of 'decr_value' signal '{}' is wider than current "\
-                        "counter field. This could potentially cause ugly errors.".format(
-                            obj_decr_value.get_path()))
+                        f"Width of 'decr_value' signal '{obj_decr_value.get_path()}' is "
+                         "wider than current counter field. This could potentiall cause "
+                         "ugly errors.")
 
                 if obj_decr_width:
                     self.logger.error(
-                        "The 'decrwidth' and 'decrvalue' properties are both "\
-                        "defined. This is not legal and the decrwidth property "\
+                        "The 'decrwidth' and 'decrvalue' properties are both "
+                        "defined. This is not legal and the decrwidth property "
                         "will be ignored!")
 
 
@@ -449,10 +449,10 @@ class Field(Component):
 
                     try:
                         if incr.width > 0:
-                            self.logger.error("Increment signal '{}' is wider than 1-bit. "\
-                                              "This might result in unwanted behavior and "\
-                                              "will also cause Lint-errors.".format(
-                                                  incr.inst_name))
+                            self.logger.error(
+                                f"Increment signal '{incr.inst_name}' is wider than "
+                                 "1 bit. This might result in unwanted behavior and "
+                                 "will also cause Lint-errors.")
                     except AttributeError:
                         # 'PropRef_overflow' object has no attribute 'width'
                         pass
@@ -490,10 +490,10 @@ class Field(Component):
 
                     try:
                         if decr.width > 0:
-                            self.logger.error("Decrement signal '{}' is wider than 1-bit. "\
-                                              "This might result in unwanted behavior and "\
-                                              "will also cause Lint-errors.".format(
-                                                  decr.inst_name))
+                            self.logger.error(
+                                f"Decrement signal '{decr.inst_name}' is wider than "
+                                 "1 bit. This might result in unwanted behavior and "
+                                 "will also cause Lint-errors.")
                     except AttributeError:
                         # 'PropRef_underflow' object has no attribute 'width'
                         pass
@@ -627,9 +627,9 @@ class Field(Component):
         if self.obj.get_property('swmod'):
             self.logger.debug("Field has swmod property")
 
-            swmod_assigns = list()
+            swmod_assigns = []
 
-            # Check if read side-effects are defined. 
+            # Check if read side-effects are defined.
             if self.obj.get_property('onread'):
                 swmod_assigns.append(
                     self.process_yaml(
@@ -982,7 +982,7 @@ class Field(Component):
                      'enable_mask_start': enable_mask_start_rtl,
                      'enable_mask_end': enable_mask_end_rtl,
                      'idx': enable_mask_idx,
-                     'constant': "{{{}{{1'b1}}}}".format(self.obj.width)
+                     'constant': f"{{{self.obj.width}{{1'b1}}}}"
                         if not enable_mask else "1'b1"
                     }
                 )
@@ -997,7 +997,7 @@ class Field(Component):
                      'enable_mask_start': enable_mask_start_rtl,
                      'enable_mask_end': enable_mask_end_rtl,
                      'idx': enable_mask_idx,
-                     'constant': "{{{}{{1'b0}}}}".format(self.obj.width)
+                     'constant': f"{{{self.obj.width}{{1'b0}}}}"
                         if not enable_mask else "1'b0"
                     }
                 )
@@ -1024,7 +1024,7 @@ class Field(Component):
                 # Create bit-wise mask so that outside logic knows what
                 # bits it may change
                 mask = []
-                for j, byte_idx in enumerate(range(self.msbyte, self.lsbyte-1, -1)):
+                for byte_idx in range(self.msbyte, self.lsbyte-1, -1):
                     if byte_idx == self.lsbyte:
                         width = (self.lsbyte+1)*8 - self.lsb
                     elif byte_idx == self.msbyte:
@@ -1183,7 +1183,7 @@ class Field(Component):
             # kill the try block in most cases
             parent_scope = enum.get_parent_scope()
 
-            self.logger.debug("Starting to parse '{}'".format(enum))
+            self.logger.debug(f"Starting to parse '{enum}'")
 
             if isinstance(parent_scope, Reg):
                 enum_name = '__'.join([enum.get_scope_path().split('::')[-1], enum.__name__])
@@ -1219,12 +1219,12 @@ class Field(Component):
             self.field_type =\
                 '::'.join(['_'.join([scope, 'pkg']), enum_name])
 
-            self.logger.info("Parsed enum '{}'".format(enum_name))
+            self.logger.info(f"Parsed enum '{enum_name}'")
 
         except AttributeError:
             # In case of an AttributeError, the encode property is None. Hence,
             # the field has a simple width
-            self.field_type = 'logic [{}:0]'.format(self.obj.width-1)
+            self.field_type = f"logic [{self.obj.width-1}:0]"
 
     def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
         # Create full name
@@ -1248,7 +1248,7 @@ class Field(Component):
         self.total_dimensions = len(self.total_array_dimensions)
 
         # Calculate how many genvars shall be added
-        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(len(array_dimensions))]
+        genvars = [f"[gv_{chr(97+i)}]" for i in range(len(array_dimensions))]
         self.genvars_str = ''.join(genvars)
 
         # Write enable
@@ -1285,18 +1285,23 @@ class Field(Component):
                      obj.get_property('reset')
 
         # Define dict that holds all RTL
-        self.access_rtl = dict()
+        self.access_rtl = {}
         self.access_rtl['else'] = (["else"], False)
         self.access_rtl[''] = ([''], False)
 
     def summary(self):
         # Additional flags that are set
-        misc_flags = set(self.obj.list_properties())
+        # Use list, rather than set, to ensure the order stays the same
+        # when compiled multiple times
+        misc_flags = list(self.obj.list_properties())
 
         # Remove some flags that are not interesting
         # or that are listed elsewhere
-        misc_flags.discard('hw')
-        misc_flags.discard('reset')
+        for rdl_property in ('hw', 'reset'):
+            try:
+                misc_flags.remove(rdl_property)
+            except ValueError:
+                pass
 
         precedence = self.obj.get_property('precedence')
 

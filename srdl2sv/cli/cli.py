@@ -14,6 +14,7 @@ logging_map = {
 }
 
 class CliArguments():
+    # TODO: Add option to remove timestamp (for SCM)
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(

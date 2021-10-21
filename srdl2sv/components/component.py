@@ -1,9 +1,9 @@
 import re
 import sys
-from itertools import chain
 from typing import NamedTuple
-from systemrdl import node
 from dataclasses import dataclass
+
+from systemrdl import node
 
 # Local modules
 from log.log import create_logger
@@ -30,13 +30,13 @@ class Component():
     def __init__(self, obj, config):
         self.rtl_header = []
         self.rtl_footer = []
-        self.children = dict()
-        self.typedefs = dict()
-        self.ports = dict()
+        self.children = {}
+        self.typedefs = {}
+        self.ports = {}
         self.resets = set()
-        self.signals = dict()
-        self.ports['input'] = dict()
-        self.ports['output'] = dict()
+        self.signals = {}
+        self.ports['input'] = {}
+        self.ports['output'] = {}
         self.field_type = ''
 
         # Save object
@@ -65,14 +65,12 @@ class Component():
         }
 
         # Create logger object
-        self.create_logger("{}".format(self.full_path), config)
-        self.logger.debug('Starting to process {} "{}"'.format(
-            self.__class__.__name__,
-            obj.inst_name))
+        self.create_logger(self.full_path, config)
+        self.logger.debug(f"Starting to process {self.__class__.__name__} '{obj.inst_name}'")
 
     def create_logger(self, name: str, config: dict):
         self.logger = create_logger(
-            "{}".format(name),
+            name,
             stream_log_level=config['stream_log_level'],
             file_log_level=config['file_log_level'],
             file_name=config['file_log_location'])
@@ -81,23 +79,23 @@ class Component():
     def get_resets(self):
         self.logger.debug("Return reset list")
 
-        for x in self.children.values():
-            self.resets |= x.get_resets()
+        for child in self.children.values():
+            self.resets |= child.get_resets()
 
         return self.resets
 
     def get_ports(self, port_type: str):
         self.logger.debug("Return port list")
 
-        for x in self.children.values():
-            self.ports[port_type] |= x.get_ports(port_type)
+        for child in self.children.values():
+            self.ports[port_type] |= child.get_ports(port_type)
 
         return self.ports[port_type]
 
     def get_max_dim_depth(self) -> int:
-        self.logger.debug("Return depth '{}' for dimensions (including "\
-                          "parents) '{}'".format(self.total_dimensions, 
-                                                 self.total_array_dimensions))
+        self.logger.debug(f"Return depth '{self.total_dimensions}' for dimensions (including "\
+                          f"parents) '{self.total_array_dimensions}'")
+
         return max([
             self.total_dimensions,
             *[x.get_max_dim_depth() for x in self.children.values()]
@@ -107,16 +105,16 @@ class Component():
         self.logger.debug("Return signal list")
 
         if not no_children:
-            for x in self.children.values():
-                self.signals |= x.get_signals()
+            for child in self.children.values():
+                self.signals |= child.get_signals()
 
         return self.signals
 
     def get_typedefs(self):
         self.logger.debug("Return typedef list")
 
-        for x in self.children.values():
-            self.typedefs |= x.get_typedefs()
+        for child in self.children.values():
+            self.typedefs |= child.get_typedefs()
 
         return self.typedefs
 
@@ -126,8 +124,8 @@ class Component():
         # Loop through children and append RTL
         rtl_children = []
 
-        for x in self.children.values():
-            rtl_children.append(x.get_rtl())
+        for child in self.children.values():
+            rtl_children.append(child.get_rtl())
 
         # Concatenate header, main, and footer
         rtl = [*self.rtl_header, *rtl_children, *self.rtl_footer]
@@ -153,10 +151,10 @@ class Component():
         # Define triggers for which the indentation level will increment or
         # decrement on the next line
         trigger_re = re.compile(r"""
-            .*?(
+            .*?(?P<keyword>
                 (?:\bbegin\b|\{|\bcase\b|<<INDENT>>)|
                 (?:\bend\b|}|\bendcase\b|<<UNINDENT>>)
-            )([^$]*)
+            )(?P<remainder>[^$]*)
             """, flags=re.VERBOSE)
 
         rtl_indented = []
@@ -171,16 +169,14 @@ class Component():
 
             while 1:
                 # Check if indentation must be decremented
-                matchObj = trigger_re.match(line_split)
-
-                if matchObj:
-                    if matchObj.group(1) in ('begin', '{', 'case', '<<INDENT>>'):
+                if match_obj := trigger_re.match(line_split):
+                    if match_obj.group('keyword') in ('begin', '{', 'case', '<<INDENT>>'):
                         indent_lvl_next += 1
                     else:
                         indent_lvl = indent_lvl_next - 1
                         indent_lvl_next -= 1
 
-                    line_split = matchObj.group(2)
+                    line_split = match_obj.group('remainder')
 
                     if not line_split:
                         break
@@ -189,9 +185,7 @@ class Component():
 
             # Add tabs
             if line.strip() not in ("<<INDENT>>", "<<UNINDENT>>", "<<SQUASH_NEWLINE>>"):
-                rtl_indented.append("{}{}".format(tab*indent_lvl, line))
-
-
+                rtl_indented.append(f"{tab*indent_lvl}{line}")
 
         return '\n'.join(rtl_indented)
 
@@ -199,12 +193,12 @@ class Component():
     def get_underscored_path(path: str, owning_addrmap: str):
         return path\
                 .replace('[]', '')\
-                .replace('{}.'.format(owning_addrmap), '')\
+                .replace(f"{owning_addrmap}.", '')\
                 .replace('.', '__')
 
     @staticmethod
     def split_dimensions(path: str):
-        re_dimensions = re.compile('(\[[^]]*\])')
+        re_dimensions = re.compile(r'(\[[^]]*\])')
         new_path = re_dimensions.sub('', path)
         return (new_path, ''.join(re_dimensions.findall(path)))
 
@@ -229,19 +223,19 @@ class Component():
         elif isinstance(obj, node.SignalNode):
             # Must add it to signal list
             self.ports['input'][obj.inst_name] =\
-                ("logic" if obj.width == 1 else 'logic [{}:0]'.format(obj.width), [])
+                ("logic" if obj.width == 1 else f"logic [{obj.width}:0]", [])
         else:
             name.append('_')
             name.append(obj.name)
 
             # This is a property. Check if the original field actually has this property
-            if obj.name == "intr" or obj.name == "halt":
+            if obj.name in ("intr", "halt"):
                 pass
             elif not obj.node.get_property(obj.name):
-                self.logger.fatal("Reference to the property '{}' of instance '{}' found. "
-                                  "This instance does hold the reference property! Please "
-                                  "fix this if you want me to do my job properly."
-                    .format(obj.name, obj.node.get_path()))
+                self.logger.fatal(f"Reference to the property '{obj.name}' of instance "
+                                  f"'{obj.node.get_path()}' found. This instance does "
+                                   "hold the reference property! Please fix this if you "
+                                   "want me to do my job properly.")
 
                 sys.exit(1)
 
@@ -259,14 +253,14 @@ class Component():
             if skip_signals:
                 raise KeyError
 
-            for x in yaml_obj['signals']:
+            for signal in yaml_obj['signals']:
                 try:
-                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if signal['no_unpacked'] else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.signals[x['name'].format(**values)] =\
-                         (x['signal_type'].format(**values),
+                self.signals[signal['name'].format(**values)] =\
+                         (signal['signal_type'].format(**values),
                          array_dimensions)
         except (TypeError, KeyError):
             pass
@@ -275,14 +269,14 @@ class Component():
             if skip_inputs:
                 raise KeyError
 
-            for x in yaml_obj['input_ports']:
+            for input in yaml_obj['input_ports']:
                 try:
-                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if input['no_unpacked'] else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['input'][x['name'].format(**values)] =\
-                         (x['signal_type'].format(**values),
+                self.ports['input'][input['name'].format(**values)] =\
+                         (input['signal_type'].format(**values),
                          array_dimensions)
         except (TypeError, KeyError):
             pass
@@ -291,14 +285,14 @@ class Component():
             if skip_outputs:
                 raise KeyError
 
-            for x in yaml_obj['output_ports']:
+            for output in yaml_obj['output_ports']:
                 try:
-                    array_dimensions = [] if x['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if output['no_unpacked'] else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['output'][x['name'].format(**values)] =\
-                         (x['signal_type'].format(**values),
+                self.ports['output'][output['name'].format(**values)] =\
+                         (output['signal_type'].format(**values),
                          array_dimensions)
         except (TypeError, KeyError):
             pass
@@ -308,9 +302,9 @@ class Component():
 
     @staticmethod
     def process_reset_signal(reset_signal):
-        rst = dict()
+        rst = {}
 
-        try: 
+        try:
             rst['name']  = reset_signal.inst_name
             rst['async'] = reset_signal.get_property("async")
             rst['type'] = "asynchronous" if rst['async'] else "synchronous"
@@ -340,8 +334,7 @@ class Component():
     def create_underscored_path_static(obj):
         owning_addrmap = obj.owning_addrmap.inst_name
         full_path = Component.split_dimensions(obj.get_path())[0]
-        path = full_path\
-                    .replace('{}.'.format(owning_addrmap), '')
+        path = full_path.replace(f"{owning_addrmap}.", '')
 
         path_underscored = path.replace('.', '__')
 

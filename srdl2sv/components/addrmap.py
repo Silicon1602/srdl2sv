@@ -1,6 +1,9 @@
-import re
 import importlib.resources as pkg_resources
 import sys
+import getpass
+import socket
+import time
+import os
 import yaml
 
 from systemrdl import node
@@ -24,7 +27,7 @@ class AddrMap(Component):
         super().__init__(obj, config)
 
         # Check if global resets are defined
-        glbl_settings = dict()
+        glbl_settings = {}
 
         # Set defaults so that some of the common component methods work
         self.total_dimensions = 0
@@ -44,9 +47,9 @@ class AddrMap(Component):
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
-        self.registers = dict()
-        self.regfiles = dict()
-        self.mems = dict()
+        self.registers = {}
+        self.regfiles = {}
+        self.mems = {}
         self.regwidth = 0
 
         # Traverse through children
@@ -80,8 +83,8 @@ class AddrMap(Component):
                 # Simply ignore nodes like SignalNodes
                 pass
 
-        self.logger.info("Detected maximum register width of whole addrmap to be '{}'".format(
-            self.regwidth))
+        self.logger.info(
+            f"Detected maximum register width of whole addrmap to be '{self.regwidth}'")
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
@@ -91,7 +94,8 @@ class AddrMap(Component):
 
         # Create RTL of all registers. Registers in regfiles are
         # already built and so are memories.
-        [x.create_rtl() for x in self.registers.values()]
+        for register in self.registers.values():
+            register.create_rtl()
 
         # Add bus widget ports
         widget_rtl = self.__get_widget_ports_rtl()
@@ -176,11 +180,6 @@ class AddrMap(Component):
 
         import_package_list.pop()
 
-        import getpass
-        import socket
-        import time
-        import os
-
         self.rtl_header.append(
             AddrMap.templ_dict['header'].format(
                 user = getpass.getuser(),
@@ -251,7 +250,7 @@ class AddrMap(Component):
         )
 
     def __add_signal_instantiation(self):
-        dict_list = [(key, value) for (key, value) in self.get_signals(True).items()]
+        dict_list = list(self.get_signals(True).items())
         signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
         name_width = min(max([len(key) for (key, _) in dict_list]), 40)
 
@@ -274,7 +273,7 @@ class AddrMap(Component):
 
     def __get_widget_ports_rtl(self):
         self.widget_templ_dict = yaml.load(
-            pkg_resources.read_text(widgets, 'srdl2sv_{}.yaml'.format(self.config['bus'])),
+            pkg_resources.read_text(widgets, f"srdl2sv_{self.config['bus']}.yaml"),
             Loader=yaml.FullLoader)
 
         return self.process_yaml(
@@ -301,27 +300,28 @@ class AddrMap(Component):
     def get_package_names(self) -> set():
         names = set()
 
-        for i in self.registers.values():
-            for x in i.get_typedefs().values():
-                names.add(x.scope)
+        for register in self.registers.values():
+            for typedef in register.get_typedefs().values():
+                names.add(typedef.scope)
 
-        [names.update(x.get_package_names()) for x in self.regfiles.values()]
+        for regfile in self.regfiles.values():
+            names.update(regfile.get_package_names())
 
         return names
 
     def get_package_rtl(self, tab_width: int = 4, real_tabs = False) -> dict():
         if not self.config['enums']:
-            return dict()
+            return {}
 
         # First go through all registers in this scope to generate a package
         package_rtl = []
-        rtl_return = dict()
+        rtl_return = {}
 
         # Need to keep track of enum names since they shall be unique
         # per scope
-        enum_rtl = dict()
+        enum_rtl = {}
         enum_rtl[self.name] = []
-        enum_members = dict()
+        enum_members = {}
 
         for i in self.registers.values():
             for key, value in i.get_typedefs().items():
@@ -335,18 +335,15 @@ class AddrMap(Component):
                         enum_members[var[0]] = "::".join([self.name, key])
                     else:
                         self.logger.fatal(
-                            "Enum member '{}' was found at multiple locations in the same "\
+                           f"Enum member '{var[0]}' was found at multiple locations in the same "\
                             "main scope: \n"\
-                            " -- 1st occurance: '{}'\n"\
-                            " -- 2nd occurance: '{}'\n\n"\
+                           f" -- 1st occurance: '{enum_members[var[0]]}'\n"\
+                           f" -- 2nd occurance: '{'::'.join([self.name, key])}'\n\n"\
                             "This is not legal because all these enums will be defined "\
                             "in the same SystemVerilog scope. To share the same enum among "\
                             "different registers, define them on a higher level in the "\
                             "hierarchy.\n\n"\
-                            "Exiting...".format(
-                                var[0],
-                                enum_members[var[0]],
-                                "::".join([self.name, key])))
+                            "Exiting...")
 
                         sys.exit(1)
 
