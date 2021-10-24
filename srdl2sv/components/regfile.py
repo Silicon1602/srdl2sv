@@ -9,9 +9,9 @@ from systemrdl import node
 from systemrdl.node import FieldNode
 
 # Local packages
-from components.component import Component
-from components.register import Register
-from . import templates
+from srdl2sv.components.component import Component
+from srdl2sv.components.register import Register
+from srdl2sv.components import templates
 
 
 class RegFile(Component):

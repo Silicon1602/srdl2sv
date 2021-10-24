@@ -1,0 +1,3 @@
+include srdl2sv/components/templates/*.yaml
+include srdl2sv/components/widgets/*.yaml
+include srdl2sv/components/widgets/*.sv

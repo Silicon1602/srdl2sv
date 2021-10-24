@@ -9,12 +9,12 @@ import yaml
 from systemrdl import node
 
 # Local packages
-from components.component import Component
-from components.regfile import RegFile
-from components.register import Register
-from components.memory import Memory
-from . import templates
-from . import widgets
+from srdl2sv.components.component import Component
+from srdl2sv.components.regfile import RegFile
+from srdl2sv.components.register import Register
+from srdl2sv.components.memory import Memory
+from srdl2sv.components import templates
+from srdl2sv.components import widgets
 
 
 class AddrMap(Component):

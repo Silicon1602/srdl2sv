@@ -10,8 +10,8 @@ from systemrdl.component import Reg, Regfile
 from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteType, InterruptType
 
 # Local modules
-from components.component import Component, TypeDef
-from . import templates
+from srdl2sv.components.component import Component, TypeDef
+from srdl2sv.components import templates
 
 class Field(Component):
     # Save YAML template as class variable

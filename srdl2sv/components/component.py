@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from systemrdl import node
 
 # Local modules
-from log.log import create_logger
+from srdl2sv.log.log import create_logger
 
 # Define NamedTuple
 class TypeDef(NamedTuple):

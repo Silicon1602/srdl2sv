@@ -7,9 +7,8 @@ from systemrdl import node
 from systemrdl.rdltypes import AccessType
 
 # Local packages
-from components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
-from . import templates
-
+from srdl2sv.components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
+from srdl2sv.components import templates
 
 class Memory(Component):
     # Save YAML template as class variable

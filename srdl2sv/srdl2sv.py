@@ -9,12 +9,12 @@ import importlib.resources as pkg_resources
 from systemrdl import RDLCompiler, RDLCompileError
 
 # Local modules
-from components.addrmap import AddrMap
-from cli.cli import CliArguments
-from log.log import create_logger
-from components import widgets
+from srdl2sv.components.addrmap import AddrMap
+from srdl2sv.components import widgets
+from srdl2sv.cli.cli import CliArguments
+from srdl2sv.log.log import create_logger
 
-if __name__ == "__main__":
+def main():
     # Take start timestamp
     start = time.time()
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             file=file
         )
 
-        logger.info("Succesfully created '{out_addrmap_file}'")
+        logger.info(f"Succesfully created '{out_addrmap_file}'")
 
     # Start grabbing packages. This returns a dictionary for the main addrmap
     # and all it's child regfiles/addrmaps
@@ -98,3 +98,6 @@ if __name__ == "__main__":
 
     # Print elapsed time
     logger.info("Elapsed time: %f seconds", time.time() - start)
+
+if __name__ == "__main__":
+    main()

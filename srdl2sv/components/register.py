@@ -6,9 +6,9 @@ import yaml
 from systemrdl import node
 
 # Local modules
-from components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
-from components.field import Field
-from . import templates
+from srdl2sv.components.component import Component, SWMuxEntry, SWMuxEntryDimensioned
+from srdl2sv.components.field import Field
+from srdl2sv.components import templates
 
 class Register(Component):
     # Save YAML template as class variable
