@@ -15,9 +15,25 @@
 # Introduction 
 srdl2sv is a [SystemRDL 2.0](https://www.accellera.org/images/downloads/standards/systemrdl/SystemRDL_2.0_Jan2018.pdf) to (synthesizable) [SystemVerilog](https://ieeexplore.ieee.org/document/8299595/versions) compiler. The tool is based on based on [SystemRDL/systemrdl-compiler](https://github.com/SystemRDL/systemrdl-compiler). 
 ## Non-production ready
-⚠️ Warning ⚠️ This software is still under development and not yet ready for use in production. 
+Warning: This software is still under development and not yet ready for use in production. 
 # Getting started
 ## Installation
+A `setup.py` file is provided to install srdl2sv and all dependencies. At the time of writing this, the software was only tested on Linux but there should not be anything that prevents it from running on MacOS, Windows, or any other OS with Python >= 3.8.
+
+To install srdl2sv globally on your Linux machine, first clone the repository:
+
+```
+git clone dennispotter.eu:Dennis/srdl2sv.git
+```
+enter the local repository repository
+```
+cd srdl2sv
+```
+and run
+```
+sudo python3 setup.py install
+```
+
 ## Compiling your first RDL
 The argument that is required to get started is the location of the SystemRDL file that contains the root address map. The compiler will generate a seperate SystemVerilog module for each address map it encounters in the code. Thus, if address maps are instantiated within other address maps, these will be packed into a seperate module.
 
