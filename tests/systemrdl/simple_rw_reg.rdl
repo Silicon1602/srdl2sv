@@ -1,7 +1,7 @@
 addrmap simple_rw_reg {
     reg {
-        regwidth = 64;
-        field {sw=rw; hw=rw;} f1 [15:0];
-        field {sw=rw; hw=rw;} f2 [31:16];
+        regwidth = 32;
+        field {sw=rw; hw=rw; we;} f1 [15:0];
+        field {sw=rw; hw=rw; we;} f2 [31:16];
     } register_0 [2];
 };
