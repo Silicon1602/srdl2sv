@@ -1,7 +1,7 @@
 ![srdl2sv logo](images/srdl2sv_logo.gif)
 # Table of Contents
 1. [Introduction](#introduction)
-    1. [Non-production ready](#non-production-ready)
+    1. [Not production ready](#non-production-ready)
 2. [Getting started](#getting-started)
     1. [Installation](#installation)
     2. [Compiling your first RDL](#compiling-your-first-rdl)
@@ -14,16 +14,16 @@
 
 # Introduction 
 srdl2sv is a [SystemRDL 2.0](https://www.accellera.org/images/downloads/standards/systemrdl/SystemRDL_2.0_Jan2018.pdf) to (synthesizable) [SystemVerilog](https://ieeexplore.ieee.org/document/8299595/versions) compiler. The tool is based on based on [SystemRDL/systemrdl-compiler](https://github.com/SystemRDL/systemrdl-compiler). 
-## Non-production ready
+## Not production ready
 Warning: This software is still under development and not yet ready for use in production. Many SystemRDL features are implemented but srdl2sv is still under active development and almost all tests are yet to be written.
 # Getting started
 ## Installation
-A `setup.py` file is provided to install srdl2sv and all dependencies. At the time of writing this, the software was only tested on Linux but there should not be anything that prevents it from running on MacOS, Windows, or any other OS with Python >= 3.8.
+A `setup.py` file is provided to install srdl2sv and all dependencies. At the time of writing this, the software has only been tested on Linux but there should not be anything that prevents it from running on MacOS, Windows, or any other OS with Python >= 3.8.
 
 To install srdl2sv globally on your Linux machine, first clone the repository:
 
 ```
-git clone dennispotter.eu:Dennis/srdl2sv.git
+git clone https://github.com/Silicon1602/srdl2sv
 ```
 enter the local repository repository
 ```
