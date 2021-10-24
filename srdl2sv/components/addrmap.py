@@ -24,22 +24,22 @@ class AddrMap(Component):
         Loader=yaml.FullLoader)
 
     def __init__(self, obj: node.RootNode, config: dict):
-        super().__init__(obj, config)
+        super().__init__(
+                    obj=obj,
+                    config=config,
+                    parents_strides=None,
+                    parents_dimensions=None)
 
         # Check if global resets are defined
         glbl_settings = {}
-
-        # Set defaults so that some of the common component methods work
-        self.total_dimensions = 0
-        self.total_array_dimensions = []
 
         # Use global settings to define whether a component is already in a generate block
         glbl_settings['generate_active'] = False
 
         # Save whether 0, 1, or x must be set for reserved bits
-        if obj.get_property('rsvdset'):
+        if self.obj.get_property('rsvdset'):
             glbl_settings['rsvd_val'] = "1"
-        elif obj.get_property('rsvdsetX'):
+        elif self.obj.get_property('rsvdsetX'):
             glbl_settings['rsvd_val'] = "x"
         else:
             glbl_settings['rsvd_val'] = "0"
@@ -53,17 +53,28 @@ class AddrMap(Component):
         self.regwidth = 0
 
         # Traverse through children
-        for child in obj.children():
+        for child in self.obj.children():
             if isinstance(child, node.AddrmapNode):
                 # This addressmap opens a completely new scope. For example,
                 # a field_reset does not propagate through to this scope.
                 self.logger.info('Found hierarchical addrmap. Entering it...')
                 self.logger.error('Child addrmaps are not implemented yet!')
             elif isinstance(child, node.RegfileNode):
-                new_child = RegFile(child, [], [], config, glbl_settings)
+                new_child = RegFile(
+                                obj=child,
+                                parents_dimensions=None,
+                                parents_strides=None,
+                                config=config,
+                                glbl_settings=glbl_settings)
                 self.regfiles[child.inst_name] = new_child
             elif isinstance(child, node.MemNode):
-                new_child = Memory(child, [], [], config, glbl_settings)
+                new_child = Memory(
+                                obj=child,
+                                parents_dimensions=None,
+                                parents_strides=None,
+                                config=config,
+                                glbl_settings=glbl_settings)
+                new_child.sanity_checks()
                 self.mems[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
@@ -73,7 +84,12 @@ class AddrMap(Component):
                     self.registers[child.inst.alias_primary_inst.inst_name]\
                         .add_alias(child)
                 else:
-                    new_child = Register(child, [], [], config, glbl_settings)
+                    new_child = Register(
+                                    obj=child,
+                                    parents_dimensions=None,
+                                    parents_strides=None,
+                                    config=config,
+                                    glbl_settings=glbl_settings)
                     self.registers[child.inst_name] = new_child
 
             try:
@@ -168,9 +184,9 @@ class AddrMap(Component):
             ]
 
         try:
-            for x in self.get_package_names():
+            for pkg_name in self.__get_package_names():
                 import_package_list.append(
-                    AddrMap.templ_dict['import_package']['rtl'].format(name = x)
+                    AddrMap.templ_dict['import_package']['rtl'].format(name = pkg_name)
                 )
 
                 import_package_list.append('\n')
@@ -243,7 +259,7 @@ class AddrMap(Component):
         list_of_cases.append(AddrMap.templ_dict['default_mux_case']['rtl'])
 
         self.rtl_footer.append(
-            self.process_yaml(
+            self._process_yaml(
                 AddrMap.templ_dict['read_mux'],
                 {'list_of_cases': '\n'.join(list_of_cases)}
             )
@@ -276,7 +292,7 @@ class AddrMap(Component):
             pkg_resources.read_text(widgets, f"srdl2sv_{self.config['bus']}.yaml"),
             Loader=yaml.FullLoader)
 
-        return self.process_yaml(
+        return self._process_yaml(
             self.widget_templ_dict['module_instantiation'],
             {'bus_width': self.regwidth,
              'no_byte_enable': 1 if self.config['no_byte_enable'] else 0,
@@ -297,7 +313,7 @@ class AddrMap(Component):
 
             self.rtl_header.append(genvars_instantiation)
 
-    def get_package_names(self) -> set():
+    def __get_package_names(self) -> set():
         names = set()
 
         for register in self.registers.values():
@@ -387,6 +403,3 @@ class AddrMap(Component):
                 real_tabs)
 
         return rtl_return
-
-    def get_regwidth(self) -> int:
-        return self.regwidth

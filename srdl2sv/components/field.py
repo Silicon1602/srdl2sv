@@ -2,6 +2,7 @@ import math
 
 import importlib.resources as pkg_resources
 import sys
+from typing import Optional
 import yaml
 
 from systemrdl.node import FieldNode, SignalNode
@@ -21,16 +22,22 @@ class Field(Component):
     def __init__(
             self,
             obj: FieldNode,
-            array_dimensions: list,
-            config:dict,
-            glbl_settings: dict):
-        super().__init__(obj, config)
+            parents_dimensions: Optional[list],
+            config: dict):
+        super().__init__(
+                    obj=obj,
+                    config=config,
+                    parents_strides=None,
+                    parents_dimensions=parents_dimensions)
+
+        # Generate all variables that have anything to do with dimensions or strides
+        self._init_genvars()
 
         # Save and/or process important variables
-        self.__process_variables(obj, array_dimensions, glbl_settings)
+        self.__init_variables(obj)
 
         # Determine field types
-        self.__process_fieldtype()
+        self.__init_fieldtype()
 
         ##################################################################################
         # LIMITATION:
@@ -39,7 +46,7 @@ class Field(Component):
         # can be found here: https://github.com/SystemRDL/systemrdl-compiler/issues/51
         ##################################################################################
         # Print a summary
-        self.rtl_header.append(self.summary())
+        self.rtl_header.append(self.__summary())
 
         # Add description
         self.rtl_header.append(self.get_description())
@@ -87,7 +94,7 @@ class Field(Component):
 
             if isinstance(swwe, (FieldNode, SignalNode)):
                 access_rtl['sw_write'][0].append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['sw_access_field_swwe'],
                         {'path_wo_field': path_wo_field,
                          'genvars': self.genvars_str,
@@ -97,7 +104,7 @@ class Field(Component):
                 )
             elif isinstance(swwel, (FieldNode, SignalNode)):
                 access_rtl['sw_write'][0].append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['sw_access_field_swwel'],
                         {'path_wo_field': path_wo_field,
                          'genvars': self.genvars_str,
@@ -107,7 +114,7 @@ class Field(Component):
                 )
             else:
                 access_rtl['sw_write'][0].append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['sw_access_field'],
                         {'path_wo_field': path_wo_field,
                          'genvars': self.genvars_str,
@@ -123,7 +130,7 @@ class Field(Component):
                     self.logger.warning("The OnWriteType.wuser is not yet supported!")
                 elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
                     access_rtl['sw_write'][0].append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Field.templ_dict[str(onwrite)],
                             {'path': path_underscored,
                              'genvars': self.genvars_str,
@@ -139,7 +146,7 @@ class Field(Component):
                         lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
 
                         access_rtl['sw_write'][0].append(
-                            self.process_yaml(
+                            self._process_yaml(
                                 Field.templ_dict[str(onwrite)],
                                 {'path': path_underscored,
                                  'genvars': self.genvars_str,
@@ -161,7 +168,7 @@ class Field(Component):
                     lsb_bus = 8*i if i != self.lsbyte else obj.inst.lsb
 
                     access_rtl['sw_write'][0].append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Field.templ_dict['sw_access_byte'],
                             {'path': self.path_underscored,
                              'genvars': self.genvars_str,
@@ -192,7 +199,7 @@ class Field(Component):
                 self.properties['sw_rd_wire'] = True
 
                 access_rtl['sw_read'][0].append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict[str(onread)],
                         {'width': obj.width,
                          'path': path_underscored,
@@ -205,7 +212,7 @@ class Field(Component):
         # Property cannot be overwritten by alias
         if obj.get_property('singlepulse'):
             self.access_rtl['singlepulse'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['singlepulse'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str}
@@ -297,7 +304,7 @@ class Field(Component):
                     incr_width_input = True
 
                     # Doesn't return RTL, only adds input port
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_incr_val_input'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -339,7 +346,7 @@ class Field(Component):
             # an internal signal. It is possible that this is tied to 0.
             if not incr_width_input:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_internal_incr_val_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -365,7 +372,7 @@ class Field(Component):
                     decr_width_input = True
 
                     # Doesn't return RTL, only adds input port
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_decr_val_input'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -407,7 +414,7 @@ class Field(Component):
             # an internal signal. It is possible that this is tied to 0.
             if not decr_width_input:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_internal_decr_val_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -432,13 +439,13 @@ class Field(Component):
 
                 if not incr:
                     # Will only add input port but not return any RTL
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_incr_input'],
                         {'path': self.path_underscored}
                     )
                 else:
                     self.rtl_footer.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Field.templ_dict['counter_internal_incr_signal'],
                             {'path': self.path_underscored,
                              'genvars': self.genvars_str,
@@ -459,7 +466,7 @@ class Field(Component):
             else:
                 # Tie signal to 0
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_internal_incr_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -473,13 +480,13 @@ class Field(Component):
 
                 if not self.obj.get_property('decr'):
                     # Will only add input port but not return any RTL
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_decr_input'],
                         {'path': self.path_underscored}
                     )
                 else:
                     self.rtl_footer.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Field.templ_dict['counter_internal_decr_signal'],
                             {'path': self.path_underscored,
                              'genvars': self.genvars_str,
@@ -500,7 +507,7 @@ class Field(Component):
             else:
                 # Tie signal to 0
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_internal_decr_signal'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -512,7 +519,7 @@ class Field(Component):
             # Handle saturation signals
             if not incr_sat_value:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_incr_sat_tied'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -521,7 +528,7 @@ class Field(Component):
                 )
             else:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_incr_sat'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -534,7 +541,7 @@ class Field(Component):
 
             if not decr_sat_value:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_decr_sat_tied'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -543,7 +550,7 @@ class Field(Component):
                 )
             else:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_decr_sat'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -560,7 +567,7 @@ class Field(Component):
 
             if incr_thr_value:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_incr_thr'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -573,7 +580,7 @@ class Field(Component):
 
             if decr_thr_value:
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_decr_thr'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -587,7 +594,7 @@ class Field(Component):
             # Handle overflow & underflow signals
             if self.obj.get_property('overflow'):
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_overflow'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -600,7 +607,7 @@ class Field(Component):
 
             if self.obj.get_property('underflow'):
                 self.rtl_footer.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['counter_underflow'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -613,15 +620,13 @@ class Field(Component):
 
             # Implement actual counter logic
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['counter'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
                     }
                 )
             )
-
-
 
     def __add_swmod_swacc(self):
         if self.obj.get_property('swmod'):
@@ -632,7 +637,7 @@ class Field(Component):
             # Check if read side-effects are defined.
             if self.obj.get_property('onread'):
                 swmod_assigns.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['swmod_assign'],
                         {'path': self.path_underscored,
                          'path_wo_field': self.path_wo_field,
@@ -648,7 +653,7 @@ class Field(Component):
             # Check if SW has write access to the field
             if self.properties['sw_wr']:
                 swmod_assigns.append(
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['swmod_assign'],
                         {'path': self.path_underscored,
                          'path_wo_field': self.path_wo_field,
@@ -661,7 +666,7 @@ class Field(Component):
                     )
                 )
 
-            swmod_props = self.process_yaml(
+            swmod_props = self._process_yaml(
                 Field.templ_dict['swmod_always_comb'],
                 {'path': self.path_underscored,
                  'genvars': self.genvars_str,
@@ -683,7 +688,7 @@ class Field(Component):
             self.properties['sw_wr_wire'] = True
             self.properties['sw_rd_wire'] = True
 
-            swacc_props = self.process_yaml(
+            swacc_props = self._process_yaml(
                 Field.templ_dict['swacc_assign'],
                 {'path': self.path_underscored,
                  'path_wo_field': self.path_wo_field,
@@ -719,7 +724,7 @@ class Field(Component):
                 trigger_signal = self.get_signal_name(next_val)
             else:
                 trigger_signal =\
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['trigger_input'],
                         {'path': self.path_underscored,
                          'field_type': self.field_type,
@@ -728,7 +733,7 @@ class Field(Component):
 
         if bit_type:
             self.access_rtl['hw_write'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict[bit_type],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -741,7 +746,7 @@ class Field(Component):
             False)
 
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict[str(latch_signal)],
                     {'trigger_signal': trigger_signal,
                      'path': self.path_underscored,
@@ -752,7 +757,6 @@ class Field(Component):
             )
 
         return (bit_type, trigger_signal)
-
 
     def __add_interrupt(self):
         if self.obj.get_property('intr'):
@@ -789,7 +793,7 @@ class Field(Component):
                 if intr_type != InterruptType.level:
                     if self.rst['name']:
                         reset_intr_header = \
-                            self.process_yaml(
+                            self._process_yaml(
                                 Field.templ_dict['rst_intr_header'],
                                 {'trigger_signal': trigger_signal,
                                  'rst_name': self.rst['name'],
@@ -802,7 +806,7 @@ class Field(Component):
                         reset_intr_header = ""
 
                     self.rtl_footer.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Field.templ_dict['always_ff_block_intr'],
                             {'trigger_signal': trigger_signal,
                              'always_ff_header': self.always_ff_header,
@@ -816,7 +820,7 @@ class Field(Component):
 
             else:
                 self.access_rtl['hw_write'] = ([
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['nonsticky_intr'],
                         {'path': self.path_underscored,
                          'assignment': trigger_signal,
@@ -878,7 +882,7 @@ class Field(Component):
 
         if enable_mask:
             enable_mask_start_rtl = \
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_enable_mask_start'],
                     {'signal': self.get_signal_name(enable_mask),
                      'width': self.obj.width,
@@ -886,7 +890,7 @@ class Field(Component):
                 )
 
             enable_mask_end_rtl = \
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_enable_mask_end'],
                     {'width': self.obj.width}
                 )
@@ -904,7 +908,7 @@ class Field(Component):
             self.logger.info(f"Found {sticky} property.")
         elif self.obj.get_property('counter'):
             self.access_rtl['hw_write'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_access_counter'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -920,7 +924,7 @@ class Field(Component):
 
             # if-line of hw-access
             self.access_rtl['hw_write'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict[write_condition],
                     {'negl': '!' if self.obj.get_property('wel') else '',
                      'path': self.path_underscored,
@@ -948,7 +952,7 @@ class Field(Component):
 
                 # No special property. Assign input to register
                 assignment = \
-                    self.process_yaml(
+                    self._process_yaml(
                         Field.templ_dict['hw_access_field__assignment__input'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
@@ -957,7 +961,7 @@ class Field(Component):
                     )
 
             self.access_rtl['hw_write'][0].append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_access_field'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -975,7 +979,7 @@ class Field(Component):
         # Check if the hwset or hwclr option is set
         if self.obj.get_property('hwset'):
             self.access_rtl['hw_setclr'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_access_hwset'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -990,7 +994,7 @@ class Field(Component):
             False)
         elif self.obj.get_property('hwclr'):
             self.access_rtl['hw_setclr'] = ([
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['hw_access_hwclr'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -1010,7 +1014,7 @@ class Field(Component):
         if self.obj.get_property('hw') in (AccessType.rw, AccessType.r):
             # Connect flops to output port
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['out_port_assign'],
                     {'genvars': self.genvars_str,
                      'path': self.path_underscored,
@@ -1038,7 +1042,7 @@ class Field(Component):
                             width = width)
                         )
 
-                self.rtl_footer.append(self.process_yaml(
+                self.rtl_footer.append(self._process_yaml(
                     Field.templ_dict['external_wr_assignments'],
                     {'path': alias,
                      'path_wo_field': self.path_wo_field_vec[i],
@@ -1053,7 +1057,7 @@ class Field(Component):
 
         if self.properties['sw_rd']:
             for i, alias in enumerate(self.path_underscored_vec):
-                self.rtl_footer.append(self.process_yaml(
+                self.rtl_footer.append(self._process_yaml(
                     Field.templ_dict['external_rd_assignments'],
                     {'path': alias,
                      'path_wo_field': self.path_wo_field_vec[i],
@@ -1126,12 +1130,11 @@ class Field(Component):
         self.rtl_header = [*self.rtl_header, *order_list_rtl]
 
         self.rtl_header.append(
-            self.process_yaml(
+            self._process_yaml(
                 Field.templ_dict['end_field_ff'],
                 {'path': self.path_underscored}
             )
         )
-
 
     def __add_combo(self):
         operations = []
@@ -1144,7 +1147,7 @@ class Field(Component):
 
         if len(operations) > 0:
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['combo_operation_comment'],
                     {'path': self.path_underscored}
                 )
@@ -1152,7 +1155,7 @@ class Field(Component):
 
         self.rtl_footer = [
             *self.rtl_footer,
-            *[self.process_yaml(
+            *[self._process_yaml(
                 Field.templ_dict[i[1]],
                 {'path': self.path_underscored,
                  'genvars': self.genvars_str,
@@ -1161,8 +1164,7 @@ class Field(Component):
             ) for i in operations]
             ]
 
-
-    def __process_fieldtype(self):
+    def __init_fieldtype(self):
         try:
             if not self.config['enums']:
                 raise AttributeError
@@ -1226,7 +1228,9 @@ class Field(Component):
             # the field has a simple width
             self.field_type = f"logic [{self.obj.width-1}:0]"
 
-    def __process_variables(self, obj: FieldNode, array_dimensions: list, glbl_settings: dict):
+    def __init_variables(
+            self,
+            obj: FieldNode):
         # Create full name
         self.path_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
         self.register_name = ''.join([self.path_underscored, '_q'])
@@ -1241,15 +1245,6 @@ class Field(Component):
         # In case of an external register, a wire to indicate a read
         # is always required
         self.properties['sw_rd_wire'] = self.config['external'] and self.properties['sw_rd']
-
-        # Save dimensions of unpacked dimension
-        self.array_dimensions = array_dimensions
-        self.total_array_dimensions = array_dimensions
-        self.total_dimensions = len(self.total_array_dimensions)
-
-        # Calculate how many genvars shall be added
-        genvars = [f"[gv_{chr(97+i)}]" for i in range(len(array_dimensions))]
-        self.genvars_str = ''.join(genvars)
 
         # Write enable
         self.we_or_wel = self.obj.get_property('we') or self.obj.get_property('wel')
@@ -1266,8 +1261,7 @@ class Field(Component):
 
         # Determine resets. This includes checking for async/sync resets,
         # the reset value, and whether the field actually has a reset
-        self.rst = Field.process_reset_signal(
-                        obj.get_property("resetsignal"))
+        self.rst = Field.__process_reset_signal(obj.get_property("resetsignal"))
 
         if self.rst['name']:
             self.resets.add(self.rst['name'])
@@ -1289,7 +1283,7 @@ class Field(Component):
         self.access_rtl['else'] = (["else"], False)
         self.access_rtl[''] = ([''], False)
 
-    def summary(self):
+    def __summary(self):
         # Additional flags that are set
         # Use list, rather than set, to ensure the order stays the same
         # when compiled multiple times
@@ -1326,7 +1320,7 @@ class Field(Component):
         sense_list = 'sense_list_rst' if self.rst['async'] else 'sense_list_no_rst'
 
         self.always_ff_header = \
-            self.process_yaml(
+            self._process_yaml(
                 Field.templ_dict[sense_list],
                 {'rst_edge': self.rst['edge'],
                  'rst_name': self.rst['name']}
@@ -1337,7 +1331,7 @@ class Field(Component):
         # Add actual reset line
         if self.rst['name']:
             self.rtl_header.append(
-                self.process_yaml(
+                self._process_yaml(
                     Field.templ_dict['rst_field_assign'],
                     {'path': self.path_underscored,
                      'rst_name': self.rst['name'],
@@ -1377,3 +1371,31 @@ class Field(Component):
             self.logger.error("It's not possible to combine the sticky(bit) "\
                               "property with the counter property. The counter property "\
                               "will be ignored.")
+
+    @staticmethod
+    def __process_reset_signal(reset_signal):
+        rst = {}
+
+        try:
+            rst['name']  = reset_signal.inst_name
+            rst['async'] = reset_signal.get_property("async")
+            rst['type'] = "asynchronous" if rst['async'] else "synchronous"
+
+            # Active low or active high?
+            if reset_signal.get_property("activelow"):
+                rst['edge'] = "negedge"
+                rst['active'] = "active_low"
+            else:
+                rst['edge'] = "posedge"
+                rst['active'] = "active_high"
+        except AttributeError:
+            # Catch if reset_signal does not exist
+            rst['async'] = False
+            rst['name'] = None
+            rst['edge'] = None
+            rst['value'] = "'x"
+            rst['active'] = "-"
+            rst['type'] = "-"
+
+        return rst
+

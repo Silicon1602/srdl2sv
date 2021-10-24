@@ -1,6 +1,7 @@
 import re
+import math
 import sys
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 from dataclasses import dataclass
 
 from systemrdl import node
@@ -27,7 +28,13 @@ class SWMuxEntryDimensioned():
     dim: str
 
 class Component():
-    def __init__(self, obj, config):
+    def __init__(
+            self,
+            obj,
+            config,
+            parents_dimensions: Optional[list] = None,
+            parents_strides: Optional[list] = None):
+
         self.rtl_header = []
         self.rtl_footer = []
         self.children = {}
@@ -52,6 +59,18 @@ class Component():
         # Save config
         self.config = config.copy()
 
+        # Generate all variables that have anything to do with dimensions or strides
+        self.__init_dimensions(parents_dimensions)
+        self.__init_strides(parents_strides)
+
+        # Save and/or process important variables
+        self.__init_variables()
+
+        # Create logger object
+        self.__create_logger(self.full_path, config)
+        self.logger.debug(f"Starting to process {self.__class__.__name__} '{obj.inst_name}'")
+
+    def __init_variables(self):
         # By default, registers and fields are not interrupt registers
         self.properties = {
             'intr': False,
@@ -64,17 +83,61 @@ class Component():
             'sw_wr_wire': False,
         }
 
-        # Create logger object
-        self.create_logger(self.full_path, config)
-        self.logger.debug(f"Starting to process {self.__class__.__name__} '{obj.inst_name}'")
+        self.genvars_str = ''
 
-    def create_logger(self, name: str, config: dict):
+
+    def __create_logger(self, name: str, config: dict):
         self.logger = create_logger(
             name,
             stream_log_level=config['stream_log_level'],
             file_log_level=config['file_log_level'],
             file_name=config['file_log_location'])
         self.logger.propagate = False
+
+    def __init_dimensions(self, parents_dimensions):
+        # Determine dimensions of register
+        self.sel_arr = 'single'
+        self.total_array_dimensions = parents_dimensions if parents_dimensions else []
+        self.own_array_dimensions = []
+
+        try:
+            if self.obj.is_array:
+                self.sel_arr = 'array'
+                self.total_array_dimensions = [*self.total_array_dimensions,
+                                               *self.obj.array_dimensions]
+                self.own_array_dimensions = self.obj.array_dimensions
+        except AttributeError:
+            pass
+
+        # How many dimensions were already part of some higher up hierarchy?
+        self.parents_depths = len(parents_dimensions) if parents_dimensions else 0
+
+        # Calculate depth and number of dimensions
+        self.own_depth = '[{}]'.format(']['.join(f"{i}" for i in self.own_array_dimensions))
+        self.own_dimensions = len(self.own_array_dimensions)
+        self.total_dimensions = len(self.total_array_dimensions)
+
+    def __init_strides(self, parents_strides):
+        self.total_stride = parents_strides if parents_strides else []
+
+        try:
+            if self.obj.is_array:
+                # Merge parent's stride with stride of this regfile. Before doing so, the
+                # respective stride of the different dimensions shall be calculated
+                self.total_stride = [
+                    *self.total_stride,
+                    *[math.prod(self.own_array_dimensions[i+1:])
+                        *self.obj.array_stride
+                            for i, _ in enumerate(self.own_array_dimensions)]
+                    ]
+        except AttributeError:
+            # Not all Nodes can be an array. In that case, just take the parent's stride
+            pass
+
+    def _init_genvars(self):
+        # Calculate how many genvars shall be added
+        genvars = [f"[gv_{chr(97+i)}]" for i in range(self.total_dimensions)]
+        self.genvars_str = ''.join(genvars)
 
     def get_resets(self):
         self.logger.debug("Return reset list")
@@ -145,7 +208,7 @@ class Component():
         indent_lvl_next = 0
 
         # Define tab style
-        tab = "\t" if real_tabs else " " 
+        tab = "\t" if real_tabs else " "
         tab = tab_width * tab
 
         # Define triggers for which the indentation level will increment or
@@ -190,14 +253,14 @@ class Component():
         return '\n'.join(rtl_indented)
 
     @staticmethod
-    def get_underscored_path(path: str, owning_addrmap: str):
+    def __get_underscored_path(path: str, owning_addrmap: str):
         return path\
                 .replace('[]', '')\
                 .replace(f"{owning_addrmap}.", '')\
                 .replace('.', '__')
 
     @staticmethod
-    def split_dimensions(path: str):
+    def __split_dimensions(path: str):
         re_dimensions = re.compile(r'(\[[^]]*\])')
         new_path = re_dimensions.sub('', path)
         return (new_path, ''.join(re_dimensions.findall(path)))
@@ -210,8 +273,8 @@ class Component():
         except AttributeError:
             child_obj = obj
 
-        split_name = Component.split_dimensions(
-            Component.get_underscored_path(
+        split_name = self.__split_dimensions(
+            self.__get_underscored_path(
                 child_obj.get_path(),
                 child_obj.owning_addrmap.inst_name)
             )
@@ -243,7 +306,7 @@ class Component():
 
         return ''.join(name)
 
-    def process_yaml(self,
+    def _process_yaml(self,
                      yaml_obj,
                      values: dict = {},
                      skip_signals: bool = False,
@@ -255,7 +318,8 @@ class Component():
 
             for signal in yaml_obj['signals']:
                 try:
-                    array_dimensions = [] if signal['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if signal['no_unpacked'] \
+                                                else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
@@ -269,14 +333,15 @@ class Component():
             if skip_inputs:
                 raise KeyError
 
-            for input in yaml_obj['input_ports']:
+            for input_p in yaml_obj['input_ports']:
                 try:
-                    array_dimensions = [] if input['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if input_p['no_unpacked'] \
+                                                else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['input'][input['name'].format(**values)] =\
-                         (input['signal_type'].format(**values),
+                self.ports['input'][input_p['name'].format(**values)] =\
+                         (input_p['signal_type'].format(**values),
                          array_dimensions)
         except (TypeError, KeyError):
             pass
@@ -285,46 +350,21 @@ class Component():
             if skip_outputs:
                 raise KeyError
 
-            for output in yaml_obj['output_ports']:
+            for output_p in yaml_obj['output_ports']:
                 try:
-                    array_dimensions = [] if output['no_unpacked'] else self.total_array_dimensions
+                    array_dimensions = [] if output_p['no_unpacked'] \
+                                                else self.total_array_dimensions
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['output'][output['name'].format(**values)] =\
-                         (output['signal_type'].format(**values),
+                self.ports['output'][output_p['name'].format(**values)] =\
+                         (output_p['signal_type'].format(**values),
                          array_dimensions)
         except (TypeError, KeyError):
             pass
 
         # Return RTL with values
         return yaml_obj['rtl'].format(**values)
-
-    @staticmethod
-    def process_reset_signal(reset_signal):
-        rst = {}
-
-        try:
-            rst['name']  = reset_signal.inst_name
-            rst['async'] = reset_signal.get_property("async")
-            rst['type'] = "asynchronous" if rst['async'] else "synchronous"
-
-            # Active low or active high?
-            if reset_signal.get_property("activelow"):
-                rst['edge'] = "negedge"
-                rst['active'] = "active_low"
-            else:
-                rst['edge'] = "posedge"
-                rst['active'] = "active_high"
-        except:
-            rst['async'] = False
-            rst['name'] = None
-            rst['edge'] = None
-            rst['value'] = "'x"
-            rst['active'] = "-"
-            rst['type'] = "-"
-
-        return rst
 
     def create_underscored_path(self):
         self.owning_addrmap, self.full_path, self.path, self.path_underscored =\
@@ -333,7 +373,7 @@ class Component():
     @staticmethod
     def create_underscored_path_static(obj):
         owning_addrmap = obj.owning_addrmap.inst_name
-        full_path = Component.split_dimensions(obj.get_path())[0]
+        full_path = Component.__split_dimensions(obj.get_path())[0]
         path = full_path.replace(f"{owning_addrmap}.", '')
 
         path_underscored = path.replace('.', '__')
@@ -349,3 +389,6 @@ class Component():
                 )
 
         return ''
+
+    def get_regwidth(self) -> int:
+        return self.regwidth

@@ -1,6 +1,6 @@
 import importlib.resources as pkg_resources
-import math
 import sys
+from typing import Optional
 import yaml
 
 from systemrdl import node
@@ -19,27 +19,31 @@ class Register(Component):
     def __init__(
             self,
             obj: node.RegNode,
-            parents_dimensions: list,
-            parents_stride: list,
             config: dict,
+            parents_dimensions: Optional[list],
+            parents_strides: Optional[list],
             glbl_settings: dict):
-        super().__init__(obj, config)
+        super().__init__(
+                    obj=obj,
+                    config=config,
+                    parents_strides=parents_strides,
+                    parents_dimensions=parents_dimensions)
 
-        # Save and/or process important variables
-        self.__process_variables(obj, parents_dimensions, parents_stride, glbl_settings)
+        # Generate all variables that have anything to do with dimensions or strides
+        self.__init_genvars()
 
-        self.config['external'] = obj.external
+        # Initialize all other variables
+        self.__init_variables(glbl_settings)
 
         # Create RTL for fields of initial, non-alias register
-        for field in obj.fields():
+        for field in self.obj.fields():
             # Use range to save field in an array. Reason is, names are allowed to
             # change when using an alias
             field_range = ':'.join(map(str, [field.msb, field.lsb]))
 
             self.children[field_range] = Field(field,
                                                self.total_array_dimensions,
-                                               self.config,
-                                               glbl_settings)
+                                               self.config)
 
             # Get properties from field that apply to whole register
             for key in self.properties:
@@ -58,15 +62,15 @@ class Register(Component):
                 child.create_internal_rtl()
 
         # Create generate block for register and add comment
-        if self.dimensions and not self.generate_active:
+        if self.own_dimensions and not self.generate_active:
             self.rtl_header.append("generate")
 
         # Add N layers of for-loop starts
-        for i in range(self.dimensions):
+        for i in range(self.own_dimensions):
             self.rtl_header.append(
                 Register.templ_dict['generate_for_start'].format(
                     iterator = ''.join(['gv_', chr(97+i+self.parents_depths)]),
-                    limit = self.array_dimensions[i]))
+                    limit = self.own_array_dimensions[i]))
 
         # Add decoders for all registers & aliases
         self.__add_address_decoder()
@@ -80,12 +84,12 @@ class Register(Component):
         self.__add_sw_mux_assignments()
 
         # Add N layers of for-loop end
-        for i in range(self.dimensions-1, -1, -1):
+        for i in range(self.own_dimensions-1, -1, -1):
             self.rtl_footer.append(
                 Register.templ_dict['generate_for_end'].format(
                     dimension = ''.join(['gv_', chr(97+i)])))
 
-        if self.dimensions and not self.generate_active:
+        if self.own_dimensions and not self.generate_active:
             self.rtl_footer.append("\nendgenerate\n")
 
         # Add wire instantiation
@@ -104,8 +108,8 @@ class Register(Component):
         self.rtl_header = [
             Register.templ_dict['reg_comment'].format(
                 name = self.obj.inst_name,
-                dimensions = self.dimensions,
-                depth = self.depth),
+                dimensions = self.own_dimensions,
+                depth = self.own_depth),
                 *self.rtl_header
             ]
 
@@ -121,7 +125,7 @@ class Register(Component):
             self.rtl_footer.append(Register.templ_dict['interrupt_comment']['rtl'])
 
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict['interrupt_intr'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -133,7 +137,7 @@ class Register(Component):
 
         if self.properties['halt']:
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict['interrupt_halt'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
@@ -189,16 +193,16 @@ class Register(Component):
             # Create list of mux-inputs to later be picked up by carrying addrmap
             self.sw_mux_assignment_var_name.append(
                 SWMuxEntry(
-                    data_wire = self.process_yaml(
+                    data_wire = self._process_yaml(
                         Register.templ_dict['sw_data_assignment_var_name'],
                         {'path': na_map[0],
                          'accesswidth': accesswidth}
                     ),
-                    rdy_wire = self.process_yaml(
+                    rdy_wire = self._process_yaml(
                         Register.templ_dict['sw_rdy_assignment_var_name'],
                         {'path': na_map[0]}
                     ),
-                    err_wire = self.process_yaml(
+                    err_wire = self._process_yaml(
                         Register.templ_dict['sw_err_assignment_var_name'],
                         {'path': na_map[0]}
                     ),
@@ -216,7 +220,7 @@ class Register(Component):
 
             sw_err_condition_vec = []
 
-            sw_err_condition_vec.append(self.process_yaml(
+            sw_err_condition_vec.append(self._process_yaml(
                     Register.templ_dict['sw_err_condition'],
                     {'rd_byte_list_ored':
                         ' || '.join(bytes_read_format) if bytes_read else "1'b0",
@@ -228,7 +232,7 @@ class Register(Component):
             if self.config['external']:
                 if bytes_read:
                     for field in self.children.values():
-                        sw_err_condition_vec.append(self.process_yaml(
+                        sw_err_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_err_condition'],
                                 {'path': '__'.join([na_map[0], field.name]),
                                  'genvars': self.genvars_str,
@@ -238,7 +242,7 @@ class Register(Component):
 
                 if bytes_written:
                     for field in self.children.values():
-                        sw_err_condition_vec.append(self.process_yaml(
+                        sw_err_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_err_condition'],
                                 {'path': '__'.join([na_map[0], field.name]),
                                  'genvars': self.genvars_str,
@@ -255,7 +259,7 @@ class Register(Component):
                     sw_rdy_condition_vec = ['(']
 
                     for field in self.children.values():
-                        sw_rdy_condition_vec.append(self.process_yaml(
+                        sw_rdy_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_rdy_condition'],
                                 {'path': '__'.join([na_map[0], field.name]),
                                  'genvars': self.genvars_str,
@@ -275,7 +279,7 @@ class Register(Component):
                     sw_rdy_condition_vec.append('(')
 
                     for field in self.children.values():
-                        sw_rdy_condition_vec.append(self.process_yaml(
+                        sw_rdy_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_rdy_condition'],
                                 {'path': '__'.join([na_map[0], field.name]),
                                  'genvars': self.genvars_str,
@@ -294,7 +298,7 @@ class Register(Component):
 
             # Assign all values
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict['sw_data_assignment'],
                     {'sw_data_assignment_var_name': self.sw_mux_assignment_var_name[-1].data_wire,
                      'sw_rdy_assignment_var_name': self.sw_mux_assignment_var_name[-1].rdy_wire,
@@ -313,7 +317,7 @@ class Register(Component):
             if self.total_array_dimensions:
                 vec = [0]*len(self.total_array_dimensions)
 
-                for dimension in Register.eval_genvars(vec, 0, self.total_array_dimensions):
+                for dimension in Register.__eval_genvars(vec, 0, self.total_array_dimensions):
                     yield (
                         SWMuxEntryDimensioned(
                             mux_entry = mux_entry,
@@ -329,21 +333,18 @@ class Register(Component):
                 )
 
     @staticmethod
-    def eval_genvars(vec, depth, dimensions):
+    def __eval_genvars(vec, depth, dimensions):
         for i in range(dimensions[depth]):
             vec[depth] = i
 
             if depth == len(dimensions) - 1:
                 yield f"[{']['.join(map(str, vec))}]"
             else:
-                yield from Register.eval_genvars(vec, depth+1, dimensions)
+                yield from Register.__eval_genvars(vec, depth+1, dimensions)
 
         vec[depth] = 0
 
     def __add_address_decoder(self):
-        # Assign variables from bus
-        self.obj.current_idx = [0]
-
         if self.total_dimensions:
             access_wire_assign_field = 'access_wire_assign_multi_dim'
         else:
@@ -351,7 +352,7 @@ class Register(Component):
 
         for i, name_addr_map in enumerate(self.name_addr_mappings):
             self.rtl_header.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict['access_wire_comment'],
                     {'path': name_addr_map[0],
                      'alias': '(alias)' if i > 0 else '',
@@ -360,13 +361,13 @@ class Register(Component):
             )
 
             self.rtl_header.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict[access_wire_assign_field],
                     {'path': name_addr_map[0],
                      'addr': name_addr_map[1],
                      'genvars': self.genvars_str,
                      'genvars_sum': self.genvars_sum_str,
-                     'depth': self.depth,
+                     'depth': self.own_depth,
                     }
                 )
             )
@@ -377,19 +378,19 @@ class Register(Component):
                 # that is tied to 1'b0
                 if self.properties['sw_rd']:
                     self.rtl_header.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Register.templ_dict['read_wire_assign'],
                             {'path': name_addr_map[0],
                              'addr': name_addr_map[1],
                              'genvars': self.genvars_str,
                              'genvars_sum': self.genvars_sum_str,
-                             'depth': self.depth,
+                             'depth': self.own_depth,
                             }
                         )
                     )
                 else:
                     self.rtl_header.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Register.templ_dict['read_wire_assign_0'],
                             {'path': name_addr_map[0],
                              'genvars': self.genvars_str,
@@ -403,19 +404,19 @@ class Register(Component):
                 # that is tied to 1'b0
                 if self.properties['sw_wr']:
                     self.rtl_header.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Register.templ_dict['write_wire_assign'],
                             {'path': name_addr_map[0],
                              'addr': name_addr_map[1],
                              'genvars': self.genvars_str,
                              'genvars_sum': self.genvars_sum_str,
-                             'depth': self.depth,
+                             'depth': self.own_depth,
                             }
                         )
                     )
                 else:
                     self.rtl_header.append(
-                        self.process_yaml(
+                        self._process_yaml(
                             Register.templ_dict['write_wire_assign_0'],
                             {'path': name_addr_map[0],
                              'genvars': self.genvars_str,
@@ -426,7 +427,7 @@ class Register(Component):
         # Add combined signal to be used for general access of the register
         if self.properties['swacc']:
             self.rtl_header.append(
-                self.process_yaml(
+                self._process_yaml(
                     Register.templ_dict['rw_wire_assign_any_alias'],
                     {'path': self.name_addr_mappings[0][0],
                      'genvars': self.genvars_str,
@@ -484,27 +485,21 @@ class Register(Component):
                 sys.exit(1)
 
         # Add name to list
-        self.obj.current_idx = [0]
         self.name_addr_mappings.append(
             (self.create_underscored_path_static(obj)[3], obj.absolute_address))
 
-    def __process_variables(
-            self,
-            obj: node.RegNode,
-            parents_dimensions: list,
-            parents_stride: list,
-            glbl_settings: dict):
-
-        # Save name
+    def __init_variables(self, glbl_settings: dict):
         self.obj.current_idx = [0]
-        self.name = obj.inst_name
 
         # Save global settings
         self.glbl_settings = glbl_settings
 
+        # Is this an external register?
+        self.config['external'] = self.obj.external
+
         # Create mapping between (alias-) name and address
         self.name_addr_mappings = [
-            (self.create_underscored_path_static(obj)[3], obj.absolute_address)
+            (self.create_underscored_path_static(self.obj)[3], self.obj.absolute_address)
             ]
 
         # Geneate already started?
@@ -513,42 +508,11 @@ class Register(Component):
         # Empty array for mux-input signals
         self.sw_mux_assignment_var_name = []
 
-        # Determine dimensions of register
-        if obj.is_array:
-            self.sel_arr = 'array'
-            self.total_array_dimensions = [*parents_dimensions, *self.obj.array_dimensions]
-            self.array_dimensions = self.obj.array_dimensions
-
-            # Merge parent's stride with stride of this regfile. Before doing so, the
-            # respective stride of the different dimensions shall be calculated
-            self.total_stride = [
-                *parents_stride,
-                *[math.prod(self.array_dimensions[i+1:])
-                    *self.obj.array_stride
-                        for i, _ in enumerate(self.array_dimensions)]
-                ]
-        else:
-            self.sel_arr = 'single'
-            self.total_array_dimensions = parents_dimensions
-            self.array_dimensions = []
-            self.total_stride = parents_stride
-
-        # How many dimensions were already part of some higher up hierarchy?
-        self.parents_depths = len(parents_dimensions)
-
-        self.total_depth = '[{}]'.format(']['.join(f"{i}" for i in self.total_array_dimensions))
-        self.total_dimensions = len(self.total_array_dimensions)
-
-        self.depth = '[{}]'.format(']['.join(f"{i}" for i in self.array_dimensions))
-        self.dimensions = len(self.array_dimensions)
-
-        # Calculate how many genvars shall be added
-        genvars = [f"[gv_{chr(97+i)}]" for i in range(self.total_dimensions)]
-        self.genvars_str = ''.join(genvars)
+    def __init_genvars(self):
+        super()._init_genvars()
 
         # Determine value to compare address with
         genvars_sum = []
-        genvars_sum_vectorized = []
         try:
             for i, stride in enumerate(self.total_stride):
                 genvars_sum.append(''.join(['gv_', chr(97+i)]))
@@ -556,14 +520,7 @@ class Register(Component):
                 genvars_sum.append(str(stride))
                 genvars_sum.append("+")
 
-                genvars_sum_vectorized.append('vec[')
-                genvars_sum_vectorized.append(str(i))
-                genvars_sum_vectorized.append(']*')
-                genvars_sum_vectorized.append(str(stride))
-                genvars_sum_vectorized.append("+")
-
             genvars_sum.pop()
-            genvars_sum_vectorized.pop()
 
             self.logger.debug(
                 f"Multidimensional with dimensions '{self.total_array_dimensions}' "
@@ -577,7 +534,6 @@ class Register(Component):
                 "Caugt expected IndexError because genvars_sum is empty")
 
         self.genvars_sum_str = ''.join(genvars_sum)
-        self.genvars_sum_str_vectorized = ''.join(genvars_sum_vectorized)
 
     def get_regwidth(self) -> int:
         return self.obj.get_property('regwidth')

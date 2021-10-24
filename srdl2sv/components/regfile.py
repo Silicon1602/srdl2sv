@@ -3,6 +3,8 @@ import sys
 import math
 import yaml
 
+from typing import Optional
+
 from systemrdl import node
 from systemrdl.node import FieldNode
 
@@ -21,15 +23,15 @@ class RegFile(Component):
     def __init__(
             self,
             obj: node.RegfileNode,
-            parents_dimensions: list,
-            parents_stride: list,
-            config: dict, 
+            config: dict,
+            parents_dimensions: Optional[list],
+            parents_strides: Optional[list],
             glbl_settings: dict):
-        super().__init__(obj, config)
-
-        # Save and/or process important variables
-        self.__process_variables(obj, parents_dimensions, parents_stride)
-
+        super().__init__(
+                    obj=obj,
+                    config=config,
+                    parents_strides=parents_strides,
+                    parents_dimensions=parents_dimensions)
 
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
@@ -41,7 +43,7 @@ class RegFile(Component):
         self.obj.current_idx = [0]
 
         # Determine whether this regfile must add a generate block and for-loop
-        if self.dimensions and not glbl_settings['generate_active']:
+        if self.own_dimensions and not glbl_settings['generate_active']:
             self.generate_initiated = True
             glbl_settings['generate_active'] = True
         else:
@@ -60,11 +62,11 @@ class RegFile(Component):
                 self.obj.current_idx = [0]
 
                 new_child = RegFile(
-                        child,
-                        self.total_array_dimensions,
-                        self.total_stride,
-                        config,
-                        glbl_settings)
+                        obj=child,
+                        parents_dimensions=self.total_array_dimensions,
+                        parents_strides=self.total_stride,
+                        config=config,
+                        glbl_settings=glbl_settings)
                 self.regfiles[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
                 if child.inst.is_alias:
@@ -76,11 +78,11 @@ class RegFile(Component):
                 else:
                     self.obj.current_idx = [0]
                     new_child = Register(
-                            child,
-                            self.total_array_dimensions,
-                            self.total_stride,
-                            config,
-                            glbl_settings)
+                            obj=child,
+                            parents_dimensions=self.total_array_dimensions,
+                            parents_strides=self.total_stride,
+                            config=config,
+                            glbl_settings=glbl_settings)
                     self.registers[child.inst_name] = new_child
 
             try:
@@ -115,30 +117,30 @@ class RegFile(Component):
         # Create comment and provide user information about register he/she
         # is looking at.
         self.rtl_header = [
-            self.process_yaml(
+            self._process_yaml(
                 RegFile.templ_dict['regfile_comment'],
                 {'name': obj.inst_name,
-                 'dimensions': self.dimensions,
-                 'depth': self.depth}
+                 'dimensions': self.own_dimensions,
+                 'depth': self.own_depth}
             ),
             *self.rtl_header
             ]
 
         # Create generate block for register and add comment
-        for i in range(self.dimensions-1, -1, -1):
+        for i in range(self.own_dimensions-1, -1, -1):
             self.rtl_footer.append(
-                self.process_yaml(
+                self._process_yaml(
                     RegFile.templ_dict['generate_for_end'],
                     {'dimension':  ''.join(['gv_', chr(97+i)])}
                 )
             )
 
-        for i in range(self.dimensions):
+        for i in range(self.own_dimensions):
             self.rtl_header.append(
-                self.process_yaml(
+                self._process_yaml(
                     RegFile.templ_dict['generate_for_start'],
                     {'iterator': ''.join(['gv_', chr(97+i+self.parents_depths)]),
-                     'limit': self.array_dimensions[i]}
+                     'limit': self.own_array_dimensions[i]}
                 )
             )
 
@@ -148,82 +150,42 @@ class RegFile(Component):
             self.rtl_footer.append("endgenerate")
             self.rtl_footer.append("")
 
-    def __process_variables(self,
-            obj: node.RegfileNode,
-            parents_dimensions: list,
-            parents_stride: list):
-
-        # Determine dimensions of register
-        if obj.is_array:
-            self.sel_arr = 'array'
-            self.total_array_dimensions = [*parents_dimensions, *self.obj.array_dimensions]
-            self.array_dimensions = self.obj.array_dimensions
-
-            # Merge parent's stride with stride of this regfile. Before doing so, the
-            # respective stride of the different dimensions shall be calculated
-            self.total_stride = [
-                *parents_stride, 
-                *[math.prod(self.array_dimensions[i+1:])
-                    *self.obj.array_stride
-                        for i, _ in enumerate(self.array_dimensions)]
-                ]
-        else:
-            self.sel_arr = 'single'
-            self.total_array_dimensions = parents_dimensions
-            self.array_dimensions = []
-            self.total_stride = parents_stride
-
-        # How many dimensions were already part of some higher up hierarchy?
-        self.parents_depths = len(parents_dimensions)
-
-        self.total_depth = '[{}]'.format(']['.join(f"{i}" for i in self.total_array_dimensions))
-        self.total_dimensions = len(self.total_array_dimensions)
-
-        self.depth = '[{}]'.format(']['.join(f"{i}" for i in self.array_dimensions))
-        self.dimensions = len(self.array_dimensions)
-
-        # Calculate how many genvars shall be added
-        genvars = ['[gv_{}]'.format(chr(97+i)) for i in range(self.dimensions)]
-        self.genvars_str = ''.join(genvars)
-
     def create_mux_string(self):
         for i in self.children.values():
             yield from i.create_mux_string()
 
     def get_signal_instantiations_list(self) -> set():
-        instantiations = list()
+        instantiations = []
 
-        for i in self.children.values():
-            if isinstance(i, Register):
-                instantiations.append("\n// Variables of register '{}'".format(i.name))
-            instantiations = [*instantiations, *i.get_signal_instantiations_list()]
+        for child in self.children.values():
+            if isinstance(child, Register):
+                instantiations.append(f"\n// Variables of register '{child.name}'")
+            instantiations = [*instantiations, *child.get_signal_instantiations_list()]
 
         return instantiations
 
     def get_package_names(self) -> set():
         names = set()
 
-        for i in self.registers.values():
-            for key, value in i.get_typedefs().items():
-                names.add(value.scope)
+        for register in self.registers.values():
+            for typedef in register.get_typedefs().values():
+                names.add(typedef.scope)
 
         return names
 
-    def get_package_rtl(self) -> dict():
+    def get_package_rtl(self) -> {}:
         if not self.config['enums']:
             return None
 
         # First go through all registers in this scope to generate a package
-        package_rtl = []
         enum_rtl = {}
-        rtl_return = []
 
         # Need to keep track of enum names since they shall be unique
         # per scope
         enum_members = {}
 
-        for i in self.registers.values():
-            for key, value in i.get_typedefs().items():
+        for register in self.registers.values():
+            for key, value in register.get_typedefs().items():
                 if value.scope not in enum_rtl:
                     enum_rtl[value.scope] = []
 
@@ -237,18 +199,15 @@ class RegFile(Component):
                         enum_members[var[0]] = "::".join([self.name, key])
                     else:
                         self.logger.fatal(
-                            "Enum member '{}' was found at multiple locations in the same "\
+                           f"Enum member '{var[0]}' was found at multiple locations in the same "\
                             "main scope: \n"\
-                            " -- 1st occurance: '{}'\n"\
-                            " -- 2nd occurance: '{}'\n\n"\
+                           f" -- 1st occurance: '{enum_members[var[0]]}'\n"\
+                           f" -- 2nd occurance: '{'::'.join([self.name, key])}'\n\n"\
                             "This is not legal because all these enums will be defined "\
                             "in the same SystemVerilog scope. To share the same enum among "\
                             "different registers, define them on a higher level in the "\
                             "hierarchy.\n\n"\
-                            "Exiting...".format(
-                                var[0],
-                                enum_members[var[0]],
-                                "::".join([value.scope, key])))
+                            "Exiting...")
 
                         sys.exit(1)
 
@@ -266,6 +225,3 @@ class RegFile(Component):
                         enum_var_list = ',\n'.join(variable_list)))
 
         return enum_rtl
-
-    def get_regwidth(self) -> int:
-        return self.regwidth
