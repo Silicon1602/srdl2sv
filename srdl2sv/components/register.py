@@ -477,10 +477,13 @@ class Register(Component):
                 self.children[field_range].add_sw_access(field, alias=True)
             except KeyError:
                 self.logger.fatal(
-                    f"Range of field '{field.inst_name}' in alias register "
-                    f"'{obj.inst_name}' does not correspond to range of field "
-                    f"in original register '{self.name}'. This is illegal "
-                     "according to 10.5.1 b) of the SystemRDL 2.0 LRM.")
+                     "Range of field '%s' in alias register "
+                     "'%s' does not correspond to range of field "
+                     "in original register '%s'. This is illegal "
+                     "according to 10.5.1 b) of the SystemRDL 2.0 LRM.",
+                     field.inst_name,
+                     obj.inst_name,
+                     self.name)
 
                 sys.exit(1)
 
@@ -523,8 +526,8 @@ class Register(Component):
             genvars_sum.pop()
 
             self.logger.debug(
-                f"Multidimensional with dimensions '{self.total_array_dimensions}' "
-                f"and stride '{self.total_stride}'")
+                "Multidimensional with dimensions '%s' and stride '%s'",
+                self.total_array_dimensions, self.total_stride)
 
         except TypeError:
             self.logger.debug(

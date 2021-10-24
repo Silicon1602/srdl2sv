@@ -101,8 +101,8 @@ class Memory(Component):
 
     def sanity_checks(self):
         if not math.log2(self.memwidth).is_integer():
-            self.logger.fatal( "The defined memory width must be a power of 2. "\
-                              f"it is now defined as '{self.memwidth}'")
+            self.logger.fatal("The defined memory width must be a power of 2. "\
+                              "it is now defined as '%s'", self.memwidth)
             sys.exit(1)
 
         # Determine dimensions of register
@@ -112,12 +112,15 @@ class Memory(Component):
                                 "handles this outside of the memory block.")
 
             if self.obj.array_stride != int(self.mementries * self.memwidth / 8):
-                self.logger.warning(f"The memory's stride ({self.obj.array_stride}) "\
-                                    f"is unequal to the depth of the memory ({self.mementries} "\
-                                    f"* {self.memwidth} / 8 = "\
-                                    f"{int(self.mementries * self.memwidth / 8)}). This must be "\
-                                     "kept in mind when hooking up the memory interface to an "\
-                                     "external memory block.")
+                self.logger.warning("The memory's stride (%i) is unequal to the depth "\
+                                    "of the memory (%i * %i / 8 = %i). This must be "\
+                                    "kept in mind when hooking up the memory interface "\
+                                    "to an external memory block.",
+                                    self.obj.array_stride,
+                                    self.mementries,
+                                    self.memwidth,
+                                    int(self.mementries * self.memwidth / 8)
+                                     )
 
     def __add_sw_mux_assignments(self):
         # Create list of mux-inputs to later be picked up by carrying addrmap

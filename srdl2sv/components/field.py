@@ -331,9 +331,9 @@ class Field(Component):
 
                 if obj_incr_value.width > self.obj.width:
                     self.logger.error(
-                        f"Width of 'incr_value' signal '{obj_incr_value.get_path()}' is "
-                         "wider than current counter field. This could potentiall cause "
-                         "ugly errors.")
+                        "Width of 'incr_value' signal '%s' is wider than current counter"
+                        "field. This could potentiall cause ugly errors.",
+                        obj_incr_value.get_path())
 
                 if obj_incr_width:
                     self.logger.error(
@@ -399,9 +399,9 @@ class Field(Component):
 
                 if obj_decr_value.width > self.obj.width:
                     self.logger.error(
-                        f"Width of 'decr_value' signal '{obj_decr_value.get_path()}' is "
-                         "wider than current counter field. This could potentiall cause "
-                         "ugly errors.")
+                        "Width of 'decr_value' signal '%s' is wider than current counter"
+                        "field. This could potentiall cause ugly errors.",
+                        obj_decr_value.get_path())
 
                 if obj_decr_width:
                     self.logger.error(
@@ -457,9 +457,9 @@ class Field(Component):
                     try:
                         if incr.width > 0:
                             self.logger.error(
-                                f"Increment signal '{incr.inst_name}' is wider than "
-                                 "1 bit. This might result in unwanted behavior and "
-                                 "will also cause Lint-errors.")
+                                "Increment signal '%s' is wider than 1 bit. This might"
+                                "result in unwanted behavior and will also cause Lint-errors.",
+                                incr.inst_name)
                     except AttributeError:
                         # 'PropRef_overflow' object has no attribute 'width'
                         pass
@@ -498,9 +498,9 @@ class Field(Component):
                     try:
                         if decr.width > 0:
                             self.logger.error(
-                                f"Decrement signal '{decr.inst_name}' is wider than "
-                                 "1 bit. This might result in unwanted behavior and "
-                                 "will also cause Lint-errors.")
+                                "Decrement signal '%s' is wider than 1 bit. This might"
+                                "result in unwanted behavior and will also cause Lint-errors.",
+                                decr.decr_name)
                     except AttributeError:
                         # 'PropRef_underflow' object has no attribute 'width'
                         pass
@@ -783,11 +783,13 @@ class Field(Component):
                              InterruptType.bothedge):
 
                     self.logger.info(
-                        f"Found '{intr_type}' property for interrupt field that is "\
-                         "wider than 1-bit and has the sticky (rather than the "\
-                         "stickybit property. In this case, the value will be "\
-                         "latched if _any_ bit in the signal changes according to "\
-                         "'{intr_type}'"
+                        "Found '%s' property for interrupt field that is "\
+                        "wider than 1-bit and has the sticky (rather than the "\
+                        "stickybit property. In this case, the value will be "\
+                        "latched if _any_ bit in the signal changes according to "\
+                        "'%s'",
+                        intr_type,
+                        intr_type
                     )
 
                 if intr_type != InterruptType.level:
@@ -905,7 +907,7 @@ class Field(Component):
         sticky, _ = self.__add_sticky(latch_signal = InterruptType.level)
 
         if sticky:
-            self.logger.info(f"Found {sticky} property.")
+            self.logger.info("Found '%s' property.", sticky)
         elif self.obj.get_property('counter'):
             self.access_rtl['hw_write'] = ([
                 self._process_yaml(
@@ -1185,7 +1187,7 @@ class Field(Component):
             # kill the try block in most cases
             parent_scope = enum.get_parent_scope()
 
-            self.logger.debug(f"Starting to parse '{enum}'")
+            self.logger.debug("Starting to parse '%s'", enum)
 
             if isinstance(parent_scope, Reg):
                 enum_name = '__'.join([enum.get_scope_path().split('::')[-1], enum.__name__])
@@ -1221,7 +1223,7 @@ class Field(Component):
             self.field_type =\
                 '::'.join(['_'.join([scope, 'pkg']), enum_name])
 
-            self.logger.info(f"Parsed enum '{enum_name}'")
+            self.logger.info("Parsed enum '%s'", enum_name)
 
         except AttributeError:
             # In case of an AttributeError, the encode property is None. Hence,

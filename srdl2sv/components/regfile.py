@@ -1,12 +1,9 @@
 import importlib.resources as pkg_resources
 import sys
-import math
+from typing import Optional
 import yaml
 
-from typing import Optional
-
 from systemrdl import node
-from systemrdl.node import FieldNode
 
 # Local packages
 from srdl2sv.components.component import Component
@@ -97,7 +94,8 @@ class RegFile(Component):
         self.children = {**self.regfiles, **self.registers}
 
         # Create RTL of all registers
-        [x.create_rtl() for x in self.registers.values()]
+        for register in self.registers.values():
+            register.create_rtl()
 
         self.logger.info("Done generating all child-regfiles/registers")
 
@@ -199,15 +197,19 @@ class RegFile(Component):
                         enum_members[var[0]] = "::".join([self.name, key])
                     else:
                         self.logger.fatal(
-                           f"Enum member '{var[0]}' was found at multiple locations in the same "\
+                            "Enum member '%s' was found at multiple locations in the same "\
                             "main scope: \n"\
-                           f" -- 1st occurance: '{enum_members[var[0]]}'\n"\
-                           f" -- 2nd occurance: '{'::'.join([self.name, key])}'\n\n"\
+                            " -- 1st occurance: '%s'\n"\
+                            " -- 2nd occurance: '%s'\n\n"\
                             "This is not legal because all these enums will be defined "\
                             "in the same SystemVerilog scope. To share the same enum among "\
                             "different registers, define them on a higher level in the "\
                             "hierarchy.\n\n"\
-                            "Exiting...")
+                            "Exiting...",
+                            var[0],
+                            enum_members[var[0]],
+                            '::'.join([self.name, key])
+                            )
 
                         sys.exit(1)
 

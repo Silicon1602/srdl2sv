@@ -72,8 +72,7 @@ class AddrMap(Component):
                                 obj=child,
                                 parents_dimensions=None,
                                 parents_strides=None,
-                                config=config,
-                                glbl_settings=glbl_settings)
+                                config=config)
                 new_child.sanity_checks()
                 self.mems[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
@@ -100,7 +99,7 @@ class AddrMap(Component):
                 pass
 
         self.logger.info(
-            f"Detected maximum register width of whole addrmap to be '{self.regwidth}'")
+            "Detected maximum register width of whole addrmap to be '%i'", self.regwidth)
 
         # Add registers to children. This must be done in a last step
         # to account for all possible alias combinations
@@ -351,15 +350,19 @@ class AddrMap(Component):
                         enum_members[var[0]] = "::".join([self.name, key])
                     else:
                         self.logger.fatal(
-                           f"Enum member '{var[0]}' was found at multiple locations in the same "\
+                            "Enum member '%s' was found at multiple locations in the same "\
                             "main scope: \n"\
-                           f" -- 1st occurance: '{enum_members[var[0]]}'\n"\
-                           f" -- 2nd occurance: '{'::'.join([self.name, key])}'\n\n"\
+                            " -- 1st occurance: '%s'\n"\
+                            " -- 2nd occurance: '%s'\n\n"\
                             "This is not legal because all these enums will be defined "\
                             "in the same SystemVerilog scope. To share the same enum among "\
                             "different registers, define them on a higher level in the "\
                             "hierarchy.\n\n"\
-                            "Exiting...")
+                            "Exiting...",
+                            var[0],
+                            enum_members[var[0]],
+                            '::'.join([self.name, key])
+                            )
 
                         sys.exit(1)
 

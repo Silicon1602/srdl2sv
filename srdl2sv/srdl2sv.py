@@ -41,7 +41,7 @@ def main():
     except RDLCompileError:
         sys.exit(1)
     except FileNotFoundError:
-        logger.fatal(f"Could not find '{input_file}'")
+        logger.fatal("Could not find '%s'", input_file)
         sys.exit(1)
 
     addrmap = AddrMap(root.top, config)
@@ -59,7 +59,7 @@ def main():
             file=file
         )
 
-        logger.info(f"Succesfully created '{out_addrmap_file}'")
+        logger.info("Succesfully created '%s'", out_addrmap_file)
 
     # Start grabbing packages. This returns a dictionary for the main addrmap
     # and all it's child regfiles/addrmaps
@@ -79,7 +79,7 @@ def main():
     with open(out_widget_file, 'w', encoding="UTF-8") as file:
         print(widget_rtl, file=file)
 
-    logger.info(f"Selected, implemented, and copied '{config['bus']}' widget")
+    logger.info("Selected, implemented, and copied '%s' widget", config['bus'])
 
     # Copy over generic srdl2sv_interface_pkg
     widget_if_rtl = pkg_resources.read_text(widgets, 'srdl2sv_if_pkg.sv')
