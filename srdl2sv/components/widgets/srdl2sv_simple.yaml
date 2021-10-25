@@ -1,0 +1,45 @@
+# This file only contains the instantiation of the module
+module_instantiation:
+    rtl: |-
+        /*******************************************************************
+         * CPU Interface
+         * ======================
+         * Naming conventions
+         *    - r2b.*     -> Signals from registers to bus
+         *    - b2r.*     -> Signals from bus to registers
+         *    - clk       -> Clock that drives registers and the bus
+         *******************************************************************/
+        assign b2r.addr     = cpuif_address_i;
+        assign b2r.data     = cpuif_data_i;
+        assign b2r.w_vld    = cpuif_wr_vld_i;
+        assign b2r.r_vld    = cpuif_rd_vld_i;
+        assign b2r.byte_en  = {no_byte_enable} ? {{{bus_width_byte}{{1'b1}}}} : cpuif_byte_enable_i;
+
+        assign cpuif_data_o = r2b.data; 
+        assign cpuif_rdy_o  = r2b.rdy;
+        assign cpuif_err_o  = r2b.err;
+    signals:
+        - name: 'b2r'
+          signal_type: 'b2r_t'
+        - name: 'r2b'
+          signal_type: 'r2b_t'
+    input_ports:
+        - name: 'clk'
+          signal_type: ''
+        - name: 'cpuif_address_i'
+          signal_type: '[{addr_width}-1:0]'
+        - name: 'cpuif_wr_vld_i'
+          signal_type: ''
+        - name: 'cpuif_rd_vld_i'
+          signal_type: ''
+        - name: 'cpuif_data_i'
+          signal_type: '[{bus_width}-1:0]'
+        - name: 'cpuif_byte_enable_i'
+          signal_type: '[{bus_width_byte}-1:0]'
+    output_ports:
+        - name: 'cpuif_err_o'
+          signal_type: ''
+        - name: 'cpuif_rdy_o'
+          signal_type: ''
+        - name: 'cpuif_data_o'
+          signal_type: '[{bus_width}-1:0]'

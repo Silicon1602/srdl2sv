@@ -293,8 +293,10 @@ class AddrMap(Component):
 
         return self._process_yaml(
             self.widget_templ_dict['module_instantiation'],
-            {'bus_width': self.regwidth,
+            {'bus_width': self.get_regwidth(),
              'no_byte_enable': 1 if self.config['no_byte_enable'] else 0,
+             'addr_width': self.config['addrwidth'],
+             'bus_width_byte': int(self.get_regwidth() / 8),
             }
         )
 

@@ -21,12 +21,23 @@ class CliArguments():
             description="SystemRDL 2 SystemVerilog compiler")
 
         self.parser.add_argument(
+            "-a",
+            "--address_width",
+            default=32,
+            type=int,
+            help="Set the address width of the register space. For some \
+                  protocols, the default as described in the specification \
+                  is used. (default: %(default)s)")
+
+        self.parser.add_argument(
             "-b",
             "--bus",
-            choices=['amba3ahblite'],
+            choices=['simple', 'amba3ahblite'],
             default='amba3ahblite',
-            help="Set the bus protocol that shall be used by software to ',\
-                  communicate with the registers. (default: %(default)s)")
+            help="Set the bus protocol that shall be used by software to \
+                  communicate with the registers. If just a simple interface \
+                  to the registers is needed, use the 'simple' protocol. \
+                  (default: %(default)s)")
 
         self.parser.add_argument(
             "-c",
@@ -163,8 +174,15 @@ class CliArguments():
         config['bus'] = args.bus
         config['list_args'].append(f"Register Bus Type: {config['bus']}")
 
+        # Address width
         if args.bus == 'amba3ahblite':
             config['addrwidth'] = 32
+            config['addrwidth_bus_spec'] = True
+        else:
+            config['addrwidth'] = args.address_width
+            config['addrwidth_bus_spec'] = False
+
+        config['list_args'].append(f"Address width    : {config['addrwidth']}")
 
         # Byte enables?
         config['no_byte_enable'] = args.no_byte_enable

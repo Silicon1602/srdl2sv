@@ -81,8 +81,8 @@ The following bus protocols are planned at this point:
 # Help function
 A comprehensive help function of the tool can be invoked by running `srdl2sv --help`.
 ```
-usage: main.py [-h] [-b {amba3ahblite}] [-c DESCRIPTIONS]
-               [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-e]
+usage: srdl2sv [-h] [-a ADDRESS_WIDTH] [-b {simple,amba3ahblite}]
+               [-c DESCRIPTIONS] [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-e]
                [--file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
                [--stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
                [--no_byte_enable] [-o OUT_DIR] [-r] [--real_tabs]
@@ -96,10 +96,15 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -b {amba3ahblite}, --bus {amba3ahblite}
+  -a ADDRESS_WIDTH, --address_width ADDRESS_WIDTH
+                        Set the address width of the register space. For some
+                        protocols, the default as described in the
+                        specification is used. (default: 32)
+  -b {simple,amba3ahblite}, --bus {simple,amba3ahblite}
                         Set the bus protocol that shall be used by software to
-                        ', communicate with the registers. (default:
-                        amba3ahblite)
+                        communicate with the registers. If just a simple
+                        interface to the registers is needed, use the 'simple'
+                        protocol. (default: amba3ahblite)
   -c DESCRIPTIONS, --descriptions DESCRIPTIONS
                         Include descriptions of addrmaps (+16), regfiles (+8),
                         memories (+4) registers (+2), and fields (+1) in RTL.

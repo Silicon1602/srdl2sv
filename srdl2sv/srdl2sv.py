@@ -72,16 +72,26 @@ def main():
                 print(value, file=file)
 
     # Copy over widget RTL from widget directory
-    widget_rtl = pkg_resources.read_text(widgets, f"srdl2sv_{config['bus']}.sv")
+    try:
+        widget_rtl = pkg_resources.read_text(widgets, f"srdl2sv_{config['bus']}.sv")
 
-    out_widget_file = f"{config['output_dir']}/srdl2sv_{config['bus']}.sv"
+        out_widget_file = f"{config['output_dir']}/srdl2sv_{config['bus']}.sv"
 
-    with open(out_widget_file, 'w', encoding="UTF-8") as file:
-        print(widget_rtl, file=file)
+        with open(out_widget_file, 'w', encoding="UTF-8") as file:
+            print(widget_rtl, file=file)
 
-    logger.info("Selected, implemented, and copied '%s' widget", config['bus'])
+        logger.info("Selected, implemented, and copied '%s' widget", config['bus'])
+    except FileNotFoundError:
+        # Bus might not have a corresponding SV file
+        logger.info("Did not find a seperate SystemVerilog file for '%s' widget", config['bus'])
 
     # Copy over generic srdl2sv_interface_pkg
+    if config['addrwidth_bus_spec']:
+        logger.info("Set address width to '%i', according to '%s' specification",
+                     config['addrwidth'], config['bus'])
+    else:
+        logger.info("Set address width to '%i'", config['addrwidth'])
+
     widget_if_rtl = pkg_resources.read_text(widgets, 'srdl2sv_if_pkg.sv')
 
     out_if_file = f"{config['output_dir']}/srdl2sv_if_pkg.sv"
