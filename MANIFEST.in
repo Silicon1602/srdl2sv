@@ -1,3 +1,5 @@
 include srdl2sv/components/templates/*.yaml
+include srdl2sv/components/templates/LICENSE
 include srdl2sv/components/widgets/*.yaml
 include srdl2sv/components/widgets/*.sv
+include srdl2sv/components/widgets/LICENSE
