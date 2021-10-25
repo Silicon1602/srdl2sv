@@ -85,7 +85,7 @@ class RegFile(Component):
             try:
                 if (regwidth := new_child.get_regwidth()) > self.regwidth:
                     self.regwidth = regwidth
-            except KeyError:
+            except (KeyError, UnboundLocalError):
                 # Simply ignore nodes like SignalNodes
                 pass
 

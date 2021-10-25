@@ -54,6 +54,7 @@ class AddrMap(Component):
 
         # Traverse through children
         for child in self.obj.children():
+            print(child)
             if isinstance(child, node.AddrmapNode):
                 # This addressmap opens a completely new scope. For example,
                 # a field_reset does not propagate through to this scope.
@@ -76,6 +77,7 @@ class AddrMap(Component):
                 new_child.sanity_checks()
                 self.mems[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
+                print('here')
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
                     # new register. Rather, we bury up the old register and add
@@ -94,7 +96,7 @@ class AddrMap(Component):
             try:
                 if (regwidth := new_child.get_regwidth()) > self.regwidth:
                     self.regwidth = regwidth
-            except KeyError:
+            except (KeyError, UnboundLocalError):
                 # Simply ignore nodes like SignalNodes
                 pass
 
