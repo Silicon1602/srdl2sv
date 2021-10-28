@@ -4,7 +4,7 @@
     1. [Not production ready](#non-production-ready)
 2. [Getting started](#getting-started)
     1. [Installation](#installation)
-    2. [Compiling your first RDL](#compiling-your-first-rdl)
+    2. [Quick start into RDL compilation](#quick-start-into-rdl-compilation)
     3. [Using the generated RTL](#using-the-generated-rtl)
 3. [Supported bus protocols](#supported-bus-protocols)
 4. [Help function](#help-functions)
@@ -34,20 +34,20 @@ and run
 sudo python3 setup.py install
 ```
 
-## Compiling your first RDL
+## Quick start into RDL compilation
 The argument that is required to get started is the location of the SystemRDL file that contains the root address map. The compiler will generate a seperate SystemVerilog module for each address map it encounters in the code. Thus, if address maps are instantiated within other address maps, these will be packed into a seperate module.
 
 To compile a file called `example_addrmap.rdl`, simply run:
 ```
 srdl2sv example_addrmap.rdl
 ```
-By default, the compiler will create a directory called `srdl2sv_out` and dump `example_addrmap.sv` with the actual RTL and a log file that contains `INFO`-level logging into this directory. To change the logging level, use `--file_log_level` like shown below:
+By default, the compiler will create a directory called `srdl2sv_out` and dump `example_addrmap.sv` with the actual RTL. By default, the program wil not dump any logging into this directory. To change the logging level, use `--file_log_level` like shown below:
 
 ```
 srdl2sv example_addrmap.rdl
     --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
 ```
-Similarly, to change the default log level of the output to the shell, which is `WARNING`, use `--stream_log_level` like shown below:
+Similarly, to change the default log level of the output to the shell, which is `INFO`, use `--stream_log_level` like shown below:
 ```
 srdl2sv example_addrmap.rdl
     --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
@@ -70,10 +70,51 @@ srdl2sv example_addrmap.rdl
     --no_byte_enable
 ```
 ## Using the generated RTL
+For the generated RTL to work, all files in `srdl2sv_out` (or in a custom directory, if specified with `-o` must be passed on to the respective EDA tool for proper functioning. For a better understanding of the files that get generated, a short summary below.
 
+A run with only 1 `addrmap`, without any enumerations, and with `--bus simple` will generate 2 files:
+```
+srdl2sv_out/
+├─ <addrmap_name>.sv
+├─ srdl2sv_widget_if.sv
+```
+The former file is the actual SystemVerilog module that contains all register logic. The latter contains a SystemVerilog `interface` that is internally being used to enable communication with the registers. It is worth noting that the `interface` is **not** brought up to the module's interface but is flattened out for compatibility reasons.
+
+If one decides to al create a bus protocol (see [Supported bus protocols](#supported-bus-protocols)), an additional file will be created that contains a SHIM between the protocol and the internal bus logic.
+```
+srdl2sv_out/
+├─ <addrmap_name>.sv
+├─ srdl2sv_widget_if.sv
+├─ srdl2sv_<protocol_name>.sv
+```
+If an `addrmap` calls other `addrmaps`, each will get it's own SystemVerilog module. For example, if `<addrmap_name>` from the previous example would instantiate `<addrmap1_name>` and `<addrmap2_name>`, the following files would be generated:
+```
+srdl2sv_out/
+├─ <addrmap_name>.sv
+├─ <addrmap1_name>.sv
+├─ <addrmap2_name>.sv
+├─ srdl2sv_widget_if.sv
+```
+In case we only 1 `addrmap` is compiled, that address map contains enumerations, and `--disable_enums` is *not* set, a seperate package will be generated that defines those enums. These enumerations are used in the module's I/O interface but can also be easily used outside of the `<addrmap_name>.sv`. That way, the code outside of the register block becomes more readable and a user gets all benefits of SystemVerilog's strong type checking. 
+```
+srdl2sv_out/
+├─ <addrmap_name>.sv
+├─ srdl2sv_widget_if.sv
+├─ <addrmap_name>_pkg.sv
+```
+If the address map from the aforementioned example contains `regfiles`, these will open a seperate scope to prevent naming collisions. For example's sake, let's assume it instantiates the `regfiles` `<regfile_1>` and `<regfile_2>`. In that case, the following files would be dumped:
+```
+srdl2sv_out/
+├─ <addrmap_name>.sv
+├─ srdl2sv_widget_if.sv
+├─ <addrmap_name>_pkg.sv
+├─ <addrmap_name>__<regfile_1>_pkg.sv
+├─ <addrmap_name>__<regfile_2>_pkg.sv
+```
 # Supported bus protocols
-The following bus protocols are supported:
-- AMBA 3 AHB-Lite Protocol (default)
+The following standardized bus protocols are supported:
+- None
+- AMBA 3 AHB-Lite Protocol **(default)**
 
 The following bus protocols are planned at this point:
 - AMBA 3 APB Protocol
@@ -118,11 +159,11 @@ optional arguments:
   --file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
                         Set verbosity level of output to log-file. When set to
                         'NONE', nothing will be printed to the shell.
-                        (default: INFO)
+                        (default: NONE)
   --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
                         Set verbosity level of output to shell. When set to
                         'NONE', nothing will be printed to the shell.
-                        (default: WARNING)
+                        (default: INFO)
   --no_byte_enable      If this flag gets set, byte-enables get disabled. At
                         that point, it is only possible to address whole
                         registers, not single bytes within these registers
