@@ -3,26 +3,19 @@ module_instantiation:
     rtl: |-
         /*******************************************************************
          * CPU Interface
-         * ======================
-         * Naming conventions
-         *    - r2b.*     -> Signals from registers to bus
-         *    - b2r.*     -> Signals from bus to registers
-         *    - clk       -> Clock that drives registers and the bus
          *******************************************************************/
-        assign b2r.addr     = cpuif_address_i;
-        assign b2r.data     = cpuif_data_i;
-        assign b2r.w_vld    = cpuif_wr_vld_i;
-        assign b2r.r_vld    = cpuif_rd_vld_i;
-        assign b2r.byte_en  = {no_byte_enable} ? {{{bus_width_byte}{{1'b1}}}} : cpuif_byte_enable_i;
+        assign widget_if.addr     = cpuif_address_i;
+        assign widget_if.w_data   = cpuif_data_i;
+        assign widget_if.w_vld    = cpuif_wr_vld_i;
+        assign widget_if.r_vld    = cpuif_rd_vld_i;
+        assign widget_if.byte_en  = {no_byte_enable} ? {{{bus_width_byte}{{1'b1}}}} : cpuif_byte_enable_i;
 
-        assign cpuif_data_o = r2b.data; 
-        assign cpuif_rdy_o  = r2b.rdy;
-        assign cpuif_err_o  = r2b.err;
+        assign cpuif_data_o = widget_if.r_data; 
+        assign cpuif_rdy_o  = widget_if.rdy;
+        assign cpuif_err_o  = widget_if.err;
     signals:
-        - name: 'b2r'
-          signal_type: 'b2r_t'
-        - name: 'r2b'
-          signal_type: 'r2b_t'
+        - name: 'widget_if'
+          signal_type: 'srdl2sv_widget_if #(.ADDR_W ({addr_width}), .DATA_W({bus_width}). NO_BYTE_ENABLE({no_byte_enable}))'
     input_ports:
         - name: 'clk'
           signal_type: ''

@@ -30,6 +30,9 @@ class AddrMap(Component):
                     parents_strides=None,
                     parents_dimensions=None)
 
+        # Name of addrmap should always be the object's name and not the name of the instance
+        self.name = obj.type_name
+
         # Check if global resets are defined
         glbl_settings = {}
 
@@ -47,6 +50,8 @@ class AddrMap(Component):
         # Empty dictionary of register objects
         # We need a dictionary since it might be required to access the objects later
         # by name (for example, in case of aliases)
+        self.addrmap_ids = {}
+        self.addrmaps = []
         self.registers = {}
         self.regfiles = {}
         self.mems = {}
@@ -54,12 +59,34 @@ class AddrMap(Component):
 
         # Traverse through children
         for child in self.obj.children():
-            print(child)
+            new_child = None
+
             if isinstance(child, node.AddrmapNode):
                 # This addressmap opens a completely new scope. For example,
                 # a field_reset does not propagate through to this scope.
-                self.logger.info('Found hierarchical addrmap. Entering it...')
-                self.logger.error('Child addrmaps are not implemented yet!')
+                #
+                # We only need to create files for objects, not for instantiations.
+                # For that reason, scan if we already created an instance of this
+                # object. 
+                if child.type_name not in self.addrmap_ids:
+                    self.logger.info("Found hierarchical addrmap of type '%s' " \
+                                     ". Entering it...", child.type_name)
+
+                    # Save unique ID of object to dictionary
+                    self.addrmap_ids[child.type_name] = id(child.inst.original_def)
+
+                    # Create addrmap object
+                    self.addrmaps.append(AddrMap(obj=child, config=config))
+                elif id(child.inst.original_def) == self.addrmap_ids[child.type_name]:
+                    self.logger.info("Found another instance of addrmap '%s'. " \
+                                     "Not rebuilding it...", child.type_name)
+                else:
+                    self.logger.fatal("Found a redeclaration of addrmap '%s'. " \
+                                      "This is not supported by srdl2sv because " \
+                                      "the compiler will create a seperate SystemVerilog " \
+                                      "module for every addrmap object.", child.type_name)
+
+                    sys.exit(1)
             elif isinstance(child, node.RegfileNode):
                 new_child = RegFile(
                                 obj=child,
@@ -77,7 +104,6 @@ class AddrMap(Component):
                 new_child.sanity_checks()
                 self.mems[child.inst_name] = new_child
             elif isinstance(child, node.RegNode):
-                print('here')
                 if child.inst.is_alias:
                     # If the node we found is an alias, we shall not create a
                     # new register. Rather, we bury up the old register and add
@@ -96,7 +122,7 @@ class AddrMap(Component):
             try:
                 if (regwidth := new_child.get_regwidth()) > self.regwidth:
                     self.regwidth = regwidth
-            except (KeyError, UnboundLocalError):
+            except (KeyError, UnboundLocalError, AttributeError):
                 # Simply ignore nodes like SignalNodes
                 pass
 
@@ -178,11 +204,7 @@ class AddrMap(Component):
 
         # Define packages to be included. Always include the
         # b2w and w2b defines.
-        import_package_list = [
-            AddrMap.templ_dict['import_package']['rtl'].format(
-                name = 'srdl2sv_if'),
-            '\n'
-            ]
+        import_package_list = []
 
         try:
             for pkg_name in self.__get_package_names():
@@ -195,7 +217,11 @@ class AddrMap(Component):
         except IndexError:
             pass
 
-        import_package_list.pop()
+        try:
+            import_package_list.pop()
+        except IndexError:
+            # If there are no packages, an IndexError is expected
+            pass
 
         self.rtl_header.append(
             AddrMap.templ_dict['header'].format(
@@ -243,17 +269,17 @@ class AddrMap(Component):
         for child in self.children.values():
             for mux_entry_dim in child.create_mux_string():
                 # Data structure of mux_entry:
-                r2b_data = ''.join([mux_entry_dim.mux_entry.data_wire, mux_entry_dim.dim])
-                r2b_rdy = ''.join([mux_entry_dim.mux_entry.rdy_wire, mux_entry_dim.dim])
-                r2b_err = ''.join([mux_entry_dim.mux_entry.err_wire, mux_entry_dim.dim])
+                widget_if_r_data = ''.join([mux_entry_dim.mux_entry.data_wire, mux_entry_dim.dim])
+                widget_if_rdy = ''.join([mux_entry_dim.mux_entry.rdy_wire, mux_entry_dim.dim])
+                widget_if_err = ''.join([mux_entry_dim.mux_entry.err_wire, mux_entry_dim.dim])
                 active_wire = ''.join([mux_entry_dim.mux_entry.active_wire, mux_entry_dim.dim])
 
                 list_of_cases.append(
                     AddrMap.templ_dict['list_of_mux_cases']['rtl'].format(
                         active_wire = active_wire,
-                        r2b_data = r2b_data,
-                        r2b_rdy = r2b_rdy,
-                        r2b_err = r2b_err)
+                        widget_if_r_data = widget_if_r_data,
+                        widget_if_rdy = widget_if_rdy,
+                        widget_if_err = widget_if_err)
                     )
 
         # Define default case
@@ -410,3 +436,8 @@ class AddrMap(Component):
                 real_tabs)
 
         return rtl_return
+
+    def get_addrmaps(self) -> []:
+        self.logger.debug("Returning addrmaps")
+
+        return [self, *[y for x in self.addrmaps for y in x.get_addrmaps()]]

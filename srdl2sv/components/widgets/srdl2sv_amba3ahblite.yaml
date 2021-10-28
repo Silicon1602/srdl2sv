@@ -5,8 +5,8 @@ module_instantiation:
          * AMBA 3 AHB Lite Widget
          * ======================
          * Naming conventions
-         *    - r2b.*     -> Signals from registers to bus
-         *    - b2r.*     -> Signals from bus to registers
+         *    - widget_if -> SystemVerilog interface to between widgets
+         *                   and the internal srdl2sv registers.
          *    - H*        -> Signals as defined in AMBA3 AHB Lite 
          *                   specification
          *    - clk       -> Clock that drives registers and the bus
@@ -16,13 +16,7 @@ module_instantiation:
                .BUS_BITS         ({bus_width}),
                .NO_BYTE_ENABLE   ({no_byte_enable}))
         srdl2sv_amba3ahblite_inst
-             (// Outputs to internal logic
-             .b2r,
-
-             // Inputs from internal logic
-             .r2b,
- 
-             // Bus protocol
+             (// Bus protocol
              .HRESETn,
              .HCLK        (clk),
              .HADDR,
@@ -35,12 +29,14 @@ module_instantiation:
 
              .HREADYOUT,
              .HRESP,
-             .HRDATA);
+             .HRDATA,
+
+             // Interface to internal logic
+             .widget_if);
     signals:
-        - name: 'b2r'
-          signal_type: 'b2r_t'
-        - name: 'r2b'
-          signal_type: 'r2b_t'
+    signals:
+        - name: 'widget_if'
+          signal_type: 'srdl2sv_widget_if #(.ADDR_W ({addr_width}), .DATA_W({bus_width}))'
     input_ports:
         - name: 'clk'
           signal_type: ''

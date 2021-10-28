@@ -36,7 +36,7 @@ memory_adr_assignments:
          * The address is divided so that byte-addresses are
          * translated full memory entries
          */
-        assign {path}_mem_address = (b2r.addr - {lower_bound}) / {bytes_w};
+        assign {path}_mem_address = (widget_if.addr - {lower_bound}) / {bytes_w};
         assign {path}_mem_active = {path}_mem_address >= {lower_bound} && {path}_mem_address < {upper_bound};
 
     signals:
@@ -65,7 +65,7 @@ memory_rd_assignments:
          * complete time '{path}_mem_r_ack' is high.
          */
         // Request read signal
-        assign {path}_mem_r_req = {path}_mem_active && b2r.r_vld;
+        assign {path}_mem_r_req = {path}_mem_active && widget_if.r_vld;
     input_ports:
         - name: '{path}_mem_r_data'
           signal_type: '[{data_w}:0]'
@@ -99,10 +99,10 @@ memory_wr_assignments:
          * complete time '{path}_mem_w_ack' is high.
          */
         // Write request
-        assign {path}_mem_w_req = {path}_mem_active && b2r.w_vld;
+        assign {path}_mem_w_req = {path}_mem_active && widget_if.w_vld;
 
         // Assign value from bus to output
-        assign {path}_mem_w_data = b2r.data;
+        assign {path}_mem_w_data = widget_if.w_data;
     output_ports:
         - name: '{path}_mem_w_req'
           signal_type: 'logic'

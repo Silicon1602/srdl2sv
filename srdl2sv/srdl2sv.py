@@ -44,32 +44,49 @@ def main():
         logger.fatal("Could not find '%s'", input_file)
         sys.exit(1)
 
-    addrmap = AddrMap(root.top, config)
+    addrmaps = AddrMap(root.top, config)
+
+    # Determine address width
+    if config['addrwidth_bus_spec']:
+        logger.info("Set address width to '%i', according to '%s' specification",
+                     config['addrwidth'], config['bus'])
+    else:
+        logger.info("Set address width to '%i'", config['addrwidth'])
 
     # Save RTL to file
-    # Start out with addrmap
-    out_addrmap_file = f"{config['output_dir']}/{addrmap.name}.sv"
+    for addrmap in addrmaps.get_addrmaps():
+        out_addrmap_file = f"{config['output_dir']}/{addrmap.name}.sv"
 
-    with open(out_addrmap_file, 'w', encoding='UTF-8') as file:
-        print(
-            addrmap.get_rtl(
-                tab_width=config['tab_width'],
-                real_tabs=config['real_tabs']
-            ),
-            file=file
-        )
+        with open(out_addrmap_file, 'w', encoding='UTF-8') as file:
+            print(
+                addrmap.get_rtl(
+                    tab_width=config['tab_width'],
+                    real_tabs=config['real_tabs']
+                ),
+                file=file
+            )
 
-        logger.info("Succesfully created '%s'", out_addrmap_file)
+            logger.info("Succesfully created '%s'", out_addrmap_file)
 
-    # Start grabbing packages. This returns a dictionary for the main addrmap
-    # and all it's child regfiles/addrmaps
-    for key, value in addrmap.get_package_rtl(
-        tab_width=config['tab_width'],
-        real_tabs=config['real_tabs']
-    ).items():
-        if value:
-            with open(f"{config['output_dir']}/{key}_pkg.sv", 'w', encoding="UTF-8") as file:
-                print(value, file=file)
+        # Start grabbing packages. This returns a dictionary for the main addrmap
+        # and all it's child regfiles/addrmaps
+        for key, value in addrmap.get_package_rtl(
+            tab_width=config['tab_width'],
+            real_tabs=config['real_tabs']
+        ).items():
+            if value:
+                with open(f"{config['output_dir']}/{key}_pkg.sv", 'w', encoding="UTF-8") as file:
+                    print(value, file=file)
+
+    # Copy over generic srdl2sv_interface_pkg
+    widget_if_rtl = pkg_resources.read_text(widgets, "srdl2sv_widget_if.sv")
+
+    out_if_file = f"{config['output_dir']}/srdl2sv_widget_if.sv"
+
+    with open(out_if_file, 'w', encoding="UTF-8") as file:
+        print(widget_if_rtl, file=file)
+
+    logger.info("Copied 'srdl2sv_widget_if.sv'")
 
     # Copy over widget RTL from widget directory
     try:
@@ -85,26 +102,6 @@ def main():
         # Bus might not have a corresponding SV file
         logger.info("Did not find a seperate SystemVerilog file for '%s' widget", config['bus'])
 
-    # Copy over generic srdl2sv_interface_pkg
-    if config['addrwidth_bus_spec']:
-        logger.info("Set address width to '%i', according to '%s' specification",
-                     config['addrwidth'], config['bus'])
-    else:
-        logger.info("Set address width to '%i'", config['addrwidth'])
-
-    widget_if_rtl = pkg_resources.read_text(widgets, 'srdl2sv_if_pkg.sv')
-
-    out_if_file = f"{config['output_dir']}/srdl2sv_if_pkg.sv"
-
-    with open(out_if_file, 'w', encoding="UTF-8") as file:
-        widget_if_rtl_parsed = widget_if_rtl.format(
-            regwidth_bit = addrmap.get_regwidth() - 1,
-            regwidth_byte = int(addrmap.get_regwidth() / 8) - 1,
-            addrwidth = config['addrwidth'] - 1)
-
-        print(widget_if_rtl_parsed,file=file)
-
-    logger.info("Copied 'srdl2sv_if_pkg.sv")
 
     # Print elapsed time
     logger.info("Elapsed time: %f seconds", time.time() - start)

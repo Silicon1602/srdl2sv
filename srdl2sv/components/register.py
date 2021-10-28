@@ -215,8 +215,8 @@ class Register(Component):
             # an error.
             #
             # Furthermore, consider an error indication that is set for external registers
-            bytes_read_format = [f"b2r.byte_en[{x}]" for x in list(map(str, bytes_read))]
-            bytes_written_format = [f"b2r.byte_en[{x}]" for x in list(map(str, bytes_written))]
+            bytes_read_format = [f"widget_if.byte_en[{x}]" for x in list(map(str, bytes_read))]
+            bytes_written_format = [f"widget_if.byte_en[{x}]" for x in list(map(str, bytes_written))]
 
             sw_err_condition_vec = []
 
@@ -270,7 +270,7 @@ class Register(Component):
                         sw_rdy_condition_vec.append(' && ')
 
                     sw_rdy_condition_vec.pop()
-                    sw_rdy_condition_vec.append(' && b2r.r_vld)')
+                    sw_rdy_condition_vec.append(' && widget_if.r_vld)')
 
                 if bytes_read and bytes_written:
                     sw_rdy_condition_vec.append(' || ')
@@ -290,7 +290,7 @@ class Register(Component):
                         sw_rdy_condition_vec.append(' && ')
 
                     sw_rdy_condition_vec.pop()
-                    sw_rdy_condition_vec.append(' && b2r.w_vld)')
+                    sw_rdy_condition_vec.append(' && widget_if.w_vld)')
 
                 sw_rdy_condition = ''.join(sw_rdy_condition_vec)
             else:

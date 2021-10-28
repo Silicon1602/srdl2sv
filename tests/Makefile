@@ -37,9 +37,9 @@ default: $(ALL_COCOTB_TESTS)
 build_dirs/%/compile.f: systemrdl/%.rdl 
 	srdl2sv $? --out_dir $(shell dirname $@) --file_log_level DEBUG --stream_log_level DEBUG
 
-	ls $(PWD)/$(@D)/*_pkg.sv > $@
+	ls $(PWD)/$(@D)/*_if.sv > $@
 	ls $(PWD)/$(@D)/*amba*.sv >> $@
-	ls $(PWD)/$(@D)/*.sv | grep -v '.*_pkg.sv$$' | grep -v '.*amba.*' >> $@
+	ls $(PWD)/$(@D)/*.sv | grep -v '.*_if.sv$$' | grep -v '.*amba.*' >> $@
 
 
 clean:

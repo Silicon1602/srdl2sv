@@ -5,19 +5,19 @@ access_wire_comment:
         // Register-activation for '{path}' {alias}
 access_wire_assign_1_dim:
     rtl: |-
-        assign {path}_active = b2r.addr == {addr};
+        assign {path}_active = widget_if.addr == {addr};
     signals:
         - name: '{path}_active'
           signal_type: 'logic'
 access_wire_assign_multi_dim:
     rtl: |-
-        assign {path}_active{genvars} = b2r.addr == {addr}+({genvars_sum});
+        assign {path}_active{genvars} = widget_if.addr == {addr}+({genvars_sum});
     signals:
         - name: '{path}_active'
           signal_type: 'logic'
 read_wire_assign: 
     rtl: |-
-        assign {path}_sw_rd{genvars} = {path}_active{genvars} && b2r.r_vld;
+        assign {path}_sw_rd{genvars} = {path}_active{genvars} && widget_if.r_vld;
     signals:
         - name: '{path}_sw_rd'
           signal_type: 'logic'
@@ -29,7 +29,7 @@ read_wire_assign_0:
           signal_type: 'logic'
 write_wire_assign: 
     rtl: |-
-        assign {path}_sw_wr{genvars} = {path}_active{genvars} && b2r.w_vld;
+        assign {path}_sw_wr{genvars} = {path}_active{genvars} && widget_if.w_vld;
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'
@@ -92,7 +92,7 @@ sw_rdy_assignment_var_name:
           signal_type: 'logic'
 sw_err_condition:
     rtl: |-
-        !((b2r.r_vld && ({rd_byte_list_ored})) || (b2r.w_vld && ({wr_byte_list_ored})))
+        !((widget_if.r_vld && ({rd_byte_list_ored})) || (widget_if.w_vld && ({wr_byte_list_ored})))
 sw_data_assignment:
     rtl: |-
 
@@ -133,7 +133,7 @@ external_rdy_condition:
           signal_type: 'logic'
 external_err_condition:
     rtl: |-
-        ({path}_ext_{rd_or_wr}_err{genvars} && {path}_ext_{rd_or_wr}_ack{genvars} && b2r.{rd_or_wr}_vld)
+        ({path}_ext_{rd_or_wr}_err{genvars} && {path}_ext_{rd_or_wr}_ack{genvars} && widget_if.{rd_or_wr}_vld)
     input_ports:
         - name: '{path}_ext_{rd_or_wr}_err'
           signal_type: 'logic'

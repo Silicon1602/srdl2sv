@@ -129,15 +129,15 @@ default_mux_case:
         default:
         begin
         // If the address is not found, return an error
-        r2b.data = 0;
-        r2b.err  = 1;
-        r2b.rdy  = b2r.r_vld || b2r.w_vld;
+        widget_if.r_data = 0;
+        widget_if.err    = 1;
+        widget_if.rdy    = widget_if.r_vld || widget_if.w_vld;
         end
 list_of_mux_cases:
     rtl: |-
         {active_wire}:
         begin
-        r2b.data = {r2b_data};
-        r2b.err  = {r2b_err};
-        r2b.rdy  = {r2b_rdy};
+        widget_if.r_data = {widget_if_r_data};
+        widget_if.err    = {widget_if_err};
+        widget_if.rdy    = {widget_if_rdy};
         end
