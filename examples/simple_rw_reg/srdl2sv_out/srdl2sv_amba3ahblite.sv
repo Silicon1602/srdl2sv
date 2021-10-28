@@ -23,20 +23,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-module srdl2sv_amba3ahblite
-    import srdl2sv_if_pkg::*;
-#(
+module srdl2sv_amba3ahblite #(
     parameter bit FLOP_REGISTER_IF = 0,
     parameter     BUS_BITS         = 32,
     parameter     NO_BYTE_ENABLE   = 0
 )
 (
-    // Outputs to internal logic
-    output b2r_t                b2r,
-
-    // Inputs from internal logic
-    input  r2b_t                r2b,
- 
     // Bus protocol
     input                       HCLK,
     input                       HRESETn,
@@ -50,7 +42,10 @@ module srdl2sv_amba3ahblite
 
     output logic                HREADYOUT,
     output logic                HRESP,
-    output logic [BUS_BITS-1:0] HRDATA
+    output logic [BUS_BITS-1:0] HRDATA,
+
+    // Interface to internal logic
+    srdl2sv_widget_if.widget    widget_if
 );
 
     localparam BUS_BYTES = BUS_BITS/8;
@@ -145,7 +140,7 @@ module srdl2sv_amba3ahblite
         // When reading back, the data of the bit that was accessed over the bus
         // should be at byte 0 of the HRDATA bus and bits that were not accessed
         // should be masked with 0s.
-        HRDATA_temp = r2b.data >> (8*HADDR_q[BUS_BYTES_W-1:0]);
+        HRDATA_temp = widget_if.r_data >> (8*HADDR_q[BUS_BYTES_W-1:0]);
 
         for (int i = 0; i < BUS_BYTES; i++)
             if (i < (1 << HSIZE_q))
@@ -153,8 +148,8 @@ module srdl2sv_amba3ahblite
             else
                 HRDATA[8*(i+1)-1 -: 8] = 8'b0;
 
-        b2r_w_vld_next = 0;
-        b2r_r_vld_next = 0;
+        widget_if_w_vld_next = 0;
+        widget_if_r_vld_next = 0;
         fsm_next       = fsm_q;
 
         case (fsm_q)
@@ -175,11 +170,11 @@ module srdl2sv_amba3ahblite
             end
             FSM_TRANS:
             begin
-                HREADYOUT = r2b.rdy;
-                b2r_w_vld_next = operation_q == WRITE;
-                b2r_r_vld_next = operation_q == READ;
+                HREADYOUT = widget_if.rdy;
+                widget_if_w_vld_next = operation_q == WRITE;
+                widget_if_r_vld_next = operation_q == READ;
 
-                if (r2b.err && r2b.rdy)
+                if (widget_if.err && widget_if.rdy)
                 begin
                     fsm_next = FSM_ERR_0;
                 end
@@ -201,7 +196,7 @@ module srdl2sv_amba3ahblite
                 else if (HTRANS == IDLE)
                 begin
                     // All done, wrapping things up!
-                    fsm_next = r2b.rdy ? FSM_IDLE : FSM_TRANS;
+                    fsm_next = widget_if.rdy ? FSM_IDLE : FSM_TRANS;
                 end
             end
             FSM_ERR_0:
@@ -253,14 +248,14 @@ module srdl2sv_amba3ahblite
      * Determine the number of active bytes
      ***/
     logic [BUS_BYTES-1:0] HSIZE_bitfielded;
-    logic [BUS_BYTES-1:0] b2r_byte_en_next;
-    logic                 b2r_w_vld_next;
-    logic                 b2r_r_vld_next;
+    logic [BUS_BYTES-1:0] widget_if_byte_en_next;
+    logic                 widget_if_w_vld_next;
+    logic                 widget_if_r_vld_next;
 
     generate
     if (NO_BYTE_ENABLE)
     begin
-        assign b2r_byte_en_next = {BUS_BYTES{1'b1}}; 
+        assign widget_if_byte_en_next = {BUS_BYTES{1'b1}}; 
     end
     else
     begin
@@ -270,7 +265,7 @@ module srdl2sv_amba3ahblite
                 HSIZE_bitfielded[i] = i < (1 << HSIZE_q);
 
             // Shift if not the full bus is accessed
-            b2r_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
+            widget_if_byte_en_next = HSIZE_bitfielded << (HADDR_q % BUS_BYTES);
         end
     end
     endgenerate
@@ -284,29 +279,29 @@ module srdl2sv_amba3ahblite
         always_ff @ (posedge HCLK or negedge HRESETn)
             if (!HRESETn)
             begin
-                b2r.w_vld <= 1'b0;
-                b2r.r_vld <= 1'b0;
+                widget_if.w_vld <= 1'b0;
+                widget_if.r_vld <= 1'b0;
             end
             else
             begin
-                b2r.w_vld <= b2r_w_vld_next;
-                b2r.r_vld <= b2r_r_vld_next;
+                widget_if.w_vld <= widget_if_w_vld_next;
+                widget_if.r_vld <= widget_if_r_vld_next;
             end
 
         always_ff @ (posedge HCLK)
         begin
-            b2r.addr    <= {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
-            b2r.data    <= HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
-            b2r.byte_en <= b2r_byte_en_next;
+            widget_if.addr    <= {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+            widget_if.w_data  <= HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
+            widget_if.byte_en <= widget_if_byte_en_next;
         end
     end
     else
     begin
-        assign b2r.w_vld   = b2r_w_vld_next;
-        assign b2r.r_vld   = b2r_r_vld_next;
-        assign b2r.addr    = {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
-        assign b2r.data    = HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
-        assign b2r.byte_en = b2r_byte_en_next;
+        assign widget_if.w_vld   = widget_if_w_vld_next;
+        assign widget_if.r_vld   = widget_if_r_vld_next;
+        assign widget_if.addr    = {HADDR_q[31:BUS_BYTES_W], {BUS_BYTES_W{1'b0}}};
+        assign widget_if.w_data  = HWDATA << (8*HADDR_q[BUS_BYTES_W-1:0]);
+        assign widget_if.byte_en = widget_if_byte_en_next;
     end
     endgenerate
 

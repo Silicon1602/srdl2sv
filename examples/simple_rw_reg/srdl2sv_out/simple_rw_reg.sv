@@ -20,8 +20,8 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 20 2021 23:49:07
- *  - Path     : /home/dpotter/srdl2sv_second_repo/examples/simple_rw_reg
+ *  - Time     : October 27 2021 23:33:01
+ *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
  * 
@@ -31,11 +31,12 @@
  * Commandline arguments to srdl2sv:
  *  - Ouput Directory  : ./srdl2sv_out
  *  - Stream Log Level : INFO
- *  - File Log Level   : INFO
+ *  - File Log Level   : NONE
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
  *  - Register Bus Type: amba3ahblite
+ *  - Address width    : 32
  *  - Byte enables     : True
  *  - Descriptions     : {'AddrMap': False, 'RegFile': False, 'Memory': False, 'Register': False, 'Field': False}
  *
@@ -65,7 +66,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  ****************************************************************/
 module simple_rw_reg
-    import srdl2sv_if_pkg::*;
+    
 (
     // Resets
      
@@ -107,15 +108,14 @@ module simple_rw_reg
 
 
 // Internal signals
-b2r_t b2r;
-r2b_t r2b;
+srdl2sv_widget_if #(.ADDR_W (32), .DATA_W(32)) widget_if;
 
 /*******************************************************************
  * AMBA 3 AHB Lite Widget
  * ======================
  * Naming conventions
- *    - r2b.*     -> Signals from registers to bus
- *    - b2r.*     -> Signals from bus to registers
+ *    - widget_if -> SystemVerilog interface to between widgets
+ *                   and the internal srdl2sv registers.
  *    - H*        -> Signals as defined in AMBA3 AHB Lite 
  *                   specification
  *    - clk       -> Clock that drives registers and the bus
@@ -125,13 +125,7 @@ srdl2sv_amba3ahblite
        .BUS_BITS         (32),
        .NO_BYTE_ENABLE   (0))
 srdl2sv_amba3ahblite_inst
-     (// Outputs to internal logic
-     .b2r,
-
-     // Inputs from internal logic
-     .r2b,
-
-     // Bus protocol
+     (// Bus protocol
      .HRESETn,
      .HCLK        (clk),
      .HADDR,
@@ -144,7 +138,10 @@ srdl2sv_amba3ahblite_inst
 
      .HREADYOUT,
      .HRESP,
-     .HRDATA);
+     .HRDATA,
+
+     // Interface to internal logic
+     .widget_if);
 
 genvar gv_a, gv_b;
 
@@ -167,8 +164,8 @@ logic [15:0] register_1d__f2_q      ;
 
 
 // Register-activation for 'register_1d' 
-assign register_1d_active = b2r.addr == 0;
-assign register_1d_sw_wr = register_1d_active && b2r.w_vld;
+assign register_1d_active = widget_if.addr == 0;
+assign register_1d_sw_wr = register_1d_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : f1 (register_1d[15:0])
@@ -183,10 +180,10 @@ always_ff @(posedge clk)
 begin
     if (register_1d_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            register_1d__f1_q[7:0] <= b2r.data[7:0];
-        if (b2r.byte_en[1])
-            register_1d__f1_q[15:8] <= b2r.data[15:8];
+        if (widget_if.byte_en[0])
+            register_1d__f1_q[7:0] <= widget_if.w_data[7:0];
+        if (widget_if.byte_en[1])
+            register_1d__f1_q[15:8] <= widget_if.w_data[15:8];
     end
     else
     if (register_1d__f1_hw_wr)
@@ -211,10 +208,10 @@ always_ff @(posedge clk)
 begin
     if (register_1d_sw_wr)
     begin
-        if (b2r.byte_en[2])
-            register_1d__f2_q[7:0] <= b2r.data[23:16];
-        if (b2r.byte_en[3])
-            register_1d__f2_q[15:8] <= b2r.data[31:24];
+        if (widget_if.byte_en[2])
+            register_1d__f2_q[7:0] <= widget_if.w_data[23:16];
+        if (widget_if.byte_en[3])
+            register_1d__f2_q[15:8] <= widget_if.w_data[31:24];
     end
     else
     if (register_1d__f2_hw_wr)
@@ -239,7 +236,7 @@ assign register_1d_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign register_1d_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])) || (b2r.w_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])));
+assign register_1d_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
 
 /*******************************************************************
 /*******************************************************************
@@ -262,8 +259,8 @@ for (gv_a = 0; gv_a < 2; gv_a++)
 begin
     
     // Register-activation for 'register_2d' 
-    assign register_2d_active[gv_a] = b2r.addr == 4+(gv_a*4);
-    assign register_2d_sw_wr[gv_a] = register_2d_active[gv_a] && b2r.w_vld;
+    assign register_2d_active[gv_a] = widget_if.addr == 4+(gv_a*4);
+    assign register_2d_sw_wr[gv_a] = register_2d_active[gv_a] && widget_if.w_vld;
     
     //-----------------FIELD SUMMARY-----------------
     // name       : f1 (register_2d[15:0])
@@ -278,10 +275,10 @@ begin
     begin
         if (register_2d_sw_wr[gv_a])
         begin
-            if (b2r.byte_en[0])
-                register_2d__f1_q[gv_a][7:0] <= b2r.data[7:0];
-            if (b2r.byte_en[1])
-                register_2d__f1_q[gv_a][15:8] <= b2r.data[15:8];
+            if (widget_if.byte_en[0])
+                register_2d__f1_q[gv_a][7:0] <= widget_if.w_data[7:0];
+            if (widget_if.byte_en[1])
+                register_2d__f1_q[gv_a][15:8] <= widget_if.w_data[15:8];
         end
         else
         if (register_2d__f1_hw_wr[gv_a])
@@ -306,10 +303,10 @@ begin
     begin
         if (register_2d_sw_wr[gv_a])
         begin
-            if (b2r.byte_en[2])
-                register_2d__f2_q[gv_a][7:0] <= b2r.data[23:16];
-            if (b2r.byte_en[3])
-                register_2d__f2_q[gv_a][15:8] <= b2r.data[31:24];
+            if (widget_if.byte_en[2])
+                register_2d__f2_q[gv_a][7:0] <= widget_if.w_data[23:16];
+            if (widget_if.byte_en[3])
+                register_2d__f2_q[gv_a][15:8] <= widget_if.w_data[31:24];
         end
         else
         if (register_2d__f2_hw_wr[gv_a])
@@ -334,7 +331,7 @@ begin
     // Return an error if *no* read and *no* write was succesful. If some bits
     // cannot be read/written but others are succesful, don't return and error
     // Hence, as long as one action can be succesful, no error will be returned.
-    assign register_2d_err_mux_in[gv_a] = !((b2r.r_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])) || (b2r.w_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])));
+    assign register_2d_err_mux_in[gv_a] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
 end // of for loop with iterator gv_a
 
 endgenerate
@@ -363,8 +360,8 @@ begin
     begin
         
         // Register-activation for 'register_3d' 
-        assign register_3d_active[gv_a][gv_b] = b2r.addr == 12+(gv_a*8+gv_b*4);
-        assign register_3d_sw_wr[gv_a][gv_b] = register_3d_active[gv_a][gv_b] && b2r.w_vld;
+        assign register_3d_active[gv_a][gv_b] = widget_if.addr == 12+(gv_a*8+gv_b*4);
+        assign register_3d_sw_wr[gv_a][gv_b] = register_3d_active[gv_a][gv_b] && widget_if.w_vld;
         
         //-----------------FIELD SUMMARY-----------------
         // name       : f1 (register_3d[15:0])
@@ -379,10 +376,10 @@ begin
         begin
             if (register_3d_sw_wr[gv_a][gv_b])
             begin
-                if (b2r.byte_en[0])
-                    register_3d__f1_q[gv_a][gv_b][7:0] <= b2r.data[7:0];
-                if (b2r.byte_en[1])
-                    register_3d__f1_q[gv_a][gv_b][15:8] <= b2r.data[15:8];
+                if (widget_if.byte_en[0])
+                    register_3d__f1_q[gv_a][gv_b][7:0] <= widget_if.w_data[7:0];
+                if (widget_if.byte_en[1])
+                    register_3d__f1_q[gv_a][gv_b][15:8] <= widget_if.w_data[15:8];
             end
             else
             if (register_3d__f1_hw_wr[gv_a][gv_b])
@@ -407,10 +404,10 @@ begin
         begin
             if (register_3d_sw_wr[gv_a][gv_b])
             begin
-                if (b2r.byte_en[2])
-                    register_3d__f2_q[gv_a][gv_b][7:0] <= b2r.data[23:16];
-                if (b2r.byte_en[3])
-                    register_3d__f2_q[gv_a][gv_b][15:8] <= b2r.data[31:24];
+                if (widget_if.byte_en[2])
+                    register_3d__f2_q[gv_a][gv_b][7:0] <= widget_if.w_data[23:16];
+                if (widget_if.byte_en[3])
+                    register_3d__f2_q[gv_a][gv_b][15:8] <= widget_if.w_data[31:24];
             end
             else
             if (register_3d__f2_hw_wr[gv_a][gv_b])
@@ -435,7 +432,7 @@ begin
         // Return an error if *no* read and *no* write was succesful. If some bits
         // cannot be read/written but others are succesful, don't return and error
         // Hence, as long as one action can be succesful, no error will be returned.
-        assign register_3d_err_mux_in[gv_a][gv_b] = !((b2r.r_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])) || (b2r.w_vld && (b2r.byte_en[0] || b2r.byte_en[1] || b2r.byte_en[2] || b2r.byte_en[3])));
+        assign register_3d_err_mux_in[gv_a][gv_b] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
     end // of for loop with iterator gv_b
 end // of for loop with iterator gv_a
 
@@ -448,52 +445,52 @@ begin
     unique case (1'b1)
         register_1d_active:
         begin
-            r2b.data = register_1d_data_mux_in;
-            r2b.err  = register_1d_err_mux_in;
-            r2b.rdy  = register_1d_rdy_mux_in;
+            widget_if.r_data = register_1d_data_mux_in;
+            widget_if.err    = register_1d_err_mux_in;
+            widget_if.rdy    = register_1d_rdy_mux_in;
         end
         register_2d_active[0]:
         begin
-            r2b.data = register_2d_data_mux_in[0];
-            r2b.err  = register_2d_err_mux_in[0];
-            r2b.rdy  = register_2d_rdy_mux_in[0];
+            widget_if.r_data = register_2d_data_mux_in[0];
+            widget_if.err    = register_2d_err_mux_in[0];
+            widget_if.rdy    = register_2d_rdy_mux_in[0];
         end
         register_2d_active[1]:
         begin
-            r2b.data = register_2d_data_mux_in[1];
-            r2b.err  = register_2d_err_mux_in[1];
-            r2b.rdy  = register_2d_rdy_mux_in[1];
+            widget_if.r_data = register_2d_data_mux_in[1];
+            widget_if.err    = register_2d_err_mux_in[1];
+            widget_if.rdy    = register_2d_rdy_mux_in[1];
         end
         register_3d_active[0][0]:
         begin
-            r2b.data = register_3d_data_mux_in[0][0];
-            r2b.err  = register_3d_err_mux_in[0][0];
-            r2b.rdy  = register_3d_rdy_mux_in[0][0];
+            widget_if.r_data = register_3d_data_mux_in[0][0];
+            widget_if.err    = register_3d_err_mux_in[0][0];
+            widget_if.rdy    = register_3d_rdy_mux_in[0][0];
         end
         register_3d_active[0][1]:
         begin
-            r2b.data = register_3d_data_mux_in[0][1];
-            r2b.err  = register_3d_err_mux_in[0][1];
-            r2b.rdy  = register_3d_rdy_mux_in[0][1];
+            widget_if.r_data = register_3d_data_mux_in[0][1];
+            widget_if.err    = register_3d_err_mux_in[0][1];
+            widget_if.rdy    = register_3d_rdy_mux_in[0][1];
         end
         register_3d_active[1][0]:
         begin
-            r2b.data = register_3d_data_mux_in[1][0];
-            r2b.err  = register_3d_err_mux_in[1][0];
-            r2b.rdy  = register_3d_rdy_mux_in[1][0];
+            widget_if.r_data = register_3d_data_mux_in[1][0];
+            widget_if.err    = register_3d_err_mux_in[1][0];
+            widget_if.rdy    = register_3d_rdy_mux_in[1][0];
         end
         register_3d_active[1][1]:
         begin
-            r2b.data = register_3d_data_mux_in[1][1];
-            r2b.err  = register_3d_err_mux_in[1][1];
-            r2b.rdy  = register_3d_rdy_mux_in[1][1];
+            widget_if.r_data = register_3d_data_mux_in[1][1];
+            widget_if.err    = register_3d_err_mux_in[1][1];
+            widget_if.rdy    = register_3d_rdy_mux_in[1][1];
         end
         default:
         begin
             // If the address is not found, return an error
-            r2b.data = 0;
-            r2b.err  = 1;
-            r2b.rdy  = b2r.r_vld || b2r.w_vld;
+            widget_if.r_data = 0;
+            widget_if.err    = 1;
+            widget_if.rdy    = widget_if.r_vld || widget_if.w_vld;
         end
     endcase
 end

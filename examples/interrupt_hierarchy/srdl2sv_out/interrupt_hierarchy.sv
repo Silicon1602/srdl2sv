@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 24 2021 23:17:35
+ *  - Time     : October 27 2021 23:31:13
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
@@ -30,7 +30,7 @@
  *
  * Commandline arguments to srdl2sv:
  *  - Ouput Directory  : ./srdl2sv_out
- *  - Stream Log Level : DEBUG
+ *  - Stream Log Level : INFO
  *  - File Log Level   : NONE
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
@@ -66,7 +66,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  ****************************************************************/
 module interrupt_hierarchy
-    import srdl2sv_if_pkg::*;
+    
 (
     // Resets
     input  field_reset_n, 
@@ -119,15 +119,14 @@ module interrupt_hierarchy
 
 
 // Internal signals
-b2r_t b2r;
-r2b_t r2b;
+srdl2sv_widget_if #(.ADDR_W (32), .DATA_W(32)) widget_if;
 
 /*******************************************************************
  * AMBA 3 AHB Lite Widget
  * ======================
  * Naming conventions
- *    - r2b.*     -> Signals from registers to bus
- *    - b2r.*     -> Signals from bus to registers
+ *    - widget_if -> SystemVerilog interface to between widgets
+ *                   and the internal srdl2sv registers.
  *    - H*        -> Signals as defined in AMBA3 AHB Lite 
  *                   specification
  *    - clk       -> Clock that drives registers and the bus
@@ -137,13 +136,7 @@ srdl2sv_amba3ahblite
        .BUS_BITS         (32),
        .NO_BYTE_ENABLE   (0))
 srdl2sv_amba3ahblite_inst
-     (// Outputs to internal logic
-     .b2r,
-
-     // Inputs from internal logic
-     .r2b,
-
-     // Bus protocol
+     (// Bus protocol
      .HRESETn,
      .HCLK        (clk),
      .HADDR,
@@ -156,7 +149,10 @@ srdl2sv_amba3ahblite_inst
 
      .HREADYOUT,
      .HRESP,
-     .HRDATA);
+     .HRDATA,
+
+     // Interface to internal logic
+     .widget_if);
 
 /*******************************************************************
 /*******************************************************************
@@ -182,8 +178,8 @@ logic [3:0]  block_a_int__active_ecc_master_sticky_latch;
 
 
 // Register-activation for 'block_a_int' 
-assign block_a_int_active = b2r.addr == 0;
-assign block_a_int_sw_wr = block_a_int_active && b2r.w_vld;
+assign block_a_int_active = widget_if.addr == 0;
+assign block_a_int_sw_wr = block_a_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_a_int[0:0])
@@ -203,9 +199,9 @@ else
 begin
     if (block_a_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_a_int__crc_error_q[0:0] <= block_a_int__crc_error_q[0:0] & ~b2r.data[0:0];
+            block_a_int__crc_error_q[0:0] <= block_a_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
         end
     end
     else
@@ -244,9 +240,9 @@ else
 begin
     if (block_a_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_a_int__len_error_q[0:0] <= block_a_int__len_error_q[0:0] & ~b2r.data[1:1];
+            block_a_int__len_error_q[0:0] <= block_a_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
         end
     end
     else
@@ -285,9 +281,9 @@ else
 begin
     if (block_a_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_a_int__multi_bit_ecc_error_q[0:0] <= block_a_int__multi_bit_ecc_error_q[0:0] & ~b2r.data[2:2];
+            block_a_int__multi_bit_ecc_error_q[0:0] <= block_a_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
         end
     end
     else
@@ -326,9 +322,9 @@ else
 begin
     if (block_a_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_a_int__active_ecc_master_q[3:0] <= block_a_int__active_ecc_master_q[3:0] & ~b2r.data[7:4];
+            block_a_int__active_ecc_master_q[3:0] <= block_a_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
         end
     end
     else
@@ -365,7 +361,7 @@ assign block_a_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_a_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_a_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -386,8 +382,8 @@ logic [0:0]  block_a_int_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_a_int_en' 
-assign block_a_int_en_active = b2r.addr == 4;
-assign block_a_int_en_sw_wr = block_a_int_en_active && b2r.w_vld;
+assign block_a_int_en_active = widget_if.addr == 4;
+assign block_a_int_en_sw_wr = block_a_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_a_int_en[0:0])
@@ -407,8 +403,8 @@ else
 begin
     if (block_a_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_int_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_a_int_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_a_int_en__crc_error's always_ff
 
@@ -432,8 +428,8 @@ else
 begin
     if (block_a_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_int_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_a_int_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_a_int_en__len_error's always_ff
 
@@ -457,8 +453,8 @@ else
 begin
     if (block_a_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_int_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_a_int_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_a_int_en__multi_bit_ecc_error's always_ff
 
@@ -477,7 +473,7 @@ assign block_a_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_a_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_a_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -498,8 +494,8 @@ logic [0:0]  block_a_halt_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_a_halt_en' 
-assign block_a_halt_en_active = b2r.addr == 8;
-assign block_a_halt_en_sw_wr = block_a_halt_en_active && b2r.w_vld;
+assign block_a_halt_en_active = widget_if.addr == 8;
+assign block_a_halt_en_sw_wr = block_a_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_a_halt_en[0:0])
@@ -519,8 +515,8 @@ else
 begin
     if (block_a_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_halt_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_a_halt_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_a_halt_en__crc_error's always_ff
 
@@ -544,8 +540,8 @@ else
 begin
     if (block_a_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_halt_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_a_halt_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_a_halt_en__len_error's always_ff
 
@@ -569,8 +565,8 @@ else
 begin
     if (block_a_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_a_halt_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_a_halt_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_a_halt_en__multi_bit_ecc_error's always_ff
 
@@ -589,7 +585,7 @@ assign block_a_halt_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_a_halt_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_a_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -615,8 +611,8 @@ logic [3:0]  block_b_int__active_ecc_master_sticky_latch;
 
 
 // Register-activation for 'block_b_int' 
-assign block_b_int_active = b2r.addr == 256;
-assign block_b_int_sw_wr = block_b_int_active && b2r.w_vld;
+assign block_b_int_active = widget_if.addr == 256;
+assign block_b_int_sw_wr = block_b_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_b_int[0:0])
@@ -636,9 +632,9 @@ else
 begin
     if (block_b_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_b_int__crc_error_q[0:0] <= block_b_int__crc_error_q[0:0] & ~b2r.data[0:0];
+            block_b_int__crc_error_q[0:0] <= block_b_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
         end
     end
     else
@@ -677,9 +673,9 @@ else
 begin
     if (block_b_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_b_int__len_error_q[0:0] <= block_b_int__len_error_q[0:0] & ~b2r.data[1:1];
+            block_b_int__len_error_q[0:0] <= block_b_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
         end
     end
     else
@@ -718,9 +714,9 @@ else
 begin
     if (block_b_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_b_int__multi_bit_ecc_error_q[0:0] <= block_b_int__multi_bit_ecc_error_q[0:0] & ~b2r.data[2:2];
+            block_b_int__multi_bit_ecc_error_q[0:0] <= block_b_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
         end
     end
     else
@@ -759,9 +755,9 @@ else
 begin
     if (block_b_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_b_int__active_ecc_master_q[3:0] <= block_b_int__active_ecc_master_q[3:0] & ~b2r.data[7:4];
+            block_b_int__active_ecc_master_q[3:0] <= block_b_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
         end
     end
     else
@@ -798,7 +794,7 @@ assign block_b_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_b_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_b_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -819,8 +815,8 @@ logic [0:0]  block_b_int_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_b_int_en' 
-assign block_b_int_en_active = b2r.addr == 260;
-assign block_b_int_en_sw_wr = block_b_int_en_active && b2r.w_vld;
+assign block_b_int_en_active = widget_if.addr == 260;
+assign block_b_int_en_sw_wr = block_b_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_b_int_en[0:0])
@@ -840,8 +836,8 @@ else
 begin
     if (block_b_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_int_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_b_int_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_b_int_en__crc_error's always_ff
 
@@ -865,8 +861,8 @@ else
 begin
     if (block_b_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_int_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_b_int_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_b_int_en__len_error's always_ff
 
@@ -890,8 +886,8 @@ else
 begin
     if (block_b_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_int_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_b_int_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_b_int_en__multi_bit_ecc_error's always_ff
 
@@ -910,7 +906,7 @@ assign block_b_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_b_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_b_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -931,8 +927,8 @@ logic [0:0]  block_b_halt_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_b_halt_en' 
-assign block_b_halt_en_active = b2r.addr == 264;
-assign block_b_halt_en_sw_wr = block_b_halt_en_active && b2r.w_vld;
+assign block_b_halt_en_active = widget_if.addr == 264;
+assign block_b_halt_en_sw_wr = block_b_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_b_halt_en[0:0])
@@ -952,8 +948,8 @@ else
 begin
     if (block_b_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_halt_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_b_halt_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_b_halt_en__crc_error's always_ff
 
@@ -977,8 +973,8 @@ else
 begin
     if (block_b_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_halt_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_b_halt_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_b_halt_en__len_error's always_ff
 
@@ -1002,8 +998,8 @@ else
 begin
     if (block_b_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_b_halt_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_b_halt_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_b_halt_en__multi_bit_ecc_error's always_ff
 
@@ -1022,7 +1018,7 @@ assign block_b_halt_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_b_halt_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_b_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1048,8 +1044,8 @@ logic [3:0]  block_c_int__active_ecc_master_sticky_latch;
 
 
 // Register-activation for 'block_c_int' 
-assign block_c_int_active = b2r.addr == 512;
-assign block_c_int_sw_wr = block_c_int_active && b2r.w_vld;
+assign block_c_int_active = widget_if.addr == 512;
+assign block_c_int_sw_wr = block_c_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_c_int[0:0])
@@ -1069,9 +1065,9 @@ else
 begin
     if (block_c_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_c_int__crc_error_q[0:0] <= block_c_int__crc_error_q[0:0] & ~b2r.data[0:0];
+            block_c_int__crc_error_q[0:0] <= block_c_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
         end
     end
     else
@@ -1110,9 +1106,9 @@ else
 begin
     if (block_c_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_c_int__len_error_q[0:0] <= block_c_int__len_error_q[0:0] & ~b2r.data[1:1];
+            block_c_int__len_error_q[0:0] <= block_c_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
         end
     end
     else
@@ -1151,9 +1147,9 @@ else
 begin
     if (block_c_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_c_int__multi_bit_ecc_error_q[0:0] <= block_c_int__multi_bit_ecc_error_q[0:0] & ~b2r.data[2:2];
+            block_c_int__multi_bit_ecc_error_q[0:0] <= block_c_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
         end
     end
     else
@@ -1192,9 +1188,9 @@ else
 begin
     if (block_c_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_c_int__active_ecc_master_q[3:0] <= block_c_int__active_ecc_master_q[3:0] & ~b2r.data[7:4];
+            block_c_int__active_ecc_master_q[3:0] <= block_c_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
         end
     end
     else
@@ -1231,7 +1227,7 @@ assign block_c_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_c_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_c_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1252,8 +1248,8 @@ logic [0:0]  block_c_int_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_c_int_en' 
-assign block_c_int_en_active = b2r.addr == 516;
-assign block_c_int_en_sw_wr = block_c_int_en_active && b2r.w_vld;
+assign block_c_int_en_active = widget_if.addr == 516;
+assign block_c_int_en_sw_wr = block_c_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_c_int_en[0:0])
@@ -1273,8 +1269,8 @@ else
 begin
     if (block_c_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_int_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_c_int_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_c_int_en__crc_error's always_ff
 
@@ -1298,8 +1294,8 @@ else
 begin
     if (block_c_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_int_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_c_int_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_c_int_en__len_error's always_ff
 
@@ -1323,8 +1319,8 @@ else
 begin
     if (block_c_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_int_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_c_int_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_c_int_en__multi_bit_ecc_error's always_ff
 
@@ -1343,7 +1339,7 @@ assign block_c_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_c_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_c_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1364,8 +1360,8 @@ logic [0:0]  block_c_halt_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_c_halt_en' 
-assign block_c_halt_en_active = b2r.addr == 520;
-assign block_c_halt_en_sw_wr = block_c_halt_en_active && b2r.w_vld;
+assign block_c_halt_en_active = widget_if.addr == 520;
+assign block_c_halt_en_sw_wr = block_c_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_c_halt_en[0:0])
@@ -1385,8 +1381,8 @@ else
 begin
     if (block_c_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_halt_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_c_halt_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_c_halt_en__crc_error's always_ff
 
@@ -1410,8 +1406,8 @@ else
 begin
     if (block_c_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_halt_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_c_halt_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_c_halt_en__len_error's always_ff
 
@@ -1435,8 +1431,8 @@ else
 begin
     if (block_c_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_c_halt_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_c_halt_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_c_halt_en__multi_bit_ecc_error's always_ff
 
@@ -1455,7 +1451,7 @@ assign block_c_halt_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_c_halt_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_c_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1481,8 +1477,8 @@ logic [3:0]  block_d_int__active_ecc_master_sticky_latch;
 
 
 // Register-activation for 'block_d_int' 
-assign block_d_int_active = b2r.addr == 768;
-assign block_d_int_sw_wr = block_d_int_active && b2r.w_vld;
+assign block_d_int_active = widget_if.addr == 768;
+assign block_d_int_sw_wr = block_d_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_d_int[0:0])
@@ -1502,9 +1498,9 @@ else
 begin
     if (block_d_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_d_int__crc_error_q[0:0] <= block_d_int__crc_error_q[0:0] & ~b2r.data[0:0];
+            block_d_int__crc_error_q[0:0] <= block_d_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
         end
     end
     else
@@ -1543,9 +1539,9 @@ else
 begin
     if (block_d_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_d_int__len_error_q[0:0] <= block_d_int__len_error_q[0:0] & ~b2r.data[1:1];
+            block_d_int__len_error_q[0:0] <= block_d_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
         end
     end
     else
@@ -1584,9 +1580,9 @@ else
 begin
     if (block_d_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_d_int__multi_bit_ecc_error_q[0:0] <= block_d_int__multi_bit_ecc_error_q[0:0] & ~b2r.data[2:2];
+            block_d_int__multi_bit_ecc_error_q[0:0] <= block_d_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
         end
     end
     else
@@ -1625,9 +1621,9 @@ else
 begin
     if (block_d_int_sw_wr)
     begin
-        if (b2r.byte_en[0]) // woclr property
+        if (widget_if.byte_en[0]) // woclr property
         begin
-            block_d_int__active_ecc_master_q[3:0] <= block_d_int__active_ecc_master_q[3:0] & ~b2r.data[7:4];
+            block_d_int__active_ecc_master_q[3:0] <= block_d_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
         end
     end
     else
@@ -1664,7 +1660,7 @@ assign block_d_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_d_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_d_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1685,8 +1681,8 @@ logic [0:0]  block_d_int_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_d_int_en' 
-assign block_d_int_en_active = b2r.addr == 772;
-assign block_d_int_en_sw_wr = block_d_int_en_active && b2r.w_vld;
+assign block_d_int_en_active = widget_if.addr == 772;
+assign block_d_int_en_sw_wr = block_d_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_d_int_en[0:0])
@@ -1706,8 +1702,8 @@ else
 begin
     if (block_d_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_int_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_d_int_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_d_int_en__crc_error's always_ff
 
@@ -1731,8 +1727,8 @@ else
 begin
     if (block_d_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_int_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_d_int_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_d_int_en__len_error's always_ff
 
@@ -1756,8 +1752,8 @@ else
 begin
     if (block_d_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_int_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_d_int_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_d_int_en__multi_bit_ecc_error's always_ff
 
@@ -1776,7 +1772,7 @@ assign block_d_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_d_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_d_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1797,8 +1793,8 @@ logic [0:0]  block_d_halt_en__multi_bit_ecc_error_q;
 
 
 // Register-activation for 'block_d_halt_en' 
-assign block_d_halt_en_active = b2r.addr == 776;
-assign block_d_halt_en_sw_wr = block_d_halt_en_active && b2r.w_vld;
+assign block_d_halt_en_active = widget_if.addr == 776;
+assign block_d_halt_en_sw_wr = block_d_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : crc_error (block_d_halt_en[0:0])
@@ -1818,8 +1814,8 @@ else
 begin
     if (block_d_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_halt_en__crc_error_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            block_d_halt_en__crc_error_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of block_d_halt_en__crc_error's always_ff
 
@@ -1843,8 +1839,8 @@ else
 begin
     if (block_d_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_halt_en__len_error_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            block_d_halt_en__len_error_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of block_d_halt_en__len_error's always_ff
 
@@ -1868,8 +1864,8 @@ else
 begin
     if (block_d_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            block_d_halt_en__multi_bit_ecc_error_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            block_d_halt_en__multi_bit_ecc_error_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of block_d_halt_en__multi_bit_ecc_error's always_ff
 
@@ -1888,7 +1884,7 @@ assign block_d_halt_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign block_d_halt_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign block_d_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -1909,7 +1905,7 @@ logic [0:0]  master_int__module_d_int_q;
 
 
 // Register-activation for 'master_int' 
-assign master_int_active = b2r.addr == 4096;
+assign master_int_active = widget_if.addr == 4096;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : module_a_int (master_int[0:0])
@@ -2025,7 +2021,7 @@ assign master_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign master_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (1'b0)));
+assign master_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (1'b0)));
 
 /*******************************************************************
 /*******************************************************************
@@ -2046,7 +2042,7 @@ logic [0:0]  master_halt__module_d_int_q;
 
 
 // Register-activation for 'master_halt' 
-assign master_halt_active = b2r.addr == 4100;
+assign master_halt_active = widget_if.addr == 4100;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : module_a_int (master_halt[0:0])
@@ -2165,7 +2161,7 @@ assign master_halt_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign master_halt_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (1'b0)));
+assign master_halt_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (1'b0)));
 
 /*******************************************************************
 /*******************************************************************
@@ -2187,8 +2183,8 @@ logic [0:0]  master_int_en__module_d_int_en_q;
 
 
 // Register-activation for 'master_int_en' 
-assign master_int_en_active = b2r.addr == 4104;
-assign master_int_en_sw_wr = master_int_en_active && b2r.w_vld;
+assign master_int_en_active = widget_if.addr == 4104;
+assign master_int_en_sw_wr = master_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : module_a_int_en (master_int_en[0:0])
@@ -2208,8 +2204,8 @@ else
 begin
     if (master_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_int_en__module_a_int_en_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            master_int_en__module_a_int_en_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of master_int_en__module_a_int_en's always_ff
 
@@ -2233,8 +2229,8 @@ else
 begin
     if (master_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_int_en__module_b_int_en_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            master_int_en__module_b_int_en_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of master_int_en__module_b_int_en's always_ff
 
@@ -2258,8 +2254,8 @@ else
 begin
     if (master_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_int_en__module_c_int_en_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            master_int_en__module_c_int_en_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of master_int_en__module_c_int_en's always_ff
 
@@ -2283,8 +2279,8 @@ else
 begin
     if (master_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_int_en__module_d_int_en_q[0:0] <= b2r.data[3:3];
+        if (widget_if.byte_en[0])
+            master_int_en__module_d_int_en_q[0:0] <= widget_if.w_data[3:3];
     end
 end // of master_int_en__module_d_int_en's always_ff
 
@@ -2303,7 +2299,7 @@ assign master_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign master_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign master_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -2325,8 +2321,8 @@ logic [0:0]  master_halt_en__module_d_halt_en_q;
 
 
 // Register-activation for 'master_halt_en' 
-assign master_halt_en_active = b2r.addr == 4108;
-assign master_halt_en_sw_wr = master_halt_en_active && b2r.w_vld;
+assign master_halt_en_active = widget_if.addr == 4108;
+assign master_halt_en_sw_wr = master_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : module_a_halt_en (master_halt_en[0:0])
@@ -2346,8 +2342,8 @@ else
 begin
     if (master_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_halt_en__module_a_halt_en_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            master_halt_en__module_a_halt_en_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of master_halt_en__module_a_halt_en's always_ff
 
@@ -2371,8 +2367,8 @@ else
 begin
     if (master_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_halt_en__module_b_halt_en_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            master_halt_en__module_b_halt_en_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of master_halt_en__module_b_halt_en's always_ff
 
@@ -2396,8 +2392,8 @@ else
 begin
     if (master_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_halt_en__module_c_halt_en_q[0:0] <= b2r.data[2:2];
+        if (widget_if.byte_en[0])
+            master_halt_en__module_c_halt_en_q[0:0] <= widget_if.w_data[2:2];
     end
 end // of master_halt_en__module_c_halt_en's always_ff
 
@@ -2421,8 +2417,8 @@ else
 begin
     if (master_halt_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            master_halt_en__module_d_halt_en_q[0:0] <= b2r.data[3:3];
+        if (widget_if.byte_en[0])
+            master_halt_en__module_d_halt_en_q[0:0] <= widget_if.w_data[3:3];
     end
 end // of master_halt_en__module_d_halt_en's always_ff
 
@@ -2441,7 +2437,7 @@ assign master_halt_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign master_halt_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign master_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -2460,7 +2456,7 @@ logic [0:0]  global_int__global_halt_q;
 
 
 // Register-activation for 'global_int' 
-assign global_int_active = b2r.addr == 4112;
+assign global_int_active = widget_if.addr == 4112;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : global_int (global_int[0:0])
@@ -2531,7 +2527,7 @@ assign global_int_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign global_int_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (1'b0)));
+assign global_int_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (1'b0)));
 
 /*******************************************************************
 /*******************************************************************
@@ -2551,8 +2547,8 @@ logic [0:0]  global_int_en__global_halt_en_q;
 
 
 // Register-activation for 'global_int_en' 
-assign global_int_en_active = b2r.addr == 4116;
-assign global_int_en_sw_wr = global_int_en_active && b2r.w_vld;
+assign global_int_en_active = widget_if.addr == 4116;
+assign global_int_en_sw_wr = global_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
 // name       : global_int_en (global_int_en[0:0])
@@ -2572,8 +2568,8 @@ else
 begin
     if (global_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            global_int_en__global_int_en_q[0:0] <= b2r.data[0:0];
+        if (widget_if.byte_en[0])
+            global_int_en__global_int_en_q[0:0] <= widget_if.w_data[0:0];
     end
 end // of global_int_en__global_int_en's always_ff
 
@@ -2597,8 +2593,8 @@ else
 begin
     if (global_int_en_sw_wr)
     begin
-        if (b2r.byte_en[0])
-            global_int_en__global_halt_en_q[0:0] <= b2r.data[1:1];
+        if (widget_if.byte_en[0])
+            global_int_en__global_halt_en_q[0:0] <= widget_if.w_data[1:1];
     end
 end // of global_int_en__global_halt_en's always_ff
 
@@ -2617,7 +2613,7 @@ assign global_int_en_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign global_int_en_err_mux_in = !((b2r.r_vld && (b2r.byte_en[0])) || (b2r.w_vld && (b2r.byte_en[0])));
+assign global_int_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) || (widget_if.w_vld && (widget_if.byte_en[0])));
 
 // Read multiplexer
 always_comb
@@ -2625,118 +2621,118 @@ begin
     unique case (1'b1)
         block_a_int_active:
         begin
-            r2b.data = block_a_int_data_mux_in;
-            r2b.err  = block_a_int_err_mux_in;
-            r2b.rdy  = block_a_int_rdy_mux_in;
+            widget_if.r_data = block_a_int_data_mux_in;
+            widget_if.err    = block_a_int_err_mux_in;
+            widget_if.rdy    = block_a_int_rdy_mux_in;
         end
         block_a_int_en_active:
         begin
-            r2b.data = block_a_int_en_data_mux_in;
-            r2b.err  = block_a_int_en_err_mux_in;
-            r2b.rdy  = block_a_int_en_rdy_mux_in;
+            widget_if.r_data = block_a_int_en_data_mux_in;
+            widget_if.err    = block_a_int_en_err_mux_in;
+            widget_if.rdy    = block_a_int_en_rdy_mux_in;
         end
         block_a_halt_en_active:
         begin
-            r2b.data = block_a_halt_en_data_mux_in;
-            r2b.err  = block_a_halt_en_err_mux_in;
-            r2b.rdy  = block_a_halt_en_rdy_mux_in;
+            widget_if.r_data = block_a_halt_en_data_mux_in;
+            widget_if.err    = block_a_halt_en_err_mux_in;
+            widget_if.rdy    = block_a_halt_en_rdy_mux_in;
         end
         block_b_int_active:
         begin
-            r2b.data = block_b_int_data_mux_in;
-            r2b.err  = block_b_int_err_mux_in;
-            r2b.rdy  = block_b_int_rdy_mux_in;
+            widget_if.r_data = block_b_int_data_mux_in;
+            widget_if.err    = block_b_int_err_mux_in;
+            widget_if.rdy    = block_b_int_rdy_mux_in;
         end
         block_b_int_en_active:
         begin
-            r2b.data = block_b_int_en_data_mux_in;
-            r2b.err  = block_b_int_en_err_mux_in;
-            r2b.rdy  = block_b_int_en_rdy_mux_in;
+            widget_if.r_data = block_b_int_en_data_mux_in;
+            widget_if.err    = block_b_int_en_err_mux_in;
+            widget_if.rdy    = block_b_int_en_rdy_mux_in;
         end
         block_b_halt_en_active:
         begin
-            r2b.data = block_b_halt_en_data_mux_in;
-            r2b.err  = block_b_halt_en_err_mux_in;
-            r2b.rdy  = block_b_halt_en_rdy_mux_in;
+            widget_if.r_data = block_b_halt_en_data_mux_in;
+            widget_if.err    = block_b_halt_en_err_mux_in;
+            widget_if.rdy    = block_b_halt_en_rdy_mux_in;
         end
         block_c_int_active:
         begin
-            r2b.data = block_c_int_data_mux_in;
-            r2b.err  = block_c_int_err_mux_in;
-            r2b.rdy  = block_c_int_rdy_mux_in;
+            widget_if.r_data = block_c_int_data_mux_in;
+            widget_if.err    = block_c_int_err_mux_in;
+            widget_if.rdy    = block_c_int_rdy_mux_in;
         end
         block_c_int_en_active:
         begin
-            r2b.data = block_c_int_en_data_mux_in;
-            r2b.err  = block_c_int_en_err_mux_in;
-            r2b.rdy  = block_c_int_en_rdy_mux_in;
+            widget_if.r_data = block_c_int_en_data_mux_in;
+            widget_if.err    = block_c_int_en_err_mux_in;
+            widget_if.rdy    = block_c_int_en_rdy_mux_in;
         end
         block_c_halt_en_active:
         begin
-            r2b.data = block_c_halt_en_data_mux_in;
-            r2b.err  = block_c_halt_en_err_mux_in;
-            r2b.rdy  = block_c_halt_en_rdy_mux_in;
+            widget_if.r_data = block_c_halt_en_data_mux_in;
+            widget_if.err    = block_c_halt_en_err_mux_in;
+            widget_if.rdy    = block_c_halt_en_rdy_mux_in;
         end
         block_d_int_active:
         begin
-            r2b.data = block_d_int_data_mux_in;
-            r2b.err  = block_d_int_err_mux_in;
-            r2b.rdy  = block_d_int_rdy_mux_in;
+            widget_if.r_data = block_d_int_data_mux_in;
+            widget_if.err    = block_d_int_err_mux_in;
+            widget_if.rdy    = block_d_int_rdy_mux_in;
         end
         block_d_int_en_active:
         begin
-            r2b.data = block_d_int_en_data_mux_in;
-            r2b.err  = block_d_int_en_err_mux_in;
-            r2b.rdy  = block_d_int_en_rdy_mux_in;
+            widget_if.r_data = block_d_int_en_data_mux_in;
+            widget_if.err    = block_d_int_en_err_mux_in;
+            widget_if.rdy    = block_d_int_en_rdy_mux_in;
         end
         block_d_halt_en_active:
         begin
-            r2b.data = block_d_halt_en_data_mux_in;
-            r2b.err  = block_d_halt_en_err_mux_in;
-            r2b.rdy  = block_d_halt_en_rdy_mux_in;
+            widget_if.r_data = block_d_halt_en_data_mux_in;
+            widget_if.err    = block_d_halt_en_err_mux_in;
+            widget_if.rdy    = block_d_halt_en_rdy_mux_in;
         end
         master_int_active:
         begin
-            r2b.data = master_int_data_mux_in;
-            r2b.err  = master_int_err_mux_in;
-            r2b.rdy  = master_int_rdy_mux_in;
+            widget_if.r_data = master_int_data_mux_in;
+            widget_if.err    = master_int_err_mux_in;
+            widget_if.rdy    = master_int_rdy_mux_in;
         end
         master_halt_active:
         begin
-            r2b.data = master_halt_data_mux_in;
-            r2b.err  = master_halt_err_mux_in;
-            r2b.rdy  = master_halt_rdy_mux_in;
+            widget_if.r_data = master_halt_data_mux_in;
+            widget_if.err    = master_halt_err_mux_in;
+            widget_if.rdy    = master_halt_rdy_mux_in;
         end
         master_int_en_active:
         begin
-            r2b.data = master_int_en_data_mux_in;
-            r2b.err  = master_int_en_err_mux_in;
-            r2b.rdy  = master_int_en_rdy_mux_in;
+            widget_if.r_data = master_int_en_data_mux_in;
+            widget_if.err    = master_int_en_err_mux_in;
+            widget_if.rdy    = master_int_en_rdy_mux_in;
         end
         master_halt_en_active:
         begin
-            r2b.data = master_halt_en_data_mux_in;
-            r2b.err  = master_halt_en_err_mux_in;
-            r2b.rdy  = master_halt_en_rdy_mux_in;
+            widget_if.r_data = master_halt_en_data_mux_in;
+            widget_if.err    = master_halt_en_err_mux_in;
+            widget_if.rdy    = master_halt_en_rdy_mux_in;
         end
         global_int_active:
         begin
-            r2b.data = global_int_data_mux_in;
-            r2b.err  = global_int_err_mux_in;
-            r2b.rdy  = global_int_rdy_mux_in;
+            widget_if.r_data = global_int_data_mux_in;
+            widget_if.err    = global_int_err_mux_in;
+            widget_if.rdy    = global_int_rdy_mux_in;
         end
         global_int_en_active:
         begin
-            r2b.data = global_int_en_data_mux_in;
-            r2b.err  = global_int_en_err_mux_in;
-            r2b.rdy  = global_int_en_rdy_mux_in;
+            widget_if.r_data = global_int_en_data_mux_in;
+            widget_if.err    = global_int_en_err_mux_in;
+            widget_if.rdy    = global_int_en_rdy_mux_in;
         end
         default:
         begin
             // If the address is not found, return an error
-            r2b.data = 0;
-            r2b.err  = 1;
-            r2b.rdy  = b2r.r_vld || b2r.w_vld;
+            widget_if.r_data = 0;
+            widget_if.err    = 1;
+            widget_if.rdy    = widget_if.r_vld || widget_if.w_vld;
         end
     endcase
 end
