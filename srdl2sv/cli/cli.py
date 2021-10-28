@@ -66,14 +66,14 @@ class CliArguments():
         self.parser.add_argument(
             "--file_log_level",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
-            default='INFO',
+            default='NONE',
             help="Set verbosity level of output to log-file. When set to 'NONE',\
                   nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
             "--stream_log_level",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
-            default='WARNING',
+            default='INFO',
             help="Set verbosity level of output to shell. When set to 'NONE',\
                   nothing will be printed to the shell. (default: %(default)s)")
 
