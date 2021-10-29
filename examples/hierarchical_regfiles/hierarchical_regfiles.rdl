@@ -1,0 +1,38 @@
+addrmap hierarchical_regfiles {
+
+    regfile {
+        reg {
+            field {sw=rw; hw=rw; we;} f1 [15:0];
+            field {sw=rw; hw=rw; we;} f2 [31:16];
+        } reg_a;
+
+        reg {
+            field {sw=rw; hw=rw; we;} f1 [15:0];
+            field {sw=rw; hw=rw; we;} f2 [31:16];
+        } reg_b;
+    } regfile_1;
+
+    regfile {
+        // Remove we property and set hw=w.
+        // Set sw=r for one of the properties to generate a simple wire
+        reg {
+            field {sw=r; hw=w;} f1 [15:0];
+            field {sw=rw; hw=w;} f2 [31:16];
+        } reg_c;
+
+        // Another level of regfile-hierarchy
+        regfile {
+            // Remove we property, to show yet another type of register
+            reg {
+                field {sw=rw; hw=rw;} f1 [15:0];
+                field {sw=rw; hw=rw;} f2 [31:16];
+            } reg_d;
+        } regfile_3 [4][2];
+    } regfile_2 [2];
+
+    // Just a plain old register
+    reg {
+        field {sw=rw; hw=rw; we;} f1 [15:0];
+        field {sw=rw; hw=rw; we;} f2 [31:16];
+    } reg_e;
+};
