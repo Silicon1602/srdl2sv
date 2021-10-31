@@ -89,7 +89,7 @@ class Component():
     def __create_logger(self, name: str, config: dict):
         self.logger = create_logger(
             name,
-            stream_log_level=config['stream_log_level'],
+            stdout_log_level=config['stdout_log_level'],
             file_log_level=config['file_log_level'],
             file_name=config['file_log_location'])
         self.logger.propagate = False

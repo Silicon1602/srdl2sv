@@ -31,7 +31,7 @@ class CustomFormatter(logging.Formatter):
 
 def create_logger (
         mod_name,
-        stream_log_level: int = logging.WARNING,
+        stdout_log_level: int = logging.WARNING,
         file_log_level: int = logging.INFO,
         file_name: Optional[str] = None):
 
@@ -40,10 +40,10 @@ def create_logger (
     # Set log level. If the minimum log level of one of the
     # two loggers is 0, the maximum of both values must be taken.
     # Otherwise, the complete logger gets deactivated.
-    min_log_level = min(stream_log_level, file_log_level)
+    min_log_level = min(stdout_log_level, file_log_level)
 
     if min_log_level == 0:
-        log.setLevel(max(stream_log_level, file_log_level))
+        log.setLevel(max(stdout_log_level, file_log_level))
     else:
         log.setLevel(min_log_level)
 
@@ -57,9 +57,9 @@ def create_logger (
         file_handler.setFormatter(file_formatter)
         log.addHandler(file_handler)
 
-    if stream_log_level > 0:
+    if stdout_log_level > 0:
         stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(stream_log_level)
+        stream_handler.setLevel(stdout_log_level)
 
         stream_formatter = CustomFormatter(
             "[%(levelname)s][%(name)s] %(message)s")

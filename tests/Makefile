@@ -35,7 +35,7 @@ default: $(ALL_COCOTB_TESTS)
 	@echo "##############################################################################"
 	
 build_dirs/%/compile.f: systemrdl/%.rdl 
-	srdl2sv $? --out_dir $(shell dirname $@) --file_log_level DEBUG --stream_log_level DEBUG
+	srdl2sv $? --out-dir $(shell dirname $@) --file-logging DEBUG --stdout-logging DEBUG
 
 	ls $(PWD)/$(@D)/*_if.sv > $@
 	ls $(PWD)/$(@D)/*amba*.sv >> $@

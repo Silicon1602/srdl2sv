@@ -25,7 +25,7 @@ def main():
     # Create logger
     logger = create_logger(
         __name__,
-        stream_log_level=config['stream_log_level'],
+        stdout_log_level=config['stdout_log_level'],
         file_log_level=config['file_log_level'],
         file_name=config['file_log_location'])
 

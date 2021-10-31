@@ -18,11 +18,12 @@ class CliArguments():
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(
-            description="SystemRDL 2 SystemVerilog compiler")
+            description="A SystemRDL 2.0 to (synthesizable) SystemVerilog compiler",
+            epilog="Report bugs via https://github.com/Silicon1602/srdl2sv/issues")
 
         self.parser.add_argument(
             "-a",
-            "--address_width",
+            "--address-width",
             default=32,
             type=int,
             help="Set the address width of the register space. For some \
@@ -49,7 +50,7 @@ class CliArguments():
 
         self.parser.add_argument(
             "-d",
-            "--search_paths",
+            "--search-paths",
             type=str,
             nargs="+",
             help="Point to one (or more) directories that will\
@@ -57,28 +58,28 @@ class CliArguments():
 
         self.parser.add_argument(
             "-e",
-            "--disable_enums",
+            "--no-enums",
             action="store_true",
             help="Disable enumeration generation. This will prevent the\
                   compiler from generating packages and it will prevent\
                   it from using enums in the port list.")
 
         self.parser.add_argument(
-            "--file_log_level",
+            "--file-logging",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
             default='NONE',
             help="Set verbosity level of output to log-file. When set to 'NONE',\
                   nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
-            "--stream_log_level",
+            "--stdout-logging",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
             default='INFO',
             help="Set verbosity level of output to shell. When set to 'NONE',\
                   nothing will be printed to the shell. (default: %(default)s)")
 
         self.parser.add_argument(
-            "--no_byte_enable",
+            "--no-byte-enable",
             action="store_true",
             help="If this flag gets set, byte-enables get disabled. At that point, it \
                   is only possible to address whole registers, not single bytes within \
@@ -86,7 +87,7 @@ class CliArguments():
 
         self.parser.add_argument(
             "-o",
-            "--out_dir",
+            "--out-dir",
             type=str,
             default="./srdl2sv_out",
             help="Define output directory to dump files.\
@@ -95,25 +96,25 @@ class CliArguments():
 
         self.parser.add_argument(
             "-r",
-            "--recursive_search",
+            "--recursive-search",
             action="store_true",
             help="If set, the dependency directories will be\
                   searched recursively.")
 
         self.parser.add_argument(
-            "--real_tabs",
+            "--real-tabs",
             action="store_true",
             help="Use tabs, rather than spaces, for tabs")
 
         self.parser.add_argument(
-            "--tab_width",
+            "--tab-width",
             type=int,
             default=4,
             help="Define how many tabs or spaces will be contained\
                   in one level of indentation. (default: %(default)s)")
 
         self.parser.add_argument(
-            "IN_RDL",
+            "RDL",
             type=str,
             nargs="+",
             help="Location of RDL file(s) with root addrmap.")
@@ -126,7 +127,7 @@ class CliArguments():
         config['list_args'] = []
 
         # Save input file and output directory to dump everything in
-        config['input_file'] = args.IN_RDL
+        config['input_file'] = args.RDL
         config['output_dir'] = args.out_dir
         config['list_args'].append(f"Ouput Directory  : {config['output_dir']}")
 
@@ -137,10 +138,10 @@ class CliArguments():
             pass
 
         # Map logging level string to integers
-        config['stream_log_level'] = logging_map[args.stream_log_level]
-        config['file_log_level'] = logging_map[args.file_log_level]
-        config['list_args'].append(f"Stream Log Level : {args.stream_log_level}")
-        config['list_args'].append(f"File Log Level   : {args.file_log_level}")
+        config['stdout_log_level'] = logging_map[args.stdout_logging]
+        config['file_log_level'] = logging_map[args.file_logging]
+        config['list_args'].append(f"Stream Log Level : {args.stdout_logging}")
+        config['list_args'].append(f"File Log Level   : {args.file_logging}")
 
         # Determine paths to be passed to systemrdl-compiler to search
         # for include files.
@@ -167,7 +168,7 @@ class CliArguments():
         config['list_args'].append(f"Tab Width        : {config['tab_width']}")
 
         # Set enums
-        config['enums'] = not args.disable_enums
+        config['enums'] = not args.no_enums
         config['list_args'].append(f"Enums Enabled    : {config['enums']}")
 
         # Set bus

@@ -122,63 +122,54 @@ The following bus protocols are planned at this point:
 # Help function
 A comprehensive help function of the tool can be invoked by running `srdl2sv --help`.
 ```
-usage: srdl2sv [-h] [-a ADDRESS_WIDTH] [-b {simple,amba3ahblite}]
-               [-c DESCRIPTIONS] [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-e]
-               [--file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
-               [--stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
-               [--no_byte_enable] [-o OUT_DIR] [-r] [--real_tabs]
-               [--tab_width TAB_WIDTH]
-               IN_RDL [IN_RDL ...]
+usage: srdl2sv [-h] [-a ADDRESS_WIDTH] [-b {simple,amba3ahblite}] [-c DESCRIPTIONS]
+               [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-e]
+               [--file-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
+               [--stdout-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}] [--no-byte-enable]
+               [-o OUT_DIR] [-r] [--real-tabs] [--tab-width TAB_WIDTH]
+               RDL [RDL ...]
 
-SystemRDL 2 SystemVerilog compiler
+A SystemRDL 2.0 to (synthesizable) SystemVerilog compiler
 
 positional arguments:
-  IN_RDL                Location of RDL file(s) with root addrmap.
+  RDL                   Location of RDL file(s) with root addrmap.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -a ADDRESS_WIDTH, --address_width ADDRESS_WIDTH
-                        Set the address width of the register space. For some
-                        protocols, the default as described in the
-                        specification is used. (default: 32)
+  -a ADDRESS_WIDTH, --address-width ADDRESS_WIDTH
+                        Set the address width of the register space. For some protocols, the default
+                        as described in the specification is used. (default: 32)
   -b {simple,amba3ahblite}, --bus {simple,amba3ahblite}
-                        Set the bus protocol that shall be used by software to
-                        communicate with the registers. If just a simple
-                        interface to the registers is needed, use the 'simple'
-                        protocol. (default: amba3ahblite)
+                        Set the bus protocol that shall be used by software to communicate with the
+                        registers. If just a simple interface to the registers is needed, use the
+                        'simple' protocol. (default: amba3ahblite)
   -c DESCRIPTIONS, --descriptions DESCRIPTIONS
-                        Include descriptions of addrmaps (+16), regfiles (+8),
-                        memories (+4) registers (+2), and fields (+1) in RTL.
-                        This is a bitfield.
-  -d SEARCH_PATHS [SEARCH_PATHS ...], --search_paths SEARCH_PATHS [SEARCH_PATHS ...]
-                        Point to one (or more) directories that will be
-                        searched for RDL files.
-  -e, --disable_enums   Disable enumeration generation. This will prevent the
-                        compiler from generating packages and it will prevent
-                        it from using enums in the port list.
-  --file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
-                        Set verbosity level of output to log-file. When set to
-                        'NONE', nothing will be printed to the shell.
-                        (default: NONE)
-  --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
-                        Set verbosity level of output to shell. When set to
-                        'NONE', nothing will be printed to the shell.
-                        (default: INFO)
-  --no_byte_enable      If this flag gets set, byte-enables get disabled. At
-                        that point, it is only possible to address whole
-                        registers, not single bytes within these registers
+                        Include descriptions of addrmaps (+16), regfiles (+8), memories (+4) registers
+                        (+2), and fields (+1) in RTL. This is a bitfield.
+  -d SEARCH_PATHS [SEARCH_PATHS ...], --search-paths SEARCH_PATHS [SEARCH_PATHS ...]
+                        Point to one (or more) directories that will be searched for RDL files.
+  -e, --no-enums        Disable enumeration generation. This will prevent the compiler from generating
+                        packages and it will prevent it from using enums in the port list.
+  --file-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
+                        Set verbosity level of output to log-file. When set to 'NONE', nothing will be
+                        printed to the shell. (default: NONE)
+  --stdout-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
+                        Set verbosity level of output to shell. When set to 'NONE', nothing will be
+                        printed to the shell. (default: INFO)
+  --no-byte-enable      If this flag gets set, byte-enables get disabled. At that point, it is only
+                        possible to address whole registers, not single bytes within these registers
                         anymore.
-  -o OUT_DIR, --out_dir OUT_DIR
-                        Define output directory to dump files. If directory is
-                        non-existent, it will be created. (default:
-                        ./srdl2sv_out)
-  -r, --recursive_search
-                        If set, the dependency directories will be searched
-                        recursively.
-  --real_tabs           Use tabs, rather than spaces, for tabs
-  --tab_width TAB_WIDTH
-                        Define how many tabs or spaces will be contained in
-                        one level of indentation. (default: 4)
+  -o OUT_DIR, --out-dir OUT_DIR
+                        Define output directory to dump files. If directory is non-existent, it will
+                        be created. (default: ./srdl2sv_out)
+  -r, --recursive-search
+                        If set, the dependency directories will be searched recursively.
+  --real-tabs           Use tabs, rather than spaces, for tabs
+  --tab-width TAB_WIDTH
+                        Define how many tabs or spaces will be contained in one level of indentation.
+                        (default: 4)
+
+Report bugs via https://github.com/Silicon1602/srdl2sv/issues
 ```
 # Contributing
 # License
