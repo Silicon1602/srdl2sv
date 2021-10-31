@@ -1254,6 +1254,29 @@ class Field(Component):
             )
 
             # Save name of object
+            #
+            # If the field is multidimensional and packed arrays are turned off throw a
+            # warning. Structures like:
+            #
+            #   input [N:0] enum_name   input_name,
+            #
+            # are not supported and this tool does not support custom datatypes where
+            # packed dimensions are packed into another datatypes with the enum.
+            #
+            # For that reason, in such cases, a simple flat wire will be generated
+            if self.total_dimensions > 0 and not self.config['unpacked_arrays']:
+                self.logger.warning(
+                    "Using multidimensional registers/regfiles with "
+                    "enums and also using the option --no-unpacked "
+                    "is only partly supported. Rather than using the enum "
+                    "'%s', the flat wire with dimensions '[%i:0] will be used. "
+                    "Note that the SystemVerilog package that holds the enum can "
+                    "still be used.",
+                    '::'.join(['_'.join([scope, 'pkg']), enum_name]),
+                    self.obj.width-1)
+
+                raise AttributeError
+
             self.field_type =\
                 '::'.join(['_'.join([scope, 'pkg']), enum_name])
 

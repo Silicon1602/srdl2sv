@@ -171,33 +171,60 @@ class AddrMap(Component):
 
 
         # Input ports
-        # Yay for unreadable code....
-        input_ports_rtl = [
-            AddrMap.templ_dict['input_port']['rtl'].format(
-                name = key,
-                signal_type = value[0],
-                signal_width = input_signal_width,
-                name_width = input_name_width,
-                unpacked_dim = '[{}]'.format(
-                    ']['.join(
-                        [str(y) for y in value[1]]))
-                    if value[1] else '')
-            for (key, value) in input_dict_list
-            ]
+        input_ports_rtl = []
+        for (key, value) in input_dict_list:
+            # TODO: Think about a better way to handle datatypes. Simply replacing them
+            #       is not the most efficient way of handling it.
+            signal_type = value[0].replace('logic', '').strip()
+
+            if config['unpacked_arrays'] and value[1]:
+                unpacked_dim = f"[{']['.join([str(y) for y in value[1]])}]"
+            elif value[1]:
+                unpacked_dim = ''
+                signal_type = ''.join([
+                                    f"[{':0]['.join([str(y-1) for y in value[1]])}:0]",
+                                    signal_type
+                                    ])
+            else:
+                unpacked_dim = ''
+
+            input_ports_rtl.append(
+                AddrMap.templ_dict['input_port']['rtl'].format(
+                    name = key,
+                    signal_type = signal_type,
+                    signal_width = input_signal_width,
+                    name_width = input_name_width,
+                    unpacked_dim = unpacked_dim,
+                )
+            )
 
         # Output ports
-        output_ports_rtl = [
-            AddrMap.templ_dict['output_port']['rtl'].format(
-                name = key,
-                signal_width = output_signal_width,
-                name_width = output_name_width,
-                signal_type = value[0],
-                unpacked_dim = '[{}]'.format(
-                    ']['.join(
-                        [str(y) for y in value[1]]))
-                    if value[1] else '')
-            for (key, value) in output_dict_list
-            ]
+        output_ports_rtl = []
+        for (key, value) in output_dict_list:
+            # TODO: Think about a better way to handle datatypes. Simply replacing them
+            #       is not the most efficient way of handling it.
+            signal_type = value[0].replace('logic', '').strip()
+
+            if config['unpacked_arrays'] and value[1]:
+                unpacked_dim = f"[{']['.join([str(y) for y in value[1]])}]"
+            elif value[1]:
+                unpacked_dim = ''
+                signal_type = ''.join([
+                                    f"[{':0]['.join([str(y-1) for y in value[1]])}:0]",
+                                    signal_type
+                                    ])
+            else:
+                unpacked_dim = ''
+
+            output_ports_rtl.append(
+                AddrMap.templ_dict['output_port']['rtl'].format(
+                    name = key,
+                    signal_type = signal_type,
+                    signal_width = output_signal_width,
+                    name_width = output_name_width,
+                    unpacked_dim = unpacked_dim,
+                )
+            )
 
         # Remove comma from last port entry
         output_ports_rtl[-1] = output_ports_rtl[-1].rstrip(',')

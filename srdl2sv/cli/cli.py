@@ -65,6 +65,12 @@ class CliArguments():
                   it from using enums in the port list.")
 
         self.parser.add_argument(
+            "-u",
+            "--no-unpacked",
+            action="store_true",
+            help="Disable unpacked arrays in the module's I/O interface.")
+
+        self.parser.add_argument(
             "--file-logging",
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'NONE'],
             default='NONE',
@@ -170,6 +176,10 @@ class CliArguments():
         # Set enums
         config['enums'] = not args.no_enums
         config['list_args'].append(f"Enums Enabled    : {config['enums']}")
+
+        # Set unpacked arrays
+        config['unpacked_arrays'] = not args.no_unpacked
+        config['list_args'].append(f"Unpacked I/Os    : {config['enums']}")
 
         # Set bus
         config['bus'] = args.bus
