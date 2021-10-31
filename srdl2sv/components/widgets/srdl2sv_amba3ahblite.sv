@@ -135,7 +135,7 @@ module srdl2sv_amba3ahblite #(
     begin
         // Defaults
         HREADYOUT = 1'b1;
-        HRESP     = 1'b0;
+        HRESP     = OKAY;
 
         // When reading back, the data of the bit that was accessed over the bus
         // should be at byte 0 of the HRDATA bus and bits that were not accessed
@@ -174,14 +174,16 @@ module srdl2sv_amba3ahblite #(
                 widget_if_w_vld_next = operation_q == WRITE;
                 widget_if_r_vld_next = operation_q == READ;
 
-                if (widget_if.err && widget_if.rdy)
-                begin
-                    fsm_next = FSM_ERR_0;
-                end
-                else if (HTRANS == BUSY)
+                if (HTRANS == BUSY)
                 begin
                     // Wait
                     fsm_next = FSM_TRANS;
+                end
+                else if (widget_if.err && widget_if.rdy)
+                begin
+                    HREADYOUT = 0;
+                    HRESP     = ERROR;
+                    fsm_next  = FSM_ERR_1;
                 end
                 else if (HTRANS == NONSEQ)
                 begin
@@ -306,3 +308,4 @@ module srdl2sv_amba3ahblite #(
     endgenerate
 
 endmodule
+
