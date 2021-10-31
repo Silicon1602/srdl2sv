@@ -14,13 +14,13 @@
  * srdl2sv itself is licensed under GPLv3.
  *
  * Maintainer : Dennis Potter <dennis@dennispotter.eu>
- * Report Bugs: https://git.dennispotter.eu/Dennis/srdl2sv/issues
+ * Report Bugs: https://github.com/Silicon1602/srdl2sv/issues
  *
  * ===GENERATION INFORMATION======================================
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 30 2021 19:37:23
+ *  - Time     : October 30 2021 23:34:49
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
