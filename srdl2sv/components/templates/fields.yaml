@@ -9,7 +9,7 @@ rst_field_assign:
     rtl: |-
         if ({rst_negl}{rst_name})
         begin
-        {path}_q{genvars} <= {rst_value};
+        {path}_q{genvars} <= {width}'d{rst_value};
         end
         else
     signals:
@@ -108,6 +108,25 @@ hw_access_counter:
           signal_type: 'logic'
         - name: '{path}_next'
           signal_type: '{field_type}'
+hw_const:
+    rtl: |-
+        // Field is defined as a constant.
+        assign {path}_q{genvars} = {width}'d{const};
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
+hw_wire: 
+    rtl: |-
+        // Field is a simple wire.
+        // To generate a flop either add the we/wel property, add
+        // a reset, or change the sw/hw access properties
+        assign {path}_q{genvars} = {path}_in{genvars};
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
+    input_ports:
+        - name: '{path}_in'
+          signal_type: '{field_type}'
 end_field_ff: 
     rtl: |-
         end // of {path}'s always_ff
@@ -164,12 +183,13 @@ field_comment:
     rtl: |-
 
         //-----------------FIELD SUMMARY-----------------
-        // name       : {name} ({path_wo_field}[{msb}:{lsb}])
-        // access     : hw = {hw_access} {hw_precedence} 
-        //              sw = {sw_access} {sw_precedence}
-        // reset      : {rst_active} / {rst_type}
-        // flags      : {misc_flags}
-        // external   : {external}
+        // name         : {name} ({path_wo_field}[{msb}:{lsb}])
+        // access       : hw = {hw_access} {hw_precedence} 
+        //                sw = {sw_access} {sw_precedence}
+        // reset        : {rst_active} / {rst_type}
+        // flags        : {misc_flags}
+        // external     : {external}
+        // storage type : {storage_type}
         //-----------------------------------------------
 field_desc: 
     rtl: |-

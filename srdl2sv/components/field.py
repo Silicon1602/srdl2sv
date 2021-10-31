@@ -3,6 +3,7 @@ import math
 import importlib.resources as pkg_resources
 import sys
 from typing import Optional
+from enum import Enum
 import yaml
 
 from systemrdl.node import FieldNode, SignalNode
@@ -12,6 +13,11 @@ from systemrdl.rdltypes import PrecedenceType, AccessType, OnReadType, OnWriteTy
 # Local modules
 from srdl2sv.components.component import Component, TypeDef
 from srdl2sv.components import templates
+
+class StorageType(Enum):
+    FLOPS = 0
+    WIRE = 1
+    CONST = 2
 
 class Field(Component):
     # Save YAML template as class variable
@@ -36,6 +42,9 @@ class Field(Component):
         # Save and/or process important variables
         self.__init_variables(obj)
 
+        # Determine whether it is a wire, flops, or a wire
+        self.__init_storage_type()
+
         # Determine field types
         self.__init_fieldtype()
 
@@ -54,18 +63,25 @@ class Field(Component):
         # HW Access can be handled in __init__ function but SW access
         # must be handled in a seperate method that can be called
         # seperately in case of alias registers
-        if not self.config['external']:
+        if self.config['external']:
+            pass
+        elif self.storage_type is not StorageType.FLOPS:
+            self.__add_wire_const()
+            self.__add_hw_rd_access()
+            self.add_sw_access(obj)
+        else:
             self.__add_always_ff()
 
             # Only add normal hardware access if field is not an interrupt field
             if not self.__add_interrupt():
-                self.__add_hw_access()
+                self.__add_hw_wr_access()
+                self.__add_hw_rd_access()
 
             self.__add_combo()
             self.__add_swmod_swacc()
             self.__add_counter()
 
-        self.add_sw_access(obj)
+            self.add_sw_access(obj)
 
     def add_sw_access(self, obj, alias = False):
         access_rtl = {}
@@ -871,7 +887,23 @@ class Field(Component):
 
         return self.properties['intr']
 
-    def __add_hw_access(self):
+    def __add_wire_const(self):
+        field_templ = 'hw_wire' if self.storage_type is StorageType.WIRE else 'hw_const'
+
+        self.access_rtl['hw_write'] = ([
+            self._process_yaml(
+                Field.templ_dict[field_templ],
+                {'path': self.path_underscored,
+                 'genvars': self.genvars_str,
+                 'field_type': self.field_type,
+                 'width': self.obj.width,
+                 'const': self.rst['value'],
+                }
+            )
+        ],
+        True)
+
+    def __add_hw_wr_access(self):
         # Mutually exclusive. systemrdl-compiler performs check for this
         enable_mask_negl = ''
         enable_mask = False
@@ -1012,6 +1044,7 @@ class Field(Component):
         else:
             self.access_rtl['hw_setclr'] = ([], False)
 
+    def __add_hw_rd_access(self):
         # Hookup flop to output port in case register is readable by hardware
         if self.obj.get_property('hw') in (AccessType.rw, AccessType.r):
             # Connect flops to output port
@@ -1131,12 +1164,13 @@ class Field(Component):
         # Chain access RTL to the rest of the RTL
         self.rtl_header = [*self.rtl_header, *order_list_rtl]
 
-        self.rtl_header.append(
-            self._process_yaml(
-                Field.templ_dict['end_field_ff'],
-                {'path': self.path_underscored}
+        if self.storage_type is StorageType.FLOPS:
+            self.rtl_header.append(
+                self._process_yaml(
+                    Field.templ_dict['end_field_ff'],
+                    {'path': self.path_underscored}
+                )
             )
-        )
 
     def __add_combo(self):
         operations = []
@@ -1267,23 +1301,42 @@ class Field(Component):
 
         if self.rst['name']:
             self.resets.add(self.rst['name'])
-        elif obj.get_property("reset") is not None:
-            self.logger.warning("Field has a reset value, but no reset "\
-                                "signal was defined and connected to the "\
-                                "field. Note that explicit connecting this "\
-                                "is not required if a field_reset was defined.")
 
         # Value of reset must always be determined on field level
         # Don't use 'not obj.get_property("reset"), since the value
         # could (and will often be) be '0'
         self.rst['value'] = \
-            '\'x' if obj.get_property("reset") == None else\
-                     obj.get_property('reset')
+            'x' if obj.get_property("reset") is None else\
+                   obj.get_property('reset')
 
         # Define dict that holds all RTL
         self.access_rtl = {}
         self.access_rtl['else'] = (["else"], False)
         self.access_rtl[''] = ([''], False)
+
+    def __init_storage_type(self):
+        # It is not required to check for illegal conditions because the
+        # compiler will take care of this
+        hw_prop = self.obj.get_property('hw')
+        sw_prop = self.obj.get_property('sw')
+
+        # Check the storage type, according to Table 12 of the SystemRDL 2.0 LRM
+        if hw_prop is AccessType.r and sw_prop is AccessType.r:
+            # hw=r/sw=r --> Constant
+            self.storage_type = StorageType.CONST
+        elif hw_prop is AccessType.na and sw_prop is AccessType.r:
+            # hw=na/sw=r --> Constant
+            self.storage_type = StorageType.CONST
+        elif hw_prop is AccessType.w and sw_prop is AccessType.r \
+                and self.obj.get_property("reset") is None \
+                and not self.we_or_wel:
+            # If hw=w/sw=r AND no reset or we/wel is defined, a simple wire is implemented.
+            # This isn't clear from Table 12, but '9.5.1 Semantics' describes this
+            self.storage_type = StorageType.WIRE
+        else:
+            self.storage_type = StorageType.FLOPS
+
+        self.logger.debug("Storage type of field detected as '%s'", self.storage_type)
 
     def __summary(self):
         # Additional flags that are set
@@ -1315,7 +1368,9 @@ class Field(Component):
                 external = self.config['external'],
                 lsb = self.obj.lsb,
                 msb = self.obj.msb,
-                path_wo_field = self.path_wo_field)
+                path_wo_field = self.path_wo_field,
+                storage_type = self.storage_type,
+            )
 
     def __add_always_ff(self):
         # Handle always_ff
@@ -1340,7 +1395,9 @@ class Field(Component):
                      'rst_negl':  "!" if self.rst['active'] == "active_low" else "",
                      'rst_value': self.rst['value'],
                      'genvars': self.genvars_str,
-                     'field_type': self.field_type}
+                     'field_type': self.field_type,
+                     'width': self.obj.width,
+                    }
                 )
             )
 
@@ -1374,6 +1431,17 @@ class Field(Component):
                               "property with the counter property. The counter property "\
                               "will be ignored.")
 
+        # If there a reset value is defined but no reset value, throw a warning
+        # This is not true in case of a constant
+        if not self.rst['name'] \
+                and self.obj.get_property("reset") is not None \
+                and self.storage_type is StorageType.FLOPS:
+            self.logger.warning("Field has a reset value, but no reset "\
+                                "signal was defined and connected to the "\
+                                "field. Note that explicit connecting this "\
+                                "is not required if a field_reset was defined.")
+
+
     @staticmethod
     def __process_reset_signal(reset_signal):
         rst = {}
@@ -1395,7 +1463,7 @@ class Field(Component):
             rst['async'] = False
             rst['name'] = None
             rst['edge'] = None
-            rst['value'] = "'x"
+            rst['value'] = "x"
             rst['active'] = "-"
             rst['type'] = "-"
 
