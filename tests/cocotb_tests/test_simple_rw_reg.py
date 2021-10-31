@@ -158,7 +158,7 @@ async def test_illegal_address(dut):
     await bus.reset()
 
     rand_addr = random.randint(8, 1337)
-    rand_val = random.randint(0, (1 << 32)-1)
+    rand_val = random.randint(0, (1 << 8)-1)
 
     dut._log.info(f"Write value {rand_val} to illegal addres {rand_addr}.")
 
@@ -168,8 +168,8 @@ async def test_illegal_address(dut):
         await bus.write(
             address=rand_addr,
             value=rand_val,
-            nbytes=4,
-            step_size=4)
+            nbytes=1,
+            step_size=1)
     except AMBA3AHBLiteDriver.BusErrorResponse:
         write_error = True
 
@@ -180,8 +180,8 @@ async def test_illegal_address(dut):
     try:
         await bus.read(
             address=rand_addr,
-            nbytes=4,
-            step_size=4)
+            nbytes=1,
+            step_size=1)
     except AMBA3AHBLiteDriver.BusErrorResponse:
         read_error = True
 
