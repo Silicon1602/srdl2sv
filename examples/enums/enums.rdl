@@ -1,0 +1,56 @@
+addrmap enums {
+    desc = 
+        "This example demonstrates how enumerations are translated to Systemverilog, how enumerations are handled when the same enumeration is redefined in different scopes, and hence how enumerations can be re-used in the RTL that surrounds the register block.
+
+        It is not mandatory to use enums in RTL when defining enums in SystemRDL. By providing the command-line argument `--no-enums` all I/O will be defined as flat wires.";
+
+    enum first_enum {
+        val_1 = 2'b10;
+        val_2 = 2'b01;
+    };
+
+    enum second_enum {
+        val_3 = 2'b10;
+        val_4 = 2'b01;
+    };
+
+    reg {
+        field {sw=rw; hw=rw;} f1 [1:0];
+        field {sw=rw; hw=rw;} f2 [9:8];
+
+        f1->encode = first_enum;
+    } reg_a;
+
+    reg {
+        field {sw=rw; hw=rw;} f1 [1:0];
+        field {sw=rw; hw=rw;} f2 [9:8];
+
+        f1->encode = second_enum;
+    } reg_b;
+
+    enum third_enum {
+        val_5 = 2'b10;
+        val_6 = 2'b01;
+    };
+
+    regfile {
+        enum fourth_enum {
+            val_7 = 2'b10;
+            val_8 = 2'b01;
+        };
+
+        reg {
+            field {sw=rw; hw=rw;} f1 [1:0];
+            field {sw=rw; hw=rw;} f2 [9:8];
+
+            f1->encode = third_enum;
+        } reg_c;
+
+        reg {
+            field {sw=rw; hw=rw;} f1 [1:0];
+            field {sw=rw; hw=rw;} f2 [9:8];
+
+            f1->encode = fourth_enum;
+        } reg_d;
+    } regfile_1;
+};
