@@ -30,7 +30,7 @@ addrmap hierarchical_regfiles {
                 field {sw=rw; hw=rw;} f2 [31:16];
             } reg_d;
         } regfile_3 [4][2];
-    } regfile_2 [2];
+    } regfile_2 [3];
 
     // Just a plain old register
     reg {

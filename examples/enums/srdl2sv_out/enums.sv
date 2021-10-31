@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 31 2021 13:59:16
+ *  - Time     : October 31 2021 16:01:37
  *  - Path     : /home/dpotter/srdl2sv/examples/enums
  *  - RDL file : ['enums.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
  *  - Byte enables     : True
@@ -83,26 +84,26 @@ module enums
     input  [32-1:0]                          HWDATA                 ,
     input                                    HSEL                   ,
     input  enums_pkg::third_enum             regfile_1__reg_c__f1_in,
-    input  logic [1:0]                       regfile_1__reg_c__f2_in,
+    input  [1:0]                             regfile_1__reg_c__f2_in,
     input  enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_in,
-    input  logic [1:0]                       regfile_1__reg_d__f2_in,
+    input  [1:0]                             regfile_1__reg_d__f2_in,
     input  enums_pkg::first_enum             reg_a__f1_in           ,
-    input  logic [1:0]                       reg_a__f2_in           ,
+    input  [1:0]                             reg_a__f2_in           ,
     input  enums_pkg::second_enum            reg_b__f1_in           ,
-    input  logic [1:0]                       reg_b__f2_in           ,
+    input  [1:0]                             reg_b__f2_in           ,
     
     // Outputs
     output                                   HREADYOUT             ,
     output                                   HRESP                 ,
     output [32-1:0]                          HRDATA                ,
     output enums_pkg::third_enum             regfile_1__reg_c__f1_r,
-    output logic [1:0]                       regfile_1__reg_c__f2_r,
+    output [1:0]                             regfile_1__reg_c__f2_r,
     output enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_r,
-    output logic [1:0]                       regfile_1__reg_d__f2_r,
+    output [1:0]                             regfile_1__reg_d__f2_r,
     output enums_pkg::first_enum             reg_a__f1_r           ,
-    output logic [1:0]                       reg_a__f2_r           ,
+    output [1:0]                             reg_a__f2_r           ,
     output enums_pkg::second_enum            reg_b__f1_r           ,
-    output logic [1:0]                       reg_b__f2_r           
+    output [1:0]                             reg_b__f2_r           
 );
 
 

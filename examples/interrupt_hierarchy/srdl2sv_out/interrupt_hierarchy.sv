@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 30 2021 23:34:49
+ *  - Time     : October 31 2021 15:59:28
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
  *  - Byte enables     : True
@@ -81,40 +82,40 @@ module interrupt_hierarchy
     input  [1:0]       HTRANS                             ,
     input  [32-1:0]    HWDATA                             ,
     input              HSEL                               ,
-    input  logic [0:0] block_a_int__crc_error_in          ,
-    input  logic [0:0] block_a_int__len_error_in          ,
-    input  logic [0:0] block_a_int__multi_bit_ecc_error_in,
-    input  logic [3:0] block_a_int__active_ecc_master_in  ,
-    input  logic [0:0] block_b_int__crc_error_in          ,
-    input  logic [0:0] block_b_int__len_error_in          ,
-    input  logic [0:0] block_b_int__multi_bit_ecc_error_in,
-    input  logic [3:0] block_b_int__active_ecc_master_in  ,
-    input  logic [0:0] block_c_int__crc_error_in          ,
-    input  logic [0:0] block_c_int__len_error_in          ,
-    input  logic [0:0] block_c_int__multi_bit_ecc_error_in,
-    input  logic [3:0] block_c_int__active_ecc_master_in  ,
-    input  logic [0:0] block_d_int__crc_error_in          ,
-    input  logic [0:0] block_d_int__len_error_in          ,
-    input  logic [0:0] block_d_int__multi_bit_ecc_error_in,
-    input  logic [3:0] block_d_int__active_ecc_master_in  ,
+    input  [0:0]       block_a_int__crc_error_in          ,
+    input  [0:0]       block_a_int__len_error_in          ,
+    input  [0:0]       block_a_int__multi_bit_ecc_error_in,
+    input  [3:0]       block_a_int__active_ecc_master_in  ,
+    input  [0:0]       block_b_int__crc_error_in          ,
+    input  [0:0]       block_b_int__len_error_in          ,
+    input  [0:0]       block_b_int__multi_bit_ecc_error_in,
+    input  [3:0]       block_b_int__active_ecc_master_in  ,
+    input  [0:0]       block_c_int__crc_error_in          ,
+    input  [0:0]       block_c_int__len_error_in          ,
+    input  [0:0]       block_c_int__multi_bit_ecc_error_in,
+    input  [3:0]       block_c_int__active_ecc_master_in  ,
+    input  [0:0]       block_d_int__crc_error_in          ,
+    input  [0:0]       block_d_int__len_error_in          ,
+    input  [0:0]       block_d_int__multi_bit_ecc_error_in,
+    input  [3:0]       block_d_int__active_ecc_master_in  ,
     
     // Outputs
     output          HREADYOUT       ,
     output          HRESP           ,
     output [32-1:0] HRDATA          ,
-    output logic    block_a_int_intr,
-    output logic    block_a_int_halt,
-    output logic    block_b_int_intr,
-    output logic    block_b_int_halt,
-    output logic    block_c_int_intr,
-    output logic    block_c_int_halt,
-    output logic    block_d_int_intr,
-    output logic    block_d_int_halt,
-    output logic    master_int_intr ,
-    output logic    master_halt_intr,
-    output logic    master_halt_halt,
-    output logic    global_int_intr ,
-    output logic    global_int_halt 
+    output          block_a_int_intr,
+    output          block_a_int_halt,
+    output          block_b_int_intr,
+    output          block_b_int_halt,
+    output          block_c_int_intr,
+    output          block_c_int_halt,
+    output          block_d_int_intr,
+    output          block_d_int_halt,
+    output          master_int_intr ,
+    output          master_halt_intr,
+    output          master_halt_halt,
+    output          global_int_intr ,
+    output          global_int_halt 
 );
 
 

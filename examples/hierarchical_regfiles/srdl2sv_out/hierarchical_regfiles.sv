@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 30 2021 23:34:40
+ *  - Time     : October 31 2021 15:59:23
  *  - Path     : /home/dpotter/srdl2sv/examples/hierarchical_regfiles
  *  - RDL file : ['hierarchical_regfiles.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
  *  - Byte enables     : True
@@ -81,36 +82,36 @@ module hierarchical_regfiles
     input  [1:0]        HTRANS                            ,
     input  [32-1:0]     HWDATA                            ,
     input               HSEL                              ,
-    input  logic        regfile_1__reg_a__f1_hw_wr        ,
-    input  logic [15:0] regfile_1__reg_a__f1_in           ,
-    input  logic        regfile_1__reg_a__f2_hw_wr        ,
-    input  logic [15:0] regfile_1__reg_a__f2_in           ,
-    input  logic        regfile_1__reg_b__f1_hw_wr        ,
-    input  logic [15:0] regfile_1__reg_b__f1_in           ,
-    input  logic        regfile_1__reg_b__f2_hw_wr        ,
-    input  logic [15:0] regfile_1__reg_b__f2_in           ,
-    input  logic [15:0] regfile_2__regfile_3__reg_d__f1_in[2][4][2],
-    input  logic [15:0] regfile_2__regfile_3__reg_d__f2_in[2][4][2],
-    input  logic [7:0]  regfile_2__reg_c__f1_in           [2],
-    input  logic [15:0] regfile_2__reg_c__f3_in           [2],
-    input  logic        reg_e__f1_hw_wr                   ,
-    input  logic [15:0] reg_e__f1_in                      ,
-    input  logic        reg_e__f2_hw_wr                   ,
-    input  logic [15:0] reg_e__f2_in                      ,
+    input               regfile_1__reg_a__f1_hw_wr        ,
+    input  [15:0]       regfile_1__reg_a__f1_in           ,
+    input               regfile_1__reg_a__f2_hw_wr        ,
+    input  [15:0]       regfile_1__reg_a__f2_in           ,
+    input               regfile_1__reg_b__f1_hw_wr        ,
+    input  [15:0]       regfile_1__reg_b__f1_in           ,
+    input               regfile_1__reg_b__f2_hw_wr        ,
+    input  [15:0]       regfile_1__reg_b__f2_in           ,
+    input  [15:0]       regfile_2__regfile_3__reg_d__f1_in[3][4][2],
+    input  [15:0]       regfile_2__regfile_3__reg_d__f2_in[3][4][2],
+    input  [7:0]        regfile_2__reg_c__f1_in           [3],
+    input  [15:0]       regfile_2__reg_c__f3_in           [3],
+    input               reg_e__f1_hw_wr                   ,
+    input  [15:0]       reg_e__f1_in                      ,
+    input               reg_e__f2_hw_wr                   ,
+    input  [15:0]       reg_e__f2_in                      ,
     
     // Outputs
     output              HREADYOUT                        ,
     output              HRESP                            ,
     output [32-1:0]     HRDATA                           ,
-    output logic [15:0] regfile_1__reg_a__f1_r           ,
-    output logic [15:0] regfile_1__reg_a__f2_r           ,
-    output logic [15:0] regfile_1__reg_b__f1_r           ,
-    output logic [15:0] regfile_1__reg_b__f2_r           ,
-    output logic [15:0] regfile_2__regfile_3__reg_d__f1_r[2][4][2],
-    output logic [15:0] regfile_2__regfile_3__reg_d__f2_r[2][4][2],
-    output logic [7:0]  regfile_2__reg_c__f2_r           [2],
-    output logic [15:0] reg_e__f1_r                      ,
-    output logic [15:0] reg_e__f2_r                      
+    output [15:0]       regfile_1__reg_a__f1_r           ,
+    output [15:0]       regfile_1__reg_a__f2_r           ,
+    output [15:0]       regfile_1__reg_b__f1_r           ,
+    output [15:0]       regfile_1__reg_b__f2_r           ,
+    output [15:0]       regfile_2__regfile_3__reg_d__f1_r[3][4][2],
+    output [15:0]       regfile_2__regfile_3__reg_d__f2_r[3][4][2],
+    output [7:0]        regfile_2__reg_c__f2_r           [3],
+    output [15:0]       reg_e__f1_r                      ,
+    output [15:0]       reg_e__f2_r                      
 );
 
 
@@ -352,32 +353,32 @@ assign regfile_1__reg_b_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0]
  *******************************************************************
  * REGFILE               : regfile_2
  * DIMENSION             : 1
- * DEPTHS (per dimension): [2]
+ * DEPTHS (per dimension): [3]
  *******************************************************************
  *******************************************************************/
 
 
 // Variables of register 'reg_d'
-logic        regfile_2__regfile_3__reg_d_active     [2][4][2];
-logic        regfile_2__regfile_3__reg_d_sw_wr      [2][4][2];
-logic [31:0] regfile_2__regfile_3__reg_d_data_mux_in[2][4][2];
-logic        regfile_2__regfile_3__reg_d_rdy_mux_in [2][4][2];
-logic        regfile_2__regfile_3__reg_d_err_mux_in [2][4][2];
-logic [15:0] regfile_2__regfile_3__reg_d__f1_q      [2][4][2];
-logic [15:0] regfile_2__regfile_3__reg_d__f2_q      [2][4][2];
+logic        regfile_2__regfile_3__reg_d_active     [3][4][2];
+logic        regfile_2__regfile_3__reg_d_sw_wr      [3][4][2];
+logic [31:0] regfile_2__regfile_3__reg_d_data_mux_in[3][4][2];
+logic        regfile_2__regfile_3__reg_d_rdy_mux_in [3][4][2];
+logic        regfile_2__regfile_3__reg_d_err_mux_in [3][4][2];
+logic [15:0] regfile_2__regfile_3__reg_d__f1_q      [3][4][2];
+logic [15:0] regfile_2__regfile_3__reg_d__f2_q      [3][4][2];
 
 // Variables of register 'reg_c'
-logic        regfile_2__reg_c_active     [2];
-logic        regfile_2__reg_c_sw_wr      [2];
-logic [31:0] regfile_2__reg_c_data_mux_in[2];
-logic        regfile_2__reg_c_rdy_mux_in [2];
-logic        regfile_2__reg_c_err_mux_in [2];
-logic [7:0]  regfile_2__reg_c__f1_q      [2];
-logic [7:0]  regfile_2__reg_c__f2_q      [2];
-logic [15:0] regfile_2__reg_c__f3_q      [2];
+logic        regfile_2__reg_c_active     [3];
+logic        regfile_2__reg_c_sw_wr      [3];
+logic [31:0] regfile_2__reg_c_data_mux_in[3];
+logic        regfile_2__reg_c_rdy_mux_in [3];
+logic        regfile_2__reg_c_err_mux_in [3];
+logic [7:0]  regfile_2__reg_c__f1_q      [3];
+logic [7:0]  regfile_2__reg_c__f2_q      [3];
+logic [15:0] regfile_2__reg_c__f3_q      [3];
 
 generate
-for (gv_a = 0; gv_a < 2; gv_a++)
+for (gv_a = 0; gv_a < 3; gv_a++)
 begin
     /*******************************************************************
      *******************************************************************
@@ -586,7 +587,7 @@ logic [15:0] reg_e__f2_q      ;
 
 
 // Register-activation for 'reg_e' 
-assign reg_e_active = widget_if.addr == 136;
+assign reg_e_active = widget_if.addr == 172;
 assign reg_e_sw_wr = reg_e_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
@@ -774,6 +775,54 @@ begin
             widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[1][3][1];
             widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[1][3][1];
         end
+        regfile_2__regfile_3__reg_d_active[2][0][0]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][0][0];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][0][0];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][0][0];
+        end
+        regfile_2__regfile_3__reg_d_active[2][0][1]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][0][1];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][0][1];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][0][1];
+        end
+        regfile_2__regfile_3__reg_d_active[2][1][0]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][1][0];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][1][0];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][1][0];
+        end
+        regfile_2__regfile_3__reg_d_active[2][1][1]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][1][1];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][1][1];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][1][1];
+        end
+        regfile_2__regfile_3__reg_d_active[2][2][0]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][2][0];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][2][0];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][2][0];
+        end
+        regfile_2__regfile_3__reg_d_active[2][2][1]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][2][1];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][2][1];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][2][1];
+        end
+        regfile_2__regfile_3__reg_d_active[2][3][0]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][3][0];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][3][0];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][3][0];
+        end
+        regfile_2__regfile_3__reg_d_active[2][3][1]:
+        begin
+            widget_if.r_data = regfile_2__regfile_3__reg_d_data_mux_in[2][3][1];
+            widget_if.err    = regfile_2__regfile_3__reg_d_err_mux_in[2][3][1];
+            widget_if.rdy    = regfile_2__regfile_3__reg_d_rdy_mux_in[2][3][1];
+        end
         regfile_2__reg_c_active[0]:
         begin
             widget_if.r_data = regfile_2__reg_c_data_mux_in[0];
@@ -785,6 +834,12 @@ begin
             widget_if.r_data = regfile_2__reg_c_data_mux_in[1];
             widget_if.err    = regfile_2__reg_c_err_mux_in[1];
             widget_if.rdy    = regfile_2__reg_c_rdy_mux_in[1];
+        end
+        regfile_2__reg_c_active[2]:
+        begin
+            widget_if.r_data = regfile_2__reg_c_data_mux_in[2];
+            widget_if.err    = regfile_2__reg_c_err_mux_in[2];
+            widget_if.rdy    = regfile_2__reg_c_rdy_mux_in[2];
         end
         reg_e_active:
         begin

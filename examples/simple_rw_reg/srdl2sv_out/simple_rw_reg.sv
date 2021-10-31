@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 30 2021 23:34:53
+ *  - Time     : October 31 2021 15:59:35
  *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
  *  - Byte enables     : True
@@ -81,29 +82,29 @@ module simple_rw_reg
     input  [1:0]        HTRANS               ,
     input  [32-1:0]     HWDATA               ,
     input               HSEL                 ,
-    input  logic        register_1d__f1_hw_wr,
-    input  logic [15:0] register_1d__f1_in   ,
-    input  logic        register_1d__f2_hw_wr,
-    input  logic [15:0] register_1d__f2_in   ,
-    input  logic        register_2d__f1_hw_wr[2],
-    input  logic [15:0] register_2d__f1_in   [2],
-    input  logic        register_2d__f2_hw_wr[2],
-    input  logic [15:0] register_2d__f2_in   [2],
-    input  logic        register_3d__f1_hw_wr[2][2],
-    input  logic [15:0] register_3d__f1_in   [2][2],
-    input  logic        register_3d__f2_hw_wr[2][2],
-    input  logic [15:0] register_3d__f2_in   [2][2],
+    input               register_1d__f1_hw_wr,
+    input  [15:0]       register_1d__f1_in   ,
+    input               register_1d__f2_hw_wr,
+    input  [15:0]       register_1d__f2_in   ,
+    input               register_2d__f1_hw_wr[2],
+    input  [15:0]       register_2d__f1_in   [2],
+    input               register_2d__f2_hw_wr[2],
+    input  [15:0]       register_2d__f2_in   [2],
+    input               register_3d__f1_hw_wr[2][2],
+    input  [15:0]       register_3d__f1_in   [2][2],
+    input               register_3d__f2_hw_wr[2][2],
+    input  [15:0]       register_3d__f2_in   [2][2],
     
     // Outputs
     output              HREADYOUT        ,
     output              HRESP            ,
     output [32-1:0]     HRDATA           ,
-    output logic [15:0] register_1d__f1_r,
-    output logic [15:0] register_1d__f2_r,
-    output logic [15:0] register_2d__f1_r[2],
-    output logic [15:0] register_2d__f2_r[2],
-    output logic [15:0] register_3d__f1_r[2][2],
-    output logic [15:0] register_3d__f2_r[2][2]
+    output [15:0]       register_1d__f1_r,
+    output [15:0]       register_1d__f2_r,
+    output [15:0]       register_2d__f1_r[2],
+    output [15:0]       register_2d__f2_r[2],
+    output [15:0]       register_3d__f1_r[2][2],
+    output [15:0]       register_3d__f2_r[2][2]
 );
 
 
