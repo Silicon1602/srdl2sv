@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 27 2021 23:33:01
+ *  - Time     : October 30 2021 19:37:29
  *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -168,12 +168,13 @@ assign register_1d_active = widget_if.addr == 0;
 assign register_1d_sw_wr = register_1d_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f1 (register_1d[15:0])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f1 (register_1d[15:0])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -196,12 +197,13 @@ assign register_1d__f1_r = register_1d__f1_q;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f2 (register_1d[31:16])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f2 (register_1d[31:16])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -263,12 +265,13 @@ begin
     assign register_2d_sw_wr[gv_a] = register_2d_active[gv_a] && widget_if.w_vld;
     
     //-----------------FIELD SUMMARY-----------------
-    // name       : f1 (register_2d[15:0])
-    // access     : hw = rw  
-    //              sw = rw (precedence)
-    // reset      : - / -
-    // flags      : ['sw', 'we']
-    // external   : False
+    // name         : f1 (register_2d[15:0])
+    // access       : hw = rw  
+    //                sw = rw (precedence)
+    // reset        : - / -
+    // flags        : ['sw', 'we']
+    // external     : False
+    // storage type : StorageType.FLOPS
     //-----------------------------------------------
     
     always_ff @(posedge clk)
@@ -291,12 +294,13 @@ begin
     
     
     //-----------------FIELD SUMMARY-----------------
-    // name       : f2 (register_2d[31:16])
-    // access     : hw = rw  
-    //              sw = rw (precedence)
-    // reset      : - / -
-    // flags      : ['sw', 'we']
-    // external   : False
+    // name         : f2 (register_2d[31:16])
+    // access       : hw = rw  
+    //                sw = rw (precedence)
+    // reset        : - / -
+    // flags        : ['sw', 'we']
+    // external     : False
+    // storage type : StorageType.FLOPS
     //-----------------------------------------------
     
     always_ff @(posedge clk)
@@ -364,12 +368,13 @@ begin
         assign register_3d_sw_wr[gv_a][gv_b] = register_3d_active[gv_a][gv_b] && widget_if.w_vld;
         
         //-----------------FIELD SUMMARY-----------------
-        // name       : f1 (register_3d[15:0])
-        // access     : hw = rw  
-        //              sw = rw (precedence)
-        // reset      : - / -
-        // flags      : ['sw', 'we']
-        // external   : False
+        // name         : f1 (register_3d[15:0])
+        // access       : hw = rw  
+        //                sw = rw (precedence)
+        // reset        : - / -
+        // flags        : ['sw', 'we']
+        // external     : False
+        // storage type : StorageType.FLOPS
         //-----------------------------------------------
         
         always_ff @(posedge clk)
@@ -392,12 +397,13 @@ begin
         
         
         //-----------------FIELD SUMMARY-----------------
-        // name       : f2 (register_3d[31:16])
-        // access     : hw = rw  
-        //              sw = rw (precedence)
-        // reset      : - / -
-        // flags      : ['sw', 'we']
-        // external   : False
+        // name         : f2 (register_3d[31:16])
+        // access       : hw = rw  
+        //                sw = rw (precedence)
+        // reset        : - / -
+        // flags        : ['sw', 'we']
+        // external     : False
+        // storage type : StorageType.FLOPS
         //-----------------------------------------------
         
         always_ff @(posedge clk)

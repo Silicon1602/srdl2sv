@@ -15,9 +15,11 @@ addrmap hierarchical_regfiles {
     regfile {
         // Remove we property and set hw=w.
         // Set sw=r for one of the properties to generate a simple wire
+        // Set sw=r/hw=r for one of the properties to generate a constant
         reg {
-            field {sw=r; hw=w;} f1 [15:0];
-            field {sw=rw; hw=w;} f2 [31:16];
+            field {sw=r; hw=w;} f1 [7:0];
+            field {sw=r; hw=r;} f2 [15:8] = 42; // It's the meaning of life
+            field {sw=rw; hw=w;} f3 [31:16];
         } reg_c;
 
         // Another level of regfile-hierarchy

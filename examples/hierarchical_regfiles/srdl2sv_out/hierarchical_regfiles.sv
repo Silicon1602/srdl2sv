@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 28 2021 22:54:43
+ *  - Time     : October 30 2021 19:38:01
  *  - Path     : /home/dpotter/srdl2sv/examples/hierarchical_regfiles
  *  - RDL file : ['hierarchical_regfiles.rdl']
  *  - Hostname : ArchXPS 
@@ -91,8 +91,8 @@ module hierarchical_regfiles
     input  logic [15:0] regfile_1__reg_b__f2_in           ,
     input  logic [15:0] regfile_2__regfile_3__reg_d__f1_in[2][4][2],
     input  logic [15:0] regfile_2__regfile_3__reg_d__f2_in[2][4][2],
-    input  logic [15:0] regfile_2__reg_c__f1_in           [2],
-    input  logic [15:0] regfile_2__reg_c__f2_in           [2],
+    input  logic [7:0]  regfile_2__reg_c__f1_in           [2],
+    input  logic [15:0] regfile_2__reg_c__f3_in           [2],
     input  logic        reg_e__f1_hw_wr                   ,
     input  logic [15:0] reg_e__f1_in                      ,
     input  logic        reg_e__f2_hw_wr                   ,
@@ -108,6 +108,7 @@ module hierarchical_regfiles
     output logic [15:0] regfile_1__reg_b__f2_r           ,
     output logic [15:0] regfile_2__regfile_3__reg_d__f1_r[2][4][2],
     output logic [15:0] regfile_2__regfile_3__reg_d__f2_r[2][4][2],
+    output logic [7:0]  regfile_2__reg_c__f2_r           [2],
     output logic [15:0] reg_e__f1_r                      ,
     output logic [15:0] reg_e__f2_r                      
 );
@@ -182,12 +183,13 @@ assign regfile_1__reg_a_active = widget_if.addr == 0;
 assign regfile_1__reg_a_sw_wr = regfile_1__reg_a_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f1 (regfile_1__reg_a[15:0])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f1 (regfile_1__reg_a[15:0])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -210,12 +212,13 @@ assign regfile_1__reg_a__f1_r = regfile_1__reg_a__f1_q;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f2 (regfile_1__reg_a[31:16])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f2 (regfile_1__reg_a[31:16])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -274,12 +277,13 @@ assign regfile_1__reg_b_active = widget_if.addr == 4;
 assign regfile_1__reg_b_sw_wr = regfile_1__reg_b_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f1 (regfile_1__reg_b[15:0])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f1 (regfile_1__reg_b[15:0])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -302,12 +306,13 @@ assign regfile_1__reg_b__f1_r = regfile_1__reg_b__f1_q;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f2 (regfile_1__reg_b[31:16])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f2 (regfile_1__reg_b[31:16])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -367,8 +372,9 @@ logic        regfile_2__reg_c_sw_wr      [2];
 logic [31:0] regfile_2__reg_c_data_mux_in[2];
 logic        regfile_2__reg_c_rdy_mux_in [2];
 logic        regfile_2__reg_c_err_mux_in [2];
-logic [15:0] regfile_2__reg_c__f1_q      [2];
-logic [15:0] regfile_2__reg_c__f2_q      [2];
+logic [7:0]  regfile_2__reg_c__f1_q      [2];
+logic [7:0]  regfile_2__reg_c__f2_q      [2];
+logic [15:0] regfile_2__reg_c__f3_q      [2];
 
 generate
 for (gv_a = 0; gv_a < 2; gv_a++)
@@ -400,12 +406,13 @@ begin
             assign regfile_2__regfile_3__reg_d_sw_wr[gv_a][gv_b][gv_c] = regfile_2__regfile_3__reg_d_active[gv_a][gv_b][gv_c] && widget_if.w_vld;
             
             //-----------------FIELD SUMMARY-----------------
-            // name       : f1 (regfile_2__regfile_3__reg_d[15:0])
-            // access     : hw = rw  
-            //              sw = rw (precedence)
-            // reset      : - / -
-            // flags      : ['sw']
-            // external   : False
+            // name         : f1 (regfile_2__regfile_3__reg_d[15:0])
+            // access       : hw = rw  
+            //                sw = rw (precedence)
+            // reset        : - / -
+            // flags        : ['sw']
+            // external     : False
+            // storage type : StorageType.FLOPS
             //-----------------------------------------------
             
             always_ff @(posedge clk)
@@ -428,12 +435,13 @@ begin
             
             
             //-----------------FIELD SUMMARY-----------------
-            // name       : f2 (regfile_2__regfile_3__reg_d[31:16])
-            // access     : hw = rw  
-            //              sw = rw (precedence)
-            // reset      : - / -
-            // flags      : ['sw']
-            // external   : False
+            // name         : f2 (regfile_2__regfile_3__reg_d[31:16])
+            // access       : hw = rw  
+            //                sw = rw (precedence)
+            // reset        : - / -
+            // flags        : ['sw']
+            // external     : False
+            // storage type : StorageType.FLOPS
             //-----------------------------------------------
             
             always_ff @(posedge clk)
@@ -486,29 +494,44 @@ begin
     assign regfile_2__reg_c_sw_wr[gv_a] = regfile_2__reg_c_active[gv_a] && widget_if.w_vld;
     
     //-----------------FIELD SUMMARY-----------------
-    // name       : f1 (regfile_2__reg_c[15:0])
-    // access     : hw = w  
-    //              sw = r (precedence)
-    // reset      : - / -
-    // flags      : ['sw']
-    // external   : False
+    // name         : f1 (regfile_2__reg_c[7:0])
+    // access       : hw = w  
+    //                sw = r (precedence)
+    // reset        : - / -
+    // flags        : ['sw']
+    // external     : False
+    // storage type : StorageType.WIRE
     //-----------------------------------------------
     
-    always_ff @(posedge clk)
-    begin
-            // we or wel property not set
-            regfile_2__reg_c__f1_q[gv_a] <= regfile_2__reg_c__f1_in[gv_a];
-    end // of regfile_2__reg_c__f1's always_ff
-    
-    
+    // Field is a simple wire.
+    // To generate a flop either add the we/wel property, add
+    // a reset, or change the sw/hw access properties
+    assign regfile_2__reg_c__f1_q[gv_a] = regfile_2__reg_c__f1_in[gv_a];
     
     //-----------------FIELD SUMMARY-----------------
-    // name       : f2 (regfile_2__reg_c[31:16])
-    // access     : hw = w  
-    //              sw = rw (precedence)
-    // reset      : - / -
-    // flags      : ['sw']
-    // external   : False
+    // name         : f2 (regfile_2__reg_c[15:8])
+    // access       : hw = r  
+    //                sw = r (precedence)
+    // reset        : - / -
+    // flags        : ['sw']
+    // external     : False
+    // storage type : StorageType.CONST
+    //-----------------------------------------------
+    
+    // Field is defined as a constant.
+    assign regfile_2__reg_c__f2_q[gv_a] = 8'd42;
+    
+    // Connect register to hardware output port
+    assign regfile_2__reg_c__f2_r[gv_a] = regfile_2__reg_c__f2_q[gv_a];
+    
+    //-----------------FIELD SUMMARY-----------------
+    // name         : f3 (regfile_2__reg_c[31:16])
+    // access       : hw = w  
+    //                sw = rw (precedence)
+    // reset        : - / -
+    // flags        : ['sw']
+    // external     : False
+    // storage type : StorageType.FLOPS
     //-----------------------------------------------
     
     always_ff @(posedge clk)
@@ -516,14 +539,14 @@ begin
         if (regfile_2__reg_c_sw_wr[gv_a])
         begin
             if (widget_if.byte_en[2])
-                regfile_2__reg_c__f2_q[gv_a][7:0] <= widget_if.w_data[23:16];
+                regfile_2__reg_c__f3_q[gv_a][7:0] <= widget_if.w_data[23:16];
             if (widget_if.byte_en[3])
-                regfile_2__reg_c__f2_q[gv_a][15:8] <= widget_if.w_data[31:24];
+                regfile_2__reg_c__f3_q[gv_a][15:8] <= widget_if.w_data[31:24];
         end
         else
             // we or wel property not set
-            regfile_2__reg_c__f2_q[gv_a] <= regfile_2__reg_c__f2_in[gv_a];
-    end // of regfile_2__reg_c__f2's always_ff
+            regfile_2__reg_c__f3_q[gv_a] <= regfile_2__reg_c__f3_in[gv_a];
+    end // of regfile_2__reg_c__f3's always_ff
     
     
     
@@ -532,7 +555,7 @@ begin
      * Assign all fields to signal to Mux *
      **************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
-    assign regfile_2__reg_c_data_mux_in[gv_a] = {regfile_2__reg_c__f2_q[gv_a], regfile_2__reg_c__f1_q[gv_a]};
+    assign regfile_2__reg_c_data_mux_in[gv_a] = {regfile_2__reg_c__f3_q[gv_a], regfile_2__reg_c__f2_q[gv_a], regfile_2__reg_c__f1_q[gv_a]};
     
     // Internal registers are ready immediately
     assign regfile_2__reg_c_rdy_mux_in[gv_a] = 1'b1;
@@ -567,12 +590,13 @@ assign reg_e_active = widget_if.addr == 136;
 assign reg_e_sw_wr = reg_e_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f1 (reg_e[15:0])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f1 (reg_e[15:0])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)
@@ -595,12 +619,13 @@ assign reg_e__f1_r = reg_e__f1_q;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : f2 (reg_e[31:16])
-// access     : hw = rw  
-//              sw = rw (precedence)
-// reset      : - / -
-// flags      : ['sw', 'we']
-// external   : False
+// name         : f2 (reg_e[31:16])
+// access       : hw = rw  
+//                sw = rw (precedence)
+// reset        : - / -
+// flags        : ['sw', 'we']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk)

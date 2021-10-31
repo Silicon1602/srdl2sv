@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 27 2021 23:31:13
+ *  - Time     : October 30 2021 19:37:23
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
@@ -182,18 +182,19 @@ assign block_a_int_active = widget_if.addr == 0;
 assign block_a_int_sw_wr = block_a_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_a_int[0:0])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : crc_error (block_a_int[0:0])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int__crc_error_q <= 0;
+    block_a_int__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -223,18 +224,19 @@ assign block_a_int__crc_error_sticky_latch = block_a_int__crc_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_a_int[1:1])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : len_error (block_a_int[1:1])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int__len_error_q <= 0;
+    block_a_int__len_error_q <= 1'd0;
 end
 else
 begin
@@ -264,18 +266,19 @@ assign block_a_int__len_error_sticky_latch = block_a_int__len_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_a_int[2:2])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : multi_bit_ecc_error (block_a_int[2:2])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int__multi_bit_ecc_error_q <= 0;
+    block_a_int__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -305,18 +308,19 @@ assign block_a_int__multi_bit_ecc_error_sticky_latch = block_a_int__multi_bit_ec
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : active_ecc_master (block_a_int[7:4])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'sticky']
-// external   : False
+// name         : active_ecc_master (block_a_int[7:4])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'sticky']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int__active_ecc_master_q <= 0;
+    block_a_int__active_ecc_master_q <= 4'd0;
 end
 else
 begin
@@ -386,18 +390,19 @@ assign block_a_int_en_active = widget_if.addr == 4;
 assign block_a_int_en_sw_wr = block_a_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_a_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_a_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int_en__crc_error_q <= 1;
+    block_a_int_en__crc_error_q <= 1'd1;
 end
 else
 begin
@@ -411,18 +416,19 @@ end // of block_a_int_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_a_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_a_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int_en__len_error_q <= 1;
+    block_a_int_en__len_error_q <= 1'd1;
 end
 else
 begin
@@ -436,18 +442,19 @@ end // of block_a_int_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_a_int_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_a_int_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_int_en__multi_bit_ecc_error_q <= 0;
+    block_a_int_en__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -498,18 +505,19 @@ assign block_a_halt_en_active = widget_if.addr == 8;
 assign block_a_halt_en_sw_wr = block_a_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_a_halt_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_a_halt_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_halt_en__crc_error_q <= 0;
+    block_a_halt_en__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -523,18 +531,19 @@ end // of block_a_halt_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_a_halt_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_a_halt_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_halt_en__len_error_q <= 0;
+    block_a_halt_en__len_error_q <= 1'd0;
 end
 else
 begin
@@ -548,18 +557,19 @@ end // of block_a_halt_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_a_halt_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_a_halt_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_a_halt_en__multi_bit_ecc_error_q <= 1;
+    block_a_halt_en__multi_bit_ecc_error_q <= 1'd1;
 end
 else
 begin
@@ -615,18 +625,19 @@ assign block_b_int_active = widget_if.addr == 256;
 assign block_b_int_sw_wr = block_b_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_b_int[0:0])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : crc_error (block_b_int[0:0])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int__crc_error_q <= 0;
+    block_b_int__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -656,18 +667,19 @@ assign block_b_int__crc_error_sticky_latch = block_b_int__crc_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_b_int[1:1])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : len_error (block_b_int[1:1])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int__len_error_q <= 0;
+    block_b_int__len_error_q <= 1'd0;
 end
 else
 begin
@@ -697,18 +709,19 @@ assign block_b_int__len_error_sticky_latch = block_b_int__len_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_b_int[2:2])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : multi_bit_ecc_error (block_b_int[2:2])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int__multi_bit_ecc_error_q <= 0;
+    block_b_int__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -738,18 +751,19 @@ assign block_b_int__multi_bit_ecc_error_sticky_latch = block_b_int__multi_bit_ec
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : active_ecc_master (block_b_int[7:4])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'sticky']
-// external   : False
+// name         : active_ecc_master (block_b_int[7:4])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'sticky']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int__active_ecc_master_q <= 0;
+    block_b_int__active_ecc_master_q <= 4'd0;
 end
 else
 begin
@@ -819,18 +833,19 @@ assign block_b_int_en_active = widget_if.addr == 260;
 assign block_b_int_en_sw_wr = block_b_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_b_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_b_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int_en__crc_error_q <= 1;
+    block_b_int_en__crc_error_q <= 1'd1;
 end
 else
 begin
@@ -844,18 +859,19 @@ end // of block_b_int_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_b_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_b_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int_en__len_error_q <= 1;
+    block_b_int_en__len_error_q <= 1'd1;
 end
 else
 begin
@@ -869,18 +885,19 @@ end // of block_b_int_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_b_int_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_b_int_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_int_en__multi_bit_ecc_error_q <= 0;
+    block_b_int_en__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -931,18 +948,19 @@ assign block_b_halt_en_active = widget_if.addr == 264;
 assign block_b_halt_en_sw_wr = block_b_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_b_halt_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_b_halt_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_halt_en__crc_error_q <= 0;
+    block_b_halt_en__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -956,18 +974,19 @@ end // of block_b_halt_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_b_halt_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_b_halt_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_halt_en__len_error_q <= 0;
+    block_b_halt_en__len_error_q <= 1'd0;
 end
 else
 begin
@@ -981,18 +1000,19 @@ end // of block_b_halt_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_b_halt_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_b_halt_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_b_halt_en__multi_bit_ecc_error_q <= 1;
+    block_b_halt_en__multi_bit_ecc_error_q <= 1'd1;
 end
 else
 begin
@@ -1048,18 +1068,19 @@ assign block_c_int_active = widget_if.addr == 512;
 assign block_c_int_sw_wr = block_c_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_c_int[0:0])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : crc_error (block_c_int[0:0])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int__crc_error_q <= 0;
+    block_c_int__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -1089,18 +1110,19 @@ assign block_c_int__crc_error_sticky_latch = block_c_int__crc_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_c_int[1:1])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : len_error (block_c_int[1:1])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int__len_error_q <= 0;
+    block_c_int__len_error_q <= 1'd0;
 end
 else
 begin
@@ -1130,18 +1152,19 @@ assign block_c_int__len_error_sticky_latch = block_c_int__len_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_c_int[2:2])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : multi_bit_ecc_error (block_c_int[2:2])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int__multi_bit_ecc_error_q <= 0;
+    block_c_int__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -1171,18 +1194,19 @@ assign block_c_int__multi_bit_ecc_error_sticky_latch = block_c_int__multi_bit_ec
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : active_ecc_master (block_c_int[7:4])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'sticky']
-// external   : False
+// name         : active_ecc_master (block_c_int[7:4])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'sticky']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int__active_ecc_master_q <= 0;
+    block_c_int__active_ecc_master_q <= 4'd0;
 end
 else
 begin
@@ -1252,18 +1276,19 @@ assign block_c_int_en_active = widget_if.addr == 516;
 assign block_c_int_en_sw_wr = block_c_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_c_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_c_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int_en__crc_error_q <= 1;
+    block_c_int_en__crc_error_q <= 1'd1;
 end
 else
 begin
@@ -1277,18 +1302,19 @@ end // of block_c_int_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_c_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_c_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int_en__len_error_q <= 1;
+    block_c_int_en__len_error_q <= 1'd1;
 end
 else
 begin
@@ -1302,18 +1328,19 @@ end // of block_c_int_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_c_int_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_c_int_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_int_en__multi_bit_ecc_error_q <= 0;
+    block_c_int_en__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -1364,18 +1391,19 @@ assign block_c_halt_en_active = widget_if.addr == 520;
 assign block_c_halt_en_sw_wr = block_c_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_c_halt_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_c_halt_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_halt_en__crc_error_q <= 0;
+    block_c_halt_en__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -1389,18 +1417,19 @@ end // of block_c_halt_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_c_halt_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_c_halt_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_halt_en__len_error_q <= 0;
+    block_c_halt_en__len_error_q <= 1'd0;
 end
 else
 begin
@@ -1414,18 +1443,19 @@ end // of block_c_halt_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_c_halt_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_c_halt_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_c_halt_en__multi_bit_ecc_error_q <= 1;
+    block_c_halt_en__multi_bit_ecc_error_q <= 1'd1;
 end
 else
 begin
@@ -1481,18 +1511,19 @@ assign block_d_int_active = widget_if.addr == 768;
 assign block_d_int_sw_wr = block_d_int_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_d_int[0:0])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : crc_error (block_d_int[0:0])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int__crc_error_q <= 0;
+    block_d_int__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -1522,18 +1553,19 @@ assign block_d_int__crc_error_sticky_latch = block_d_int__crc_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_d_int[1:1])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : len_error (block_d_int[1:1])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int__len_error_q <= 0;
+    block_d_int__len_error_q <= 1'd0;
 end
 else
 begin
@@ -1563,18 +1595,19 @@ assign block_d_int__len_error_sticky_latch = block_d_int__len_error_in;
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_d_int[2:2])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
-// external   : False
+// name         : multi_bit_ecc_error (block_d_int[2:2])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'intr', 'intr type', 'enable', 'haltenable']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int__multi_bit_ecc_error_q <= 0;
+    block_d_int__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -1604,18 +1637,19 @@ assign block_d_int__multi_bit_ecc_error_sticky_latch = block_d_int__multi_bit_ec
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : active_ecc_master (block_d_int[7:4])
-// access     : hw = w  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'woclr', 'desc', 'sticky']
-// external   : False
+// name         : active_ecc_master (block_d_int[7:4])
+// access       : hw = w  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'woclr', 'desc', 'sticky']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int__active_ecc_master_q <= 0;
+    block_d_int__active_ecc_master_q <= 4'd0;
 end
 else
 begin
@@ -1685,18 +1719,19 @@ assign block_d_int_en_active = widget_if.addr == 772;
 assign block_d_int_en_sw_wr = block_d_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_d_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_d_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int_en__crc_error_q <= 1;
+    block_d_int_en__crc_error_q <= 1'd1;
 end
 else
 begin
@@ -1710,18 +1745,19 @@ end // of block_d_int_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_d_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_d_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int_en__len_error_q <= 1;
+    block_d_int_en__len_error_q <= 1'd1;
 end
 else
 begin
@@ -1735,18 +1771,19 @@ end // of block_d_int_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_d_int_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_d_int_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_int_en__multi_bit_ecc_error_q <= 0;
+    block_d_int_en__multi_bit_ecc_error_q <= 1'd0;
 end
 else
 begin
@@ -1797,18 +1834,19 @@ assign block_d_halt_en_active = widget_if.addr == 776;
 assign block_d_halt_en_sw_wr = block_d_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : crc_error (block_d_halt_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : crc_error (block_d_halt_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_halt_en__crc_error_q <= 0;
+    block_d_halt_en__crc_error_q <= 1'd0;
 end
 else
 begin
@@ -1822,18 +1860,19 @@ end // of block_d_halt_en__crc_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : len_error (block_d_halt_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : len_error (block_d_halt_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_halt_en__len_error_q <= 0;
+    block_d_halt_en__len_error_q <= 1'd0;
 end
 else
 begin
@@ -1847,18 +1886,19 @@ end // of block_d_halt_en__len_error's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : multi_bit_ecc_error (block_d_halt_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : multi_bit_ecc_error (block_d_halt_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    block_d_halt_en__multi_bit_ecc_error_q <= 1;
+    block_d_halt_en__multi_bit_ecc_error_q <= 1'd1;
 end
 else
 begin
@@ -1908,18 +1948,19 @@ logic [0:0]  master_int__module_d_int_q;
 assign master_int_active = widget_if.addr == 4096;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_a_int (master_int[0:0])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
-// external   : False
+// name         : module_a_int (master_int[0:0])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int__module_a_int_q <= 0;
+    master_int__module_a_int_q <= 1'd0;
 end
 else
 begin
@@ -1932,18 +1973,19 @@ end // of master_int__module_a_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_b_int (master_int[1:1])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
-// external   : False
+// name         : module_b_int (master_int[1:1])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int__module_b_int_q <= 0;
+    master_int__module_b_int_q <= 1'd0;
 end
 else
 begin
@@ -1956,18 +1998,19 @@ end // of master_int__module_b_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_c_int (master_int[2:2])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
-// external   : False
+// name         : module_c_int (master_int[2:2])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int__module_c_int_q <= 0;
+    master_int__module_c_int_q <= 1'd0;
 end
 else
 begin
@@ -1980,18 +2023,19 @@ end // of master_int__module_c_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_d_int (master_int[3:3])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
-// external   : False
+// name         : module_d_int (master_int[3:3])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'enable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int__module_d_int_q <= 0;
+    master_int__module_d_int_q <= 1'd0;
 end
 else
 begin
@@ -2045,18 +2089,19 @@ logic [0:0]  master_halt__module_d_int_q;
 assign master_halt_active = widget_if.addr == 4100;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_a_int (master_halt[0:0])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
-// external   : False
+// name         : module_a_int (master_halt[0:0])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt__module_a_int_q <= 0;
+    master_halt__module_a_int_q <= 1'd0;
 end
 else
 begin
@@ -2069,18 +2114,19 @@ end // of master_halt__module_a_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_b_int (master_halt[1:1])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
-// external   : False
+// name         : module_b_int (master_halt[1:1])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt__module_b_int_q <= 0;
+    master_halt__module_b_int_q <= 1'd0;
 end
 else
 begin
@@ -2093,18 +2139,19 @@ end // of master_halt__module_b_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_c_int (master_halt[2:2])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
-// external   : False
+// name         : module_c_int (master_halt[2:2])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt__module_c_int_q <= 0;
+    master_halt__module_c_int_q <= 1'd0;
 end
 else
 begin
@@ -2117,18 +2164,19 @@ end // of master_halt__module_c_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_d_int (master_halt[3:3])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
-// external   : False
+// name         : module_d_int (master_halt[3:3])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['intr', 'stickybit', 'sw', 'desc', 'haltenable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt__module_d_int_q <= 0;
+    master_halt__module_d_int_q <= 1'd0;
 end
 else
 begin
@@ -2187,18 +2235,19 @@ assign master_int_en_active = widget_if.addr == 4104;
 assign master_int_en_sw_wr = master_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_a_int_en (master_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_a_int_en (master_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int_en__module_a_int_en_q <= 0;
+    master_int_en__module_a_int_en_q <= 1'd0;
 end
 else
 begin
@@ -2212,18 +2261,19 @@ end // of master_int_en__module_a_int_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_b_int_en (master_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_b_int_en (master_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int_en__module_b_int_en_q <= 0;
+    master_int_en__module_b_int_en_q <= 1'd0;
 end
 else
 begin
@@ -2237,18 +2287,19 @@ end // of master_int_en__module_b_int_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_c_int_en (master_int_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_c_int_en (master_int_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int_en__module_c_int_en_q <= 0;
+    master_int_en__module_c_int_en_q <= 1'd0;
 end
 else
 begin
@@ -2262,18 +2313,19 @@ end // of master_int_en__module_c_int_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_d_int_en (master_int_en[3:3])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_d_int_en (master_int_en[3:3])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_int_en__module_d_int_en_q <= 0;
+    master_int_en__module_d_int_en_q <= 1'd0;
 end
 else
 begin
@@ -2325,18 +2377,19 @@ assign master_halt_en_active = widget_if.addr == 4108;
 assign master_halt_en_sw_wr = master_halt_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_a_halt_en (master_halt_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_a_halt_en (master_halt_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt_en__module_a_halt_en_q <= 0;
+    master_halt_en__module_a_halt_en_q <= 1'd0;
 end
 else
 begin
@@ -2350,18 +2403,19 @@ end // of master_halt_en__module_a_halt_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_b_halt_en (master_halt_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_b_halt_en (master_halt_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt_en__module_b_halt_en_q <= 0;
+    master_halt_en__module_b_halt_en_q <= 1'd0;
 end
 else
 begin
@@ -2375,18 +2429,19 @@ end // of master_halt_en__module_b_halt_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_c_halt_en (master_halt_en[2:2])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_c_halt_en (master_halt_en[2:2])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt_en__module_c_halt_en_q <= 0;
+    master_halt_en__module_c_halt_en_q <= 1'd0;
 end
 else
 begin
@@ -2400,18 +2455,19 @@ end // of master_halt_en__module_c_halt_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : module_d_halt_en (master_halt_en[3:3])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : module_d_halt_en (master_halt_en[3:3])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    master_halt_en__module_d_halt_en_q <= 0;
+    master_halt_en__module_d_halt_en_q <= 1'd0;
 end
 else
 begin
@@ -2459,18 +2515,19 @@ logic [0:0]  global_int__global_halt_q;
 assign global_int_active = widget_if.addr == 4112;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : global_int (global_int[0:0])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'intr', 'stickybit', 'desc', 'enable', 'next']
-// external   : False
+// name         : global_int (global_int[0:0])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'intr', 'stickybit', 'desc', 'enable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    global_int__global_int_q <= 0;
+    global_int__global_int_q <= 1'd0;
 end
 else
 begin
@@ -2483,18 +2540,19 @@ end // of global_int__global_int's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : global_halt (global_int[1:1])
-// access     : hw = w  
-//              sw = r (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'intr', 'stickybit', 'desc', 'haltenable', 'next']
-// external   : False
+// name         : global_halt (global_int[1:1])
+// access       : hw = w  
+//                sw = r (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'intr', 'stickybit', 'desc', 'haltenable', 'next']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    global_int__global_halt_q <= 0;
+    global_int__global_halt_q <= 1'd0;
 end
 else
 begin
@@ -2551,18 +2609,19 @@ assign global_int_en_active = widget_if.addr == 4116;
 assign global_int_en_sw_wr = global_int_en_active && widget_if.w_vld;
 
 //-----------------FIELD SUMMARY-----------------
-// name       : global_int_en (global_int_en[0:0])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : global_int_en (global_int_en[0:0])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    global_int_en__global_int_en_q <= 0;
+    global_int_en__global_int_en_q <= 1'd0;
 end
 else
 begin
@@ -2576,18 +2635,19 @@ end // of global_int_en__global_int_en's always_ff
 
 
 //-----------------FIELD SUMMARY-----------------
-// name       : global_halt_en (global_int_en[1:1])
-// access     : hw = na  
-//              sw = rw (precedence)
-// reset      : active_low / asynchronous
-// flags      : ['sw', 'desc']
-// external   : False
+// name         : global_halt_en (global_int_en[1:1])
+// access       : hw = na  
+//                sw = rw (precedence)
+// reset        : active_low / asynchronous
+// flags        : ['sw', 'desc']
+// external     : False
+// storage type : StorageType.FLOPS
 //-----------------------------------------------
 
 always_ff @(posedge clk or negedge field_reset_n)
 if (!field_reset_n)
 begin
-    global_int_en__global_halt_en_q <= 0;
+    global_int_en__global_halt_en_q <= 1'd0;
 end
 else
 begin
