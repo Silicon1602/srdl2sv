@@ -1,0 +1,35 @@
+addrmap swacc_properties {
+    signal { activelow; async; field_reset;} field_reset_n;
+
+    reg {
+        field{
+            sw = rw;
+            hw = rw;
+            rclr = true;
+            we = true;
+        } rclr_test_field [7:0] = 8'hff;
+
+        field{
+            sw = rw;
+            hw = rw;
+            rclr = true;
+            we = true;
+            precedence = hw;
+        } rclr_test_field_hw_prec [15:8] = 8'hff;
+
+        field {
+            sw = rw;
+            hw = rw;
+            we = true;
+            rset = true;
+        } rset_test_field [23:16] = 8'h0;
+
+        field {
+            sw = rw;
+            hw = rw;
+            we = true;
+            rset = true;
+            precedence = hw;
+        } rset_test_field_hw_prec [31:24] = 8'h0;
+    } read_props_reg;
+};
