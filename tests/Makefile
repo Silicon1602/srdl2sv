@@ -4,6 +4,13 @@ ALL_COCOTB_TESTS = $(shell ls cocotb_tests/test_*.py | sed -E 's|.*?/test_(.*?).
 .PRECIOUS: build_dirs/%/compile.f
 
 default: $(ALL_COCOTB_TESTS)
+	@echo ""
+	@echo "-------------------------------------------------------------------------------"
+	@echo "Showing all FAILs in simulation logs:"
+	@grep -r 'test.*FAIL' build_dirs && exit 1 || echo ''
+	@echo "-------------------------------------------------------------------------------"
+	@echo ""
+	@echo "SUCCESS: NO FAILURES FOUND!"
 
 # This target will always rebuild, which is fine since we want to be sure to execute any
 # test if we kick it off.
@@ -34,13 +41,13 @@ default: $(ALL_COCOTB_TESTS)
 	@echo "##############################################################################"
 	@echo "##############################################################################"
 	
-build_dirs/%/compile.f: systemrdl/%.rdl 
-	srdl2sv $? --out-dir $(shell dirname $@) --file-logging DEBUG --stdout-logging DEBUG
+# Rebuild if RDL file or srdl2sv-software is newer
+build_dirs/%/compile.f: systemrdl/%.rdl $(shell which srdl2sv)
+	srdl2sv $< --out-dir $(shell dirname $@) --file-logging DEBUG --stdout-logging DEBUG
 
 	ls $(PWD)/$(@D)/*_if.sv > $@
 	ls $(PWD)/$(@D)/*amba*.sv >> $@
 	ls $(PWD)/$(@D)/*.sv | grep -v '.*_if.sv$$' | grep -v '.*amba.*' >> $@
-
 
 clean:
 	rm -rf build_dirs
