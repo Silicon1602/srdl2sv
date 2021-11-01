@@ -1,8 +1,23 @@
-from enum import Enum
+"""Simple test that reads and writes to sw=rw/hw=rw register
+
+This test performs four different tests on a single sw=rw/hw=rw
+register with two fields:
+    - Test AHB write and subsequent read-access.
+      Registers are 32-bit wide and writes/reads
+      are performed in 1, 2, and 4B steps.
+    - Test that if hardware sets a value to the
+      registers this can be read out over the CPU bus
+    - Test that if hardware writes something but the
+      write-enable is inactive the value is not written.
+    - Test if accessing illegal addresses results in an
+      error response.
+"""
+
+import random
+
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 import cocotb
-import random
 
 from libs import AMBA3AHBLiteDriver
 
