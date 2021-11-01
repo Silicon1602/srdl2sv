@@ -139,22 +139,9 @@ class Field(Component):
                 )
 
             # Check if an onwrite property is set
-            onwrite = obj.get_property('onwrite')
-
-            if onwrite:
-                if onwrite == OnWriteType.wuser:
-                    self.logger.warning("The OnWriteType.wuser is not yet supported!")
-                elif onwrite in (OnWriteType.wclr, OnWriteType.wset):
-                    access_rtl['sw_write'][0].append(
-                        self._process_yaml(
-                            Field.templ_dict[str(onwrite)],
-                            {'path': path_underscored,
-                             'genvars': self.genvars_str,
-                             'width': obj.width,
-                             'path_wo_field': path_wo_field,
-                             'field_type': self.field_type}
-                        )
-                    )
+            if onwrite := obj.get_property('onwrite'):
+                if onwrite is OnWriteType.wuser:
+                    self.logger.error("The OnWriteType.wuser is not yet supported!")
                 else:
                     # If field spans multiple bytes, every byte shall have a seperate enable!
                     for i in range(self.lsbyte, self.msbyte+1):
@@ -167,7 +154,7 @@ class Field(Component):
                                 {'path': path_underscored,
                                  'genvars': self.genvars_str,
                                  'i': i,
-                                 'width': obj.width,
+                                 'width': msb_bus - lsb_bus + 1,
                                  'msb_bus': str(msb_bus),
                                  'lsb_bus': str(lsb_bus),
                                  'msb_field': str(msb_bus-obj.inst.lsb),
@@ -216,13 +203,29 @@ class Field(Component):
 
                 access_rtl['sw_read'][0].append(
                     self._process_yaml(
-                        Field.templ_dict[str(onread)],
-                        {'width': obj.width,
-                         'path': path_underscored,
+                        Field.templ_dict['sw_read_access_field'],
+                        {'path_wo_field': path_wo_field,
                          'genvars': self.genvars_str,
-                         'path_wo_field': path_wo_field}
+                         'field_type': self.field_type}
+                    )
+                )
+
+                # If field spans multiple bytes, every byte shall have a seperate enable!
+                for i in range(self.lsbyte, self.msbyte+1):
+                    access_rtl['sw_read'][0].append(
+                        self._process_yaml(
+                            Field.templ_dict[str(onread)],
+                            {'path': path_underscored,
+                             'genvars': self.genvars_str,
+                             'i': i,
+                             'width': msb_bus - lsb_bus + 1,
+                             'msb_field': str(msb_bus-obj.inst.lsb),
+                             'lsb_field': str(lsb_bus-obj.inst.lsb),
+                            }
                         )
                     )
+
+                access_rtl['sw_read'][0].append("end")
 
         # Add singlepulse property
         # Property cannot be overwritten by alias

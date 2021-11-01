@@ -133,52 +133,61 @@ end_field_ff:
 OnWriteType.woset: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // woset property
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] | widget_if.w_data[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
 OnWriteType.woclr: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // woclr property
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & ~widget_if.w_data[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
 OnWriteType.wot: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wot property
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ^ widget_if.w_data[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
 OnWriteType.wzs: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wzs property
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & widget_if.w_data[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
 OnWriteType.wzt: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wzt property
-        begin
+        <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ~^ widget_if.w_data[{msb_bus}:{lsb_bus}];
-        end
+        <<UNINDENT>>
 OnWriteType.wclr: 
     rtl: |-
-        {path}_q{genvars} <= {{{width}{{1'b0}}}};
+        if (widget_if.byte_en[{i}]) // wclr property
+        <<INDENT>>
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {width}'b0;
+        <<UNINDENT>>
 OnWriteType.wset: 
     rtl: |-
-        {path}_q{genvars} <= {{{width}{{1'b1}}}};
+        if (widget_if.byte_en[{i}]) // wclr property
+        <<INDENT>>
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {{{width}{{1'b1}}}};
+        <<UNINDENT>>
+sw_read_access_field: 
+    rtl: |-
+        if ({path_wo_field}_sw_rd{genvars})
+        begin
 OnReadType.rclr: 
     rtl: |-
-        if ({path_wo_field}_sw_rd{genvars}) // rclr property
-        begin
-        {path}_q{genvars} <= {{{width}{{1'b0}}}};
-        end
+        if (widget_if.byte_en[{i}]) // rclr property
+        <<INDENT>>
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {width}'b0;
+        <<UNINDENT>>
 OnReadType.rset: 
     rtl: |-
-        if ({path_wo_field}_sw_rd{genvars}) // rset property
-        begin
-        {path}_q{genvars} <= {{{width}{{1'b1}}}};
-        end
-
+        if (widget_if.byte_en[{i}]) // rset property
+        <<INDENT>>
+        {path}_q{genvars}[{msb_field}:{lsb_field}] <= {{{width}{{1'b1}}}};
+        <<UNINDENT>>
 field_comment: 
     rtl: |-
 
