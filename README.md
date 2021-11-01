@@ -41,33 +41,33 @@ To compile a file called `example_addrmap.rdl`, simply run:
 ```
 srdl2sv example_addrmap.rdl
 ```
-By default, the compiler will create a directory called `srdl2sv_out` and dump `example_addrmap.sv` with the actual RTL. By default, the program wil not dump any logging into this directory. To change the logging level, use `--file_log_level` like shown below:
+By default, the compiler will create a directory called `srdl2sv_out` and dump `example_addrmap.sv` with the actual RTL. By default, the program wil not dump any logging into this directory. To change the logging level, use `--file-logging` like shown below:
 
 ```
 srdl2sv example_addrmap.rdl
-    --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
+    --stdout-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
 ```
-Similarly, to change the default log level of the output to the shell, which is `INFO`, use `--stream_log_level` like shown below:
+Similarly, to change the default log level of the output to the shell, which is `INFO`, use `--stdout-logging` like shown below:
 ```
 srdl2sv example_addrmap.rdl
-    --stream_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
-    --file_log_level {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
+    --stdout-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
+    --file-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
 ```
 If the RDL file includes other RDL files, the directories that contain these files must be passed to the compiler as follows:
 
 ```
 srdl2sv example_addrmap.rdl
-    --search_paths SEARCH_PATHS [SEARCH_PATHS ...]
+    --search-paths SEARCH_PATHS [SEARCH_PATHS ...]
 ```
-By default, the compiler will generate SystemVerilog enumerations if SystemRDL enums are used. These enums are dumped in a seperate package to be included outside of the register module. To turn off this feature, use the flag `--disable_enums`:
-```
-srdl2sv example_addrmap.rdl
-    --disable_enums
-```
-By default, the registers in the RTL are byte-addressable. If this is not required it is recommened to turn off byte-addressing by using the flag `--no_byte_enable` to achieve more efficient results in synthesis:
+By default, the compiler will generate SystemVerilog enumerations if SystemRDL enums are used. These enums are dumped in a seperate package to be included outside of the register module. To turn off this feature, use the flag `--no-enums`:
 ```
 srdl2sv example_addrmap.rdl
-    --no_byte_enable
+    --no-enums
+```
+By default, the registers in the RTL are byte-addressable. If this is not required it is recommened to turn off byte-addressing by using the flag `--no-byte-enable` to achieve more efficient results in synthesis:
+```
+srdl2sv example_addrmap.rdl
+    --no-byte-enable
 ```
 ## Using the generated RTL
 For the generated RTL to work, all files in `srdl2sv_out` (or in a custom directory, if specified with `-o` must be passed on to the respective EDA tool for proper functioning. For a better understanding of the files that get generated, a short summary below.
@@ -95,7 +95,7 @@ srdl2sv_out/
 ├─ <addrmap2_name>.sv
 ├─ srdl2sv_widget_if.sv
 ```
-In case we only 1 `addrmap` is compiled, that address map contains enumerations, and `--disable_enums` is *not* set, a seperate package will be generated that defines those enums. These enumerations are used in the module's I/O interface but can also be easily used outside of the `<addrmap_name>.sv`. That way, the code outside of the register block becomes more readable and a user gets all benefits of SystemVerilog's strong type checking. 
+In case we only 1 `addrmap` is compiled, that address map contains enumerations, and `--no-enums` is *not* set, a seperate package will be generated that defines those enums. These enumerations are used in the module's I/O interface but can also be easily used outside of the `<addrmap_name>.sv`. That way, the code outside of the register block becomes more readable and a user gets all benefits of SystemVerilog's strong type checking. 
 ```
 srdl2sv_out/
 ├─ <addrmap_name>.sv
