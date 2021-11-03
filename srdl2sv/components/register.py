@@ -219,9 +219,15 @@ class Register(Component):
 
             bytes_read_format = []
             bytes_read_sorted = sorted(bytes_read, reverse = True)
-            prev = msb = bytes_read_sorted[0]
 
-            for i in bytes_read_sorted[1:]:
+            try:
+                prev = msb = bytes_read_sorted[0]
+            except IndexError:
+                # Do nothing. bytes_written simply didn't exist
+                # The loop below will simply not be entered
+                pass
+
+            for i in bytes_read_sorted[0:]:
                 if prev - i > 1:
                     bytes_read_format.append(
                         f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
@@ -235,9 +241,15 @@ class Register(Component):
 
             bytes_written_format = []
             bytes_written_sorted = sorted(bytes_written, reverse = True)
-            prev = msb = bytes_written_sorted[0]
 
-            for i in bytes_written_sorted[1:]:
+            try:
+                prev = msb = bytes_written_sorted[0]
+            except IndexError:
+                # Do nothing. bytes_written simply didn't exist
+                # The loop below will simply not be entered
+                pass
+
+            for i in bytes_written_sorted[0:]:
                 if prev - i > 1:
                     bytes_written_format.append(
                         f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
