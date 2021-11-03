@@ -215,11 +215,42 @@ class Register(Component):
             # an error.
             #
             # Furthermore, consider an error indication that is set for external registers
-            bytes_read_format = [f"widget_if.byte_en[{x}]" for x in list(map(str, bytes_read))]
-            bytes_written_format = [f"widget_if.byte_en[{x}]" for x in list(map(str, bytes_written))]
+            wdgt_str = 'widget_if.byte_en'
 
+            bytes_read_format = []
+            bytes_read_sorted = sorted(bytes_read, reverse = True)
+            prev = msb = bytes_read_sorted[0]
+
+            for i in bytes_read_sorted[1:]:
+                if prev - i > 1:
+                    bytes_read_format.append(
+                        f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
+                    msb = i
+
+                if i == bytes_read_sorted[-1]:
+                    bytes_read_format.append(
+                        f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
+
+                prev = i
+
+            bytes_written_format = []
+            bytes_written_sorted = sorted(bytes_written, reverse = True)
+            prev = msb = bytes_written_sorted[0]
+
+            for i in bytes_written_sorted[1:]:
+                if prev - i > 1:
+                    bytes_written_format.append(
+                        f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
+                    msb = i
+
+                if i == bytes_written_sorted[-1]:
+                    bytes_written_format.append(
+                        f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
+
+                prev = i
+
+            # Parse mux error-input
             sw_err_condition_vec = []
-
             sw_err_condition_vec.append(self._process_yaml(
                     Register.templ_dict['sw_err_condition'],
                     {'rd_byte_list_ored':
