@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 31 2021 15:59:35
+ *  - Time     : November 02 2021 23:27:37
  *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -29,7 +29,7 @@
  *  - 
  *
  * Commandline arguments to srdl2sv:
- *  - Ouput Directory  : ./srdl2sv_out
+ *  - Ouput Directory  : srdl2sv_out
  *  - Stream Log Level : INFO
  *  - File Log Level   : NONE
  *  - Use Real Tabs    : False
@@ -239,7 +239,7 @@ assign register_1d_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign register_1d_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+assign register_1d_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -336,7 +336,7 @@ begin
     // Return an error if *no* read and *no* write was succesful. If some bits
     // cannot be read/written but others are succesful, don't return and error
     // Hence, as long as one action can be succesful, no error will be returned.
-    assign register_2d_err_mux_in[gv_a] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+    assign register_2d_err_mux_in[gv_a] = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
 end // of for loop with iterator gv_a
 
 endgenerate
@@ -439,7 +439,7 @@ begin
         // Return an error if *no* read and *no* write was succesful. If some bits
         // cannot be read/written but others are succesful, don't return and error
         // Hence, as long as one action can be succesful, no error will be returned.
-        assign register_3d_err_mux_in[gv_a][gv_b] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+        assign register_3d_err_mux_in[gv_a][gv_b] = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
     end // of for loop with iterator gv_b
 end // of for loop with iterator gv_a
 

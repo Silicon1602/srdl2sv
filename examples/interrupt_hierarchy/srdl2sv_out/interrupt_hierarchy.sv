@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 31 2021 15:59:28
+ *  - Time     : November 02 2021 23:27:21
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
@@ -29,7 +29,7 @@
  *  - 
  *
  * Commandline arguments to srdl2sv:
- *  - Ouput Directory  : ./srdl2sv_out
+ *  - Ouput Directory  : srdl2sv_out
  *  - Stream Log Level : INFO
  *  - File Log Level   : NONE
  *  - Use Real Tabs    : False
@@ -202,9 +202,7 @@ begin
     if (block_a_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_a_int__crc_error_q[0:0] <= block_a_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
-        end
     end
     else
     begin
@@ -244,9 +242,7 @@ begin
     if (block_a_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_a_int__len_error_q[0:0] <= block_a_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
-        end
     end
     else
     begin
@@ -286,9 +282,7 @@ begin
     if (block_a_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_a_int__multi_bit_ecc_error_q[0:0] <= block_a_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
-        end
     end
     else
     begin
@@ -328,9 +322,7 @@ begin
     if (block_a_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_a_int__active_ecc_master_q[3:0] <= block_a_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
-        end
     end
     else
     if (|block_a_int__active_ecc_master_sticky_latch && !(|block_a_int__active_ecc_master_q))
@@ -645,9 +637,7 @@ begin
     if (block_b_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_b_int__crc_error_q[0:0] <= block_b_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
-        end
     end
     else
     begin
@@ -687,9 +677,7 @@ begin
     if (block_b_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_b_int__len_error_q[0:0] <= block_b_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
-        end
     end
     else
     begin
@@ -729,9 +717,7 @@ begin
     if (block_b_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_b_int__multi_bit_ecc_error_q[0:0] <= block_b_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
-        end
     end
     else
     begin
@@ -771,9 +757,7 @@ begin
     if (block_b_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_b_int__active_ecc_master_q[3:0] <= block_b_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
-        end
     end
     else
     if (|block_b_int__active_ecc_master_sticky_latch && !(|block_b_int__active_ecc_master_q))
@@ -1088,9 +1072,7 @@ begin
     if (block_c_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_c_int__crc_error_q[0:0] <= block_c_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
-        end
     end
     else
     begin
@@ -1130,9 +1112,7 @@ begin
     if (block_c_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_c_int__len_error_q[0:0] <= block_c_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
-        end
     end
     else
     begin
@@ -1172,9 +1152,7 @@ begin
     if (block_c_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_c_int__multi_bit_ecc_error_q[0:0] <= block_c_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
-        end
     end
     else
     begin
@@ -1214,9 +1192,7 @@ begin
     if (block_c_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_c_int__active_ecc_master_q[3:0] <= block_c_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
-        end
     end
     else
     if (|block_c_int__active_ecc_master_sticky_latch && !(|block_c_int__active_ecc_master_q))
@@ -1531,9 +1507,7 @@ begin
     if (block_d_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_d_int__crc_error_q[0:0] <= block_d_int__crc_error_q[0:0] & ~widget_if.w_data[0:0];
-        end
     end
     else
     begin
@@ -1573,9 +1547,7 @@ begin
     if (block_d_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_d_int__len_error_q[0:0] <= block_d_int__len_error_q[0:0] & ~widget_if.w_data[1:1];
-        end
     end
     else
     begin
@@ -1615,9 +1587,7 @@ begin
     if (block_d_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_d_int__multi_bit_ecc_error_q[0:0] <= block_d_int__multi_bit_ecc_error_q[0:0] & ~widget_if.w_data[2:2];
-        end
     end
     else
     begin
@@ -1657,9 +1627,7 @@ begin
     if (block_d_int_sw_wr)
     begin
         if (widget_if.byte_en[0]) // woclr property
-        begin
             block_d_int__active_ecc_master_q[3:0] <= block_d_int__active_ecc_master_q[3:0] & ~widget_if.w_data[7:4];
-        end
     end
     else
     if (|block_d_int__active_ecc_master_sticky_latch && !(|block_d_int__active_ecc_master_q))

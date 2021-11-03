@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : October 31 2021 15:59:23
+ *  - Time     : November 02 2021 23:27:37
  *  - Path     : /home/dpotter/srdl2sv/examples/hierarchical_regfiles
  *  - RDL file : ['hierarchical_regfiles.rdl']
  *  - Hostname : ArchXPS 
@@ -29,7 +29,7 @@
  *  - 
  *
  * Commandline arguments to srdl2sv:
- *  - Ouput Directory  : ./srdl2sv_out
+ *  - Ouput Directory  : srdl2sv_out
  *  - Stream Log Level : INFO
  *  - File Log Level   : NONE
  *  - Use Real Tabs    : False
@@ -254,7 +254,7 @@ assign regfile_1__reg_a_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign regfile_1__reg_a_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+assign regfile_1__reg_a_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
 
 /*******************************************************************
 /*******************************************************************
@@ -348,7 +348,7 @@ assign regfile_1__reg_b_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign regfile_1__reg_b_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+assign regfile_1__reg_b_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
 /*******************************************************************
  *******************************************************************
  * REGFILE               : regfile_2
@@ -477,7 +477,7 @@ begin
             // Return an error if *no* read and *no* write was succesful. If some bits
             // cannot be read/written but others are succesful, don't return and error
             // Hence, as long as one action can be succesful, no error will be returned.
-            assign regfile_2__regfile_3__reg_d_err_mux_in[gv_a][gv_b][gv_c] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+            assign regfile_2__regfile_3__reg_d_err_mux_in[gv_a][gv_b][gv_c] = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
         end // of for loop with iterator gv_b
     end // of for loop with iterator gv_a
     
@@ -564,7 +564,7 @@ begin
     // Return an error if *no* read and *no* write was succesful. If some bits
     // cannot be read/written but others are succesful, don't return and error
     // Hence, as long as one action can be succesful, no error will be returned.
-    assign regfile_2__reg_c_err_mux_in[gv_a] = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[2] || widget_if.byte_en[3])));
+    assign regfile_2__reg_c_err_mux_in[gv_a] = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:2])));
 end // of for loop with iterator gv_a
 endgenerate
 
@@ -661,7 +661,7 @@ assign reg_e_rdy_mux_in = 1'b1;
 // Return an error if *no* read and *no* write was succesful. If some bits
 // cannot be read/written but others are succesful, don't return and error
 // Hence, as long as one action can be succesful, no error will be returned.
-assign reg_e_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])) || (widget_if.w_vld && (widget_if.byte_en[0] || widget_if.byte_en[1] || widget_if.byte_en[2] || widget_if.byte_en[3])));
+assign reg_e_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0])));
 
 // Read multiplexer
 always_comb
