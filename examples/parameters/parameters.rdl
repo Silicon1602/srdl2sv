@@ -1,0 +1,19 @@
+// This RDL file demonstrates how parameters can be used
+// to make generic templates that can easily be re-used
+// at different locations in the design.
+
+signal {activelow; async; field_reset;} rst_async_n;
+
+reg myReg #(longint unsigned SIZE       = 32,
+            accesstype       SW_ACCESS  = rw) {
+    field {
+        sw           = SW_ACCESS;
+    } data[SIZE-1:0] = 0;
+};
+
+addrmap paremeters {
+    myReg                              reg32;
+    myReg                              reg32_arr[8];
+    myReg #(.SIZE(16))                 reg16;
+    myReg #(.SIZE(8), .SW_ACCESS(r))   reg8;
+};
