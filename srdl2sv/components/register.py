@@ -215,85 +215,88 @@ class Register(Component):
             # an error.
             #
             # Furthermore, consider an error indication that is set for external registers
-            wdgt_str = 'widget_if.byte_en'
+            if self.config['illegal_addresses']:
+                wdgt_str = 'widget_if.byte_en'
 
-            bytes_read_format = []
-            bytes_read_sorted = sorted(bytes_read, reverse = True)
+                bytes_read_format = []
+                bytes_read_sorted = sorted(bytes_read, reverse = True)
 
-            try:
-                prev = msb = bytes_read_sorted[0]
-            except IndexError:
-                # Do nothing. bytes_written simply didn't exist
-                # The loop below will simply not be entered
-                pass
+                try:
+                    prev = msb = bytes_read_sorted[0]
+                except IndexError:
+                    # Do nothing. bytes_written simply didn't exist
+                    # The loop below will simply not be entered
+                    pass
 
-            for i in bytes_read_sorted[0:]:
-                if prev - i > 1:
-                    bytes_read_format.append(
-                        f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
-                    msb = i
+                for i in bytes_read_sorted[0:]:
+                    if prev - i > 1:
+                        bytes_read_format.append(
+                            f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
+                        msb = i
 
-                if i == bytes_read_sorted[-1]:
-                    bytes_read_format.append(
-                        f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
+                    if i == bytes_read_sorted[-1]:
+                        bytes_read_format.append(
+                            f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
 
-                prev = i
+                    prev = i
 
-            bytes_written_format = []
-            bytes_written_sorted = sorted(bytes_written, reverse = True)
+                bytes_written_format = []
+                bytes_written_sorted = sorted(bytes_written, reverse = True)
 
-            try:
-                prev = msb = bytes_written_sorted[0]
-            except IndexError:
-                # Do nothing. bytes_written simply didn't exist
-                # The loop below will simply not be entered
-                pass
+                try:
+                    prev = msb = bytes_written_sorted[0]
+                except IndexError:
+                    # Do nothing. bytes_written simply didn't exist
+                    # The loop below will simply not be entered
+                    pass
 
-            for i in bytes_written_sorted[0:]:
-                if prev - i > 1:
-                    bytes_written_format.append(
-                        f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
-                    msb = i
+                for i in bytes_written_sorted[0:]:
+                    if prev - i > 1:
+                        bytes_written_format.append(
+                            f"|{wdgt_str}[{msb}:{prev}]" if msb > prev else f"{wdgt_str}[{msb}]")
+                        msb = i
 
-                if i == bytes_written_sorted[-1]:
-                    bytes_written_format.append(
-                        f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
+                    if i == bytes_written_sorted[-1]:
+                        bytes_written_format.append(
+                            f"|{wdgt_str}[{msb}:{i}]" if msb > i else f"{wdgt_str}[{msb}]")
 
-                prev = i
+                    prev = i
 
-            # Parse mux error-input
-            sw_err_condition_vec = []
-            sw_err_condition_vec.append(self._process_yaml(
-                    Register.templ_dict['sw_err_condition'],
-                    {'rd_byte_list_ored':
-                        ' || '.join(bytes_read_format) if bytes_read else "1'b0",
-                     'wr_byte_list_ored':
-                        ' || '.join(bytes_written_format) if bytes_written else "1'b0"}
+                # Parse mux error-input
+                sw_err_condition_vec = []
+                sw_err_condition_vec.append(self._process_yaml(
+                        Register.templ_dict['sw_err_condition'],
+                        {'rd_byte_list_ored':
+                            ' || '.join(bytes_read_format) if bytes_read else "1'b0",
+                         'wr_byte_list_ored':
+                            ' || '.join(bytes_written_format) if bytes_written else "1'b0"}
+                    )
                 )
-            )
 
-            if self.config['external']:
-                if bytes_read:
-                    for field in self.children.values():
-                        sw_err_condition_vec.append(self._process_yaml(
-                                Register.templ_dict['external_err_condition'],
-                                {'path': '__'.join([na_map[0], field.name]),
-                                 'genvars': self.genvars_str,
-                                 'rd_or_wr': 'r'}
+                if self.config['external']:
+                    if bytes_read:
+                        for field in self.children.values():
+                            sw_err_condition_vec.append(self._process_yaml(
+                                    Register.templ_dict['external_err_condition'],
+                                    {'path': '__'.join([na_map[0], field.name]),
+                                     'genvars': self.genvars_str,
+                                     'rd_or_wr': 'r'}
+                                )
                             )
-                        )
 
-                if bytes_written:
-                    for field in self.children.values():
-                        sw_err_condition_vec.append(self._process_yaml(
-                                Register.templ_dict['external_err_condition'],
-                                {'path': '__'.join([na_map[0], field.name]),
-                                 'genvars': self.genvars_str,
-                                 'rd_or_wr': 'w'}
+                    if bytes_written:
+                        for field in self.children.values():
+                            sw_err_condition_vec.append(self._process_yaml(
+                                    Register.templ_dict['external_err_condition'],
+                                    {'path': '__'.join([na_map[0], field.name]),
+                                     'genvars': self.genvars_str,
+                                     'rd_or_wr': 'w'}
+                                )
                             )
-                        )
 
-            sw_err_condition = ' || '.join(sw_err_condition_vec)
+                sw_err_condition = ' || '.join(sw_err_condition_vec)
+            else:
+                sw_err_condition = "1'b0"
 
             # If registers are implemented in RTL, they will be ready immediately. However,
             # if they are defined as 'external', there might be some delay

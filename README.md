@@ -122,8 +122,8 @@ The following bus protocols are planned at this point:
 # Help function
 A comprehensive help function of the tool can be invoked by running `srdl2sv --help`.
 ```
-usage: srdl2sv [-h] [-a ADDRESS_WIDTH] [-b {simple,amba3ahblite}] [-c DESCRIPTIONS]
-               [-d SEARCH_PATHS [SEARCH_PATHS ...]] [-e]
+sage: srdl2sv [-h] [-a ADDRESS_WIDTH] [-b {simple,amba3ahblite}] [-d DESCRIPTIONS]
+               [-s SEARCH_PATHS [SEARCH_PATHS ...]] [--no-enums] [--no-address-errors] [--no-unpacked]
                [--file-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}]
                [--stdout-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}] [--no-byte-enable]
                [-o OUT_DIR] [-r] [--real-tabs] [--tab-width TAB_WIDTH]
@@ -143,13 +143,15 @@ optional arguments:
                         Set the bus protocol that shall be used by software to communicate with the
                         registers. If just a simple interface to the registers is needed, use the
                         'simple' protocol. (default: amba3ahblite)
-  -c DESCRIPTIONS, --descriptions DESCRIPTIONS
+  -d DESCRIPTIONS, --descriptions DESCRIPTIONS
                         Include descriptions of addrmaps (+16), regfiles (+8), memories (+4) registers
                         (+2), and fields (+1) in RTL. This is a bitfield.
-  -d SEARCH_PATHS [SEARCH_PATHS ...], --search-paths SEARCH_PATHS [SEARCH_PATHS ...]
+  -s SEARCH_PATHS [SEARCH_PATHS ...], --search-paths SEARCH_PATHS [SEARCH_PATHS ...]
                         Point to one (or more) directories that will be searched for RDL files.
-  -e, --no-enums        Disable enumeration generation. This will prevent the compiler from generating
+  --no-enums            Disable enumeration generation. This will prevent the compiler from generating
                         packages and it will prevent it from using enums in the port list.
+  --no-address-errors   Disable an error response when illegal addresses are accessed.
+  --no-unpacked         Disable unpacked arrays in the module's I/O interface.
   --file-logging {DEBUG,INFO,WARNING,ERROR,CRITICAL,NONE}
                         Set verbosity level of output to log-file. When set to 'NONE', nothing will be
                         printed to the shell. (default: NONE)

@@ -41,7 +41,7 @@ class CliArguments():
                   (default: %(default)s)")
 
         self.parser.add_argument(
-            "-c",
+            "-d",
             "--descriptions",
             type=int,
             default=0,
@@ -49,7 +49,7 @@ class CliArguments():
                   registers (+2), and fields (+1) in RTL. This is a bitfield.")
 
         self.parser.add_argument(
-            "-d",
+            "-s",
             "--search-paths",
             type=str,
             nargs="+",
@@ -57,7 +57,6 @@ class CliArguments():
                   be searched for RDL files.")
 
         self.parser.add_argument(
-            "-e",
             "--no-enums",
             action="store_true",
             help="Disable enumeration generation. This will prevent the\
@@ -65,7 +64,12 @@ class CliArguments():
                   it from using enums in the port list.")
 
         self.parser.add_argument(
-            "-u",
+            "--no-address-errors",
+            action="store_true",
+            help="Disable an error response when illegal addresses are \
+                  accessed.")
+
+        self.parser.add_argument(
             "--no-unpacked",
             action="store_true",
             help="Disable unpacked arrays in the module's I/O interface.")
@@ -176,6 +180,10 @@ class CliArguments():
         # Set enums
         config['enums'] = not args.no_enums
         config['list_args'].append(f"Enums Enabled    : {config['enums']}")
+
+        # Set enums
+        config['illegal_addresses'] = not args.no_address_errors
+        config['list_args'].append(f"Address Errors   : {config['illegal_addresses']}")
 
         # Set unpacked arrays
         config['unpacked_arrays'] = not args.no_unpacked
