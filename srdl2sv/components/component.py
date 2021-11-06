@@ -383,7 +383,7 @@ class Component():
     def get_description(self):
         if self.config['descriptions'][self.__class__.__name__]:
             if desc := self.obj.get_property('desc'):
-                return self.process_yaml(
+                return self._process_yaml(
                         self.templ_dict['description'],
                         {'desc': desc},
                 )

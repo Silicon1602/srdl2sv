@@ -200,7 +200,7 @@ field_comment:
         // external     : {external}
         // storage type : {storage_type}
         //-----------------------------------------------
-field_desc: 
+description:
     rtl: |-
 
         /********************DESCRIPTION*****************
