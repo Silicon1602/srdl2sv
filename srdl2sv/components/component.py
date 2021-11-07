@@ -374,7 +374,7 @@ class Component():
     def create_underscored_path_static(obj):
         owning_addrmap = obj.owning_addrmap.inst_name
         full_path = Component.__split_dimensions(obj.get_path())[0]
-        path = full_path.replace(f"{owning_addrmap}.", '')
+        path = full_path.replace(f"{owning_addrmap}.", '', 1)
 
         path_underscored = path.replace('.', '__')
 
