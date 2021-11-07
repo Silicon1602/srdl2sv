@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 07 2021 11:16:51
+ *  - Time     : November 07 2021 11:34:07
  *  - Path     : /home/dpotter/srdl2sv/examples/aliases
  *  - RDL file : ['aliases.rdl']
  *  - Hostname : ArchXPS 
@@ -508,8 +508,10 @@ assign event1_for_dv_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])) 
 This is a register with 4 fields.
 /*******************************************************************/
 logic        four_field_reg_active          ;
+logic        four_field_reg_sw_rd           ;
 logic        four_field_reg_sw_wr           ;
 logic        two_field_alias_active         ;
+logic        two_field_alias_sw_rd          ;
 logic        two_field_alias_sw_wr          ;
 logic        four_field_reg__any_alias_sw_wr;
 logic [31:0] four_field_reg_data_mux_in     ;
@@ -526,10 +528,12 @@ logic [7:0]  four_field_reg__f4_q           ;
 
 // Register-activation for 'four_field_reg' 
 assign four_field_reg_active = widget_if.addr == 8;
+assign four_field_reg_sw_rd = four_field_reg_active && widget_if.r_vld;
 assign four_field_reg_sw_wr = four_field_reg_active && widget_if.w_vld;
 
 // Register-activation for 'two_field_alias' (alias)
 assign two_field_alias_active = widget_if.addr == 12;
+assign two_field_alias_sw_rd = two_field_alias_active && widget_if.r_vld;
 assign two_field_alias_sw_wr = two_field_alias_active && widget_if.w_vld;
 
 // Combined register activation. These will become active on
@@ -651,6 +655,12 @@ begin
     begin
         if (widget_if.byte_en[3]) // woclr property
             four_field_reg__f4_q[7:0] <= four_field_reg__f4_q[7:0] & ~widget_if.w_data[31:24];
+    end
+    else
+    if (four_field_reg_sw_rd)
+    begin
+        if (widget_if.byte_en[3]) // rclr property
+            four_field_reg__f4_q[7:0] <= 8'b0;
     end
     else
     if (!four_field_reg__f4_hw_wr)
