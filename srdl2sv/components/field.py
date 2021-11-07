@@ -86,20 +86,21 @@ class Field(Component):
     def add_sw_access(self, obj, alias = False):
 
         # Perform some basic checks
-        if onwrite := obj.get_property('onwrite') \
-                and not self.properties['sw_wr']:
+        onwrite = obj.get_property('onwrite')
+        onread = obj.get_property('onread')
+
+        if onwrite and not self.properties['sw_wr']:
             self.logger.fatal("An onwrite property '%s' is defined but "\
                               "software does not have write-access. This is not "\
                               "legal.", onwrite)
 
             sys.exit(1)
-        elif onread := obj.get_property('onread') \
-                and self.storage_type is not StorageType.FLOPS:
-            self.logger.warning("Field has an onread property but does not "
+        elif onread and self.storage_type is not StorageType.FLOPS:
+            self.logger.warning("Field has an onread property '%s' but does not "
                                 "implement a flop. Since the flop itself is "
                                 "implemented outside of the register block it is "
                                 "advised to remove the property and notify the external "
-                                "hardware by using the 'swacc' property.")
+                                "hardware by using the 'swacc' property.", onread)
 
         access_rtl = {}
 
