@@ -47,7 +47,6 @@ class Component():
         self.field_type = ''
 
         # Save object
-        # TODO: should probably be list because of alias registers
         self.obj = obj
 
         # Save name
@@ -68,7 +67,7 @@ class Component():
 
         # Create logger object
         self.__create_logger(self.full_path, config)
-        self.logger.debug(f"Starting to process {self.__class__.__name__} '{obj.inst_name}'")
+        self.logger.info("Starting to process %s '%s'", self.__class__.__name__, obj.inst_name)
 
     def __init_variables(self):
         # By default, registers and fields are not interrupt registers
@@ -156,8 +155,9 @@ class Component():
         return self.ports[port_type]
 
     def get_max_dim_depth(self) -> int:
-        self.logger.debug(f"Return depth '{self.total_dimensions}' for dimensions (including "\
-                          f"parents) '{self.total_array_dimensions}'")
+        self.logger.debug("Return depth '%s' for dimensions (including parents) '%s'.",
+                          self.total_dimensions,
+                          self.total_array_dimensions)
 
         return max([
             self.total_dimensions,
@@ -295,10 +295,11 @@ class Component():
             if obj.name in ("intr", "halt"):
                 pass
             elif not obj.node.get_property(obj.name):
-                self.logger.fatal(f"Reference to the property '{obj.name}' of instance "
-                                  f"'{obj.node.get_path()}' found. This instance does "
-                                   "hold the reference property! Please fix this if you "
-                                   "want me to do my job properly.")
+                self.logger.fatal("Reference to the property '%s' of instance '%s' found"
+                                  "This instance does hold the reference property! Please "
+                                  "fix this if you want me to do my job properly.",
+                                  obj.name,
+                                  obj.node.get_path())
 
                 sys.exit(1)
 
