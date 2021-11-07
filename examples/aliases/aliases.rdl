@@ -60,4 +60,27 @@ addrmap aliases {
     four_field_reg four_field_reg; // Actual register
     alias four_field_reg two_field_alias two_field_alias; // Alias with different properties
 
+    //////////////////////
+    // External aliases // 
+    //////////////////////
+    regfile {
+        desc = "Instantiate regfile to show that they also work in regfiles.";
+
+        reg ext_main_reg {
+            desc = "If aliases registers are declared to be external,
+                    the external hardware will get a seperate interface
+                    for those registers.";
+
+            field_templ f1 [15:0];
+            field_templ f2 [31:16];
+        };
+
+        reg ext_alias_reg {
+            field_templ field_1 [15:0];
+        };
+
+        external ext_main_reg ext_main_reg; // Actual register
+        alias ext_main_reg ext_alias_reg ext_alias_reg; // Alias with different properties
+    } example_rf[4];
+
 };

@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 06 2021 22:46:49
+ *  - Time     : November 07 2021 11:16:51
  *  - Path     : /home/dpotter/srdl2sv/examples/aliases
  *  - RDL file : ['aliases.rdl']
  *  - Hostname : ArchXPS 
@@ -74,35 +74,57 @@ module aliases
      
     
     // Inputs
-    input              clk                     ,
-    input              HRESETn                 ,
-    input  [31:0]      HADDR                   ,
-    input              HWRITE                  ,
-    input  [2:0]       HSIZE                   ,
-    input  [3:0]       HPROT                   ,
-    input  [1:0]       HTRANS                  ,
-    input  [32-1:0]    HWDATA                  ,
-    input              HSEL                    ,
-    input  [0:0]       event1__some_event_in   ,
-    input              four_field_reg__f1_hw_wr,
-    input  [7:0]       four_field_reg__f1_in   ,
-    input              four_field_reg__f2_hw_wr,
-    input  [7:0]       four_field_reg__f2_in   ,
-    input              four_field_reg__f3_hw_wr,
-    input  [7:0]       four_field_reg__f3_in   ,
-    input              four_field_reg__f4_hw_wr,
-    input  [7:0]       four_field_reg__f4_in   ,
+    input               clk                                    ,
+    input               HRESETn                                ,
+    input  [31:0]       HADDR                                  ,
+    input               HWRITE                                 ,
+    input  [2:0]        HSIZE                                  ,
+    input  [3:0]        HPROT                                  ,
+    input  [1:0]        HTRANS                                 ,
+    input  [32-1:0]     HWDATA                                 ,
+    input               HSEL                                   ,
+    input               example_rf__ext_main_reg__f1_ext_r_err [4],
+    input               example_rf__ext_main_reg__f1_ext_r_ack [4],
+    input               example_rf__ext_main_reg__f2_ext_r_err [4],
+    input               example_rf__ext_main_reg__f2_ext_r_ack [4],
+    input               example_rf__ext_main_reg__f1_ext_w_err [4],
+    input               example_rf__ext_main_reg__f1_ext_w_ack [4],
+    input               example_rf__ext_main_reg__f2_ext_w_err [4],
+    input               example_rf__ext_main_reg__f2_ext_w_ack [4],
+    input  [15:0]       example_rf__ext_main_reg__f1_ext_r_data[4],
+    input  [15:0]       example_rf__ext_main_reg__f2_ext_r_data[4],
+    input  [0:0]        event1__some_event_in                  ,
+    input               four_field_reg__f1_hw_wr               ,
+    input  [7:0]        four_field_reg__f1_in                  ,
+    input               four_field_reg__f2_hw_wr               ,
+    input  [7:0]        four_field_reg__f2_in                  ,
+    input               four_field_reg__f3_hw_wr               ,
+    input  [7:0]        four_field_reg__f3_in                  ,
+    input               four_field_reg__f4_hw_wr               ,
+    input  [7:0]        four_field_reg__f4_in                  ,
     
     // Outputs
-    output             HREADYOUT               ,
-    output             HRESP                   ,
-    output [32-1:0]    HRDATA                  ,
-    output             event1_intr             ,
-    output [7:0]       four_field_reg__f1_r    ,
-    output [7:0]       four_field_reg__f2_r    ,
-    output [7:0]       four_field_reg__f3_r    ,
-    output reg         four_field_reg__f3_swmod,
-    output [7:0]       four_field_reg__f4_r    
+    output              HREADYOUT                               ,
+    output              HRESP                                   ,
+    output [32-1:0]     HRDATA                                  ,
+    output              example_rf__ext_main_reg__f1_ext_w_req  [4],
+    output [15:0]       example_rf__ext_main_reg__f1_ext_w_data [4],
+    output [15:0]       example_rf__ext_main_reg__f1_ext_w_mask [4],
+    output              example_rf__ext_main_reg__f1_ext_r_req  [4],
+    output              example_rf__ext_alias_reg__field_1_ext_w_req[4],
+    output [15:0]       example_rf__ext_alias_reg__field_1_ext_w_data[4],
+    output [15:0]       example_rf__ext_alias_reg__field_1_ext_w_mask[4],
+    output              example_rf__ext_alias_reg__field_1_ext_r_req[4],
+    output              example_rf__ext_main_reg__f2_ext_w_req  [4],
+    output [15:0]       example_rf__ext_main_reg__f2_ext_w_data [4],
+    output [15:0]       example_rf__ext_main_reg__f2_ext_w_mask [4],
+    output              example_rf__ext_main_reg__f2_ext_r_req  [4],
+    output              event1_intr                             ,
+    output [7:0]        four_field_reg__f1_r                    ,
+    output [7:0]        four_field_reg__f2_r                    ,
+    output [7:0]        four_field_reg__f3_r                    ,
+    output reg          four_field_reg__f3_swmod                ,
+    output [7:0]        four_field_reg__f4_r                    
 );
 
 
@@ -141,6 +163,229 @@ srdl2sv_amba3ahblite_inst
 
      // Interface to internal logic
      .widget_if);
+
+genvar gv_a;
+
+/*******************************************************************
+ *******************************************************************
+ * REGFILE               : example_rf
+ * DIMENSION             : 1
+ * DEPTHS (per dimension): [4]
+ *******************************************************************
+ *******************************************************************/
+
+/**REGFILE DESCRIPTION**********************************************
+Instantiate regfile to show that they also work in regfiles.
+/*******************************************************************/
+
+// Variables of register 'ext_main_reg'
+logic        example_rf__ext_main_reg_active      [4];
+logic        example_rf__ext_main_reg_sw_rd       [4];
+logic        example_rf__ext_main_reg_sw_wr       [4];
+logic        example_rf__ext_alias_reg_active     [4];
+logic        example_rf__ext_alias_reg_sw_rd      [4];
+logic        example_rf__ext_alias_reg_sw_wr      [4];
+logic [31:0] example_rf__ext_main_reg_data_mux_in [4];
+logic        example_rf__ext_main_reg_rdy_mux_in  [4];
+logic        example_rf__ext_main_reg_err_mux_in  [4];
+logic [31:0] example_rf__ext_alias_reg_data_mux_in[4];
+logic        example_rf__ext_alias_reg_rdy_mux_in [4];
+logic        example_rf__ext_alias_reg_err_mux_in [4];
+logic [15:0] example_rf__ext_main_reg__f1_q       [4];
+logic [15:0] example_rf__ext_alias_reg__field_1_q [4];
+logic [15:0] example_rf__ext_main_reg__f2_q       [4];
+
+generate
+for (gv_a = 0; gv_a < 4; gv_a++)
+begin
+    
+    /*******************************************************************
+    /*******************************************************************
+    /* REGISTER              : ext_main_reg
+    /* DIMENSION             : 0
+    /* DEPTHS (per dimension): []
+    /*******************************************************************
+    /*******************************************************************/
+    
+    /**REGISTER DESCRIPTION*********************************************
+    If aliases registers are declared to be external,
+    the external hardware will get a seperate interface
+    for those registers.
+    /*******************************************************************/
+    
+    // Register-activation for 'example_rf__ext_main_reg' 
+    assign example_rf__ext_main_reg_active[gv_a] = widget_if.addr == 16+(gv_a*8);
+    assign example_rf__ext_main_reg_sw_rd[gv_a] = example_rf__ext_main_reg_active[gv_a] && widget_if.r_vld;
+    assign example_rf__ext_main_reg_sw_wr[gv_a] = example_rf__ext_main_reg_active[gv_a] && widget_if.w_vld;
+    
+    // Register-activation for 'example_rf__ext_alias_reg' (alias)
+    assign example_rf__ext_alias_reg_active[gv_a] = widget_if.addr == 20+(gv_a*8);
+    assign example_rf__ext_alias_reg_sw_rd[gv_a] = example_rf__ext_alias_reg_active[gv_a] && widget_if.r_vld;
+    assign example_rf__ext_alias_reg_sw_wr[gv_a] = example_rf__ext_alias_reg_active[gv_a] && widget_if.w_vld;
+    
+    //-----------------FIELD SUMMARY-----------------
+    // name         : f1 (example_rf__ext_main_reg[15:0])
+    // access       : hw = rw  
+    //                sw = rw (precedence)
+    // reset        : - / -
+    // flags        : ['sw', 'wel']
+    // external     : True
+    // storage type : StorageType.FLOPS
+    //-----------------------------------------------
+    
+    
+    /***********************************
+     * Handle external write interface *
+     ***********************************
+     * The 'example_rf__ext_main_reg__f1_ext_w_req' output will be asserted once a write
+     * is requested by the bus and will stay high until 'example_rf__ext_main_reg__f1_ext_w_ack' 
+     * gets set. During a write, hardware shall not touch any bits that
+     * are not defined in 'example_rf__ext_main_reg__f1_ext_w_mask'.
+     *
+     * 'example_rf__ext_main_reg__f1_ext_w_ack' shall be held 1'b1 until all fields in the register
+     * acknowledged the read. In practice, this means until 'example_rf__ext_main_reg__f1_ext_w_req'
+     * goes back to 1'b0.
+     *
+     * If 'example_rf__ext_main_reg__f1_ext_w_err' gets set, it must also be held during the
+     * complete time 'example_rf__ext_main_reg__f1_ext_w_ack' is high.
+     */
+    // Write request
+    assign example_rf__ext_main_reg__f1_ext_w_req[gv_a] = example_rf__ext_main_reg_sw_wr[gv_a];
+    
+    // Assign value from bus to output
+    assign example_rf__ext_main_reg__f1_ext_w_data[gv_a] = widget_if.w_data[15:0];
+    
+    // Provide bit-wise mask. Only bits set to 1'b1 shall be written
+    assign example_rf__ext_main_reg__f1_ext_w_mask[gv_a] = {{8{widget_if.byte_en[1]}},{8{widget_if.byte_en[0]}}};
+    
+    /**********************************
+     * Handle external read interface *
+     **********************************
+     * The 'example_rf__ext_main_reg__f1_ext_r_req' output will be asserted once a read
+     * is requested by the bus and will stay high until 'example_rf__ext_main_reg__f1_ext_r_ack' 
+     * gets set. During a read, byte-enables will be ignored.
+     *
+     * 'example_rf__ext_main_reg__f1_ext_r_ack' shall be held 1'b1 until all fields in the register
+     * acknowledged the read. In practice, this means until 'example_rf__ext_main_reg__f1_ext_r_req'
+     * goes back to 1'b0.
+     *
+     * If 'example_rf__ext_main_reg__f1_ext_r_err' gets set, it must also be held during the
+     * complete time 'example_rf__ext_main_reg__f1_ext_r_ack' is high.
+     */
+    // Actual data
+    assign example_rf__ext_main_reg__f1_ext_r_req[gv_a] = example_rf__ext_main_reg_sw_rd[gv_a];
+    
+    // Assign return from outside hardware
+    assign example_rf__ext_main_reg__f1_q[gv_a] = example_rf__ext_main_reg__f1_ext_r_data;
+    
+    /**********************************
+     * Alias external write interface *
+     **********************************
+     * The hardware gets notified via a different wire that 
+     * software accessed the register via an alias, but the return
+     * shall be done via the main register's I/O. This is similar to
+     * the implementation of an alias registers.
+     */
+    assign example_rf__ext_alias_reg__field_1_ext_w_req[gv_a] = example_rf__ext_alias_reg_sw_wr[gv_a];
+    assign example_rf__ext_alias_reg__field_1_ext_w_data[gv_a] = widget_if.w_data[15:0];
+    assign example_rf__ext_alias_reg__field_1_ext_w_mask[gv_a] = {{8{widget_if.byte_en[1]}},{8{widget_if.byte_en[0]}}};
+    
+    /*********************************
+     * Alias external read interface *
+     *********************************
+     * The hardware gets notified via a different wire that 
+     * software accessed the register via an alias, but the return
+     * shall be done via the main register's I/O. This is similar to
+     * the implementation of an alias registers.
+     */
+    assign example_rf__ext_alias_reg__field_1_ext_r_req[gv_a] = example_rf__ext_alias_reg_sw_rd[gv_a];
+    
+    //-----------------FIELD SUMMARY-----------------
+    // name         : f2 (example_rf__ext_main_reg[31:16])
+    // access       : hw = rw  
+    //                sw = rw (precedence)
+    // reset        : - / -
+    // flags        : ['sw', 'wel']
+    // external     : True
+    // storage type : StorageType.FLOPS
+    //-----------------------------------------------
+    
+    
+    /***********************************
+     * Handle external write interface *
+     ***********************************
+     * The 'example_rf__ext_main_reg__f2_ext_w_req' output will be asserted once a write
+     * is requested by the bus and will stay high until 'example_rf__ext_main_reg__f2_ext_w_ack' 
+     * gets set. During a write, hardware shall not touch any bits that
+     * are not defined in 'example_rf__ext_main_reg__f2_ext_w_mask'.
+     *
+     * 'example_rf__ext_main_reg__f2_ext_w_ack' shall be held 1'b1 until all fields in the register
+     * acknowledged the read. In practice, this means until 'example_rf__ext_main_reg__f2_ext_w_req'
+     * goes back to 1'b0.
+     *
+     * If 'example_rf__ext_main_reg__f2_ext_w_err' gets set, it must also be held during the
+     * complete time 'example_rf__ext_main_reg__f2_ext_w_ack' is high.
+     */
+    // Write request
+    assign example_rf__ext_main_reg__f2_ext_w_req[gv_a] = example_rf__ext_main_reg_sw_wr[gv_a];
+    
+    // Assign value from bus to output
+    assign example_rf__ext_main_reg__f2_ext_w_data[gv_a] = widget_if.w_data[31:16];
+    
+    // Provide bit-wise mask. Only bits set to 1'b1 shall be written
+    assign example_rf__ext_main_reg__f2_ext_w_mask[gv_a] = {{8{widget_if.byte_en[3]}},{8{widget_if.byte_en[2]}}};
+    
+    /**********************************
+     * Handle external read interface *
+     **********************************
+     * The 'example_rf__ext_main_reg__f2_ext_r_req' output will be asserted once a read
+     * is requested by the bus and will stay high until 'example_rf__ext_main_reg__f2_ext_r_ack' 
+     * gets set. During a read, byte-enables will be ignored.
+     *
+     * 'example_rf__ext_main_reg__f2_ext_r_ack' shall be held 1'b1 until all fields in the register
+     * acknowledged the read. In practice, this means until 'example_rf__ext_main_reg__f2_ext_r_req'
+     * goes back to 1'b0.
+     *
+     * If 'example_rf__ext_main_reg__f2_ext_r_err' gets set, it must also be held during the
+     * complete time 'example_rf__ext_main_reg__f2_ext_r_ack' is high.
+     */
+    // Actual data
+    assign example_rf__ext_main_reg__f2_ext_r_req[gv_a] = example_rf__ext_main_reg_sw_rd[gv_a];
+    
+    // Assign return from outside hardware
+    assign example_rf__ext_main_reg__f2_q[gv_a] = example_rf__ext_main_reg__f2_ext_r_data;
+    
+    
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
+    // Assign all fields. Fields that are not readable are tied to 0.
+    assign example_rf__ext_main_reg_data_mux_in[gv_a] = {example_rf__ext_main_reg__f2_q[gv_a], example_rf__ext_main_reg__f1_q[gv_a]};
+    
+    // Internal registers are ready immediately
+    assign example_rf__ext_main_reg_rdy_mux_in[gv_a] = (example_rf__ext_main_reg__f1_ext_r_ack[gv_a] && example_rf__ext_main_reg__f2_ext_r_ack[gv_a] && widget_if.r_vld) || (example_rf__ext_main_reg__f1_ext_w_ack[gv_a] && example_rf__ext_main_reg__f2_ext_w_ack[gv_a] && widget_if.w_vld);
+    
+    // Return an error if *no* read and *no* write was succesful. If some bits
+    // cannot be read/written but others are succesful, don't return and error
+    // Hence, as long as one action can be succesful, no error will be returned.
+    assign example_rf__ext_main_reg_err_mux_in[gv_a] = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) || (widget_if.w_vld && (|widget_if.byte_en[3:0]))) || (example_rf__ext_main_reg__f1_ext_r_err[gv_a] && example_rf__ext_main_reg__f1_ext_r_ack[gv_a] && widget_if.r_vld) || (example_rf__ext_main_reg__f2_ext_r_err[gv_a] && example_rf__ext_main_reg__f2_ext_r_ack[gv_a] && widget_if.r_vld) || (example_rf__ext_main_reg__f1_ext_w_err[gv_a] && example_rf__ext_main_reg__f1_ext_w_ack[gv_a] && widget_if.w_vld) || (example_rf__ext_main_reg__f2_ext_w_err[gv_a] && example_rf__ext_main_reg__f2_ext_w_ack[gv_a] && widget_if.w_vld);
+    
+    /********************************************** 
+     * Assign all fields to signal to Mux (alias) *
+     **********************************************/
+    // Assign all fields. Fields that are not readable are tied to 0.
+    assign example_rf__ext_alias_reg_data_mux_in[gv_a] = {{16{1'b0}}, example_rf__ext_main_reg__f1_q[gv_a]};
+    
+    // Internal registers are ready immediately
+    assign example_rf__ext_alias_reg_rdy_mux_in[gv_a] = (example_rf__ext_main_reg__f1_ext_r_ack[gv_a] && example_rf__ext_main_reg__f2_ext_r_ack[gv_a] && widget_if.r_vld) || (example_rf__ext_main_reg__f1_ext_w_ack[gv_a] && example_rf__ext_main_reg__f2_ext_w_ack[gv_a] && widget_if.w_vld);
+    
+    // Return an error if *no* read and *no* write was succesful. If some bits
+    // cannot be read/written but others are succesful, don't return and error
+    // Hence, as long as one action can be succesful, no error will be returned.
+    assign example_rf__ext_alias_reg_err_mux_in[gv_a] = !((widget_if.r_vld && (|widget_if.byte_en[1:0])) || (widget_if.w_vld && (|widget_if.byte_en[1:0]))) || (example_rf__ext_main_reg__f1_ext_r_err[gv_a] && example_rf__ext_main_reg__f1_ext_r_ack[gv_a] && widget_if.r_vld) || (example_rf__ext_main_reg__f1_ext_w_err[gv_a] && example_rf__ext_main_reg__f1_ext_w_ack[gv_a] && widget_if.w_vld);
+end // of for loop with iterator gv_a
+endgenerate
+
 
 /*******************************************************************
 /*******************************************************************
@@ -450,6 +695,54 @@ assign two_field_alias_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[3] 
 always_comb
 begin
     unique case (1'b1)
+        example_rf__ext_main_reg_active[0]:
+        begin
+            widget_if.r_data = example_rf__ext_main_reg_data_mux_in[0];
+            widget_if.err    = example_rf__ext_main_reg_err_mux_in[0];
+            widget_if.rdy    = example_rf__ext_main_reg_rdy_mux_in[0];
+        end
+        example_rf__ext_main_reg_active[1]:
+        begin
+            widget_if.r_data = example_rf__ext_main_reg_data_mux_in[1];
+            widget_if.err    = example_rf__ext_main_reg_err_mux_in[1];
+            widget_if.rdy    = example_rf__ext_main_reg_rdy_mux_in[1];
+        end
+        example_rf__ext_main_reg_active[2]:
+        begin
+            widget_if.r_data = example_rf__ext_main_reg_data_mux_in[2];
+            widget_if.err    = example_rf__ext_main_reg_err_mux_in[2];
+            widget_if.rdy    = example_rf__ext_main_reg_rdy_mux_in[2];
+        end
+        example_rf__ext_main_reg_active[3]:
+        begin
+            widget_if.r_data = example_rf__ext_main_reg_data_mux_in[3];
+            widget_if.err    = example_rf__ext_main_reg_err_mux_in[3];
+            widget_if.rdy    = example_rf__ext_main_reg_rdy_mux_in[3];
+        end
+        example_rf__ext_alias_reg_active[0]:
+        begin
+            widget_if.r_data = example_rf__ext_alias_reg_data_mux_in[0];
+            widget_if.err    = example_rf__ext_alias_reg_err_mux_in[0];
+            widget_if.rdy    = example_rf__ext_alias_reg_rdy_mux_in[0];
+        end
+        example_rf__ext_alias_reg_active[1]:
+        begin
+            widget_if.r_data = example_rf__ext_alias_reg_data_mux_in[1];
+            widget_if.err    = example_rf__ext_alias_reg_err_mux_in[1];
+            widget_if.rdy    = example_rf__ext_alias_reg_rdy_mux_in[1];
+        end
+        example_rf__ext_alias_reg_active[2]:
+        begin
+            widget_if.r_data = example_rf__ext_alias_reg_data_mux_in[2];
+            widget_if.err    = example_rf__ext_alias_reg_err_mux_in[2];
+            widget_if.rdy    = example_rf__ext_alias_reg_rdy_mux_in[2];
+        end
+        example_rf__ext_alias_reg_active[3]:
+        begin
+            widget_if.r_data = example_rf__ext_alias_reg_data_mux_in[3];
+            widget_if.err    = example_rf__ext_alias_reg_err_mux_in[3];
+            widget_if.rdy    = example_rf__ext_alias_reg_rdy_mux_in[3];
+        end
         event1_active:
         begin
             widget_if.r_data = event1_data_mux_in;
