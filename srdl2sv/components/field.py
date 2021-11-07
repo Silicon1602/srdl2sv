@@ -262,48 +262,54 @@ class Field(Component):
             self.rtl_footer.append(Field.templ_dict['counter_comment']['rtl'])
 
             # Determine saturation values
-            if isinstance(self.obj.get_property('incrsaturate'), bool):
-                if self.obj.get_property('incrsaturate'):
+            if isinstance(saturate := self.obj.get_property('incrsaturate'), bool):
+                if saturate:
                     incr_sat_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                     overflow_value = incr_sat_value
                 else:
                     incr_sat_value = False
                     overflow_value = 2**self.obj.width-1
+            elif isinstance(saturate, int):
+                incr_sat_value = f"{self.obj.width}'d{saturate}"
+                underflow_value = incr_sat_value
             else:
-                incr_sat_value = self.get_signal_name(
-                                    self.obj.get_property('incrsaturate'))
+                incr_sat_value = self.get_signal_name(saturate)
                 overflow_value = incr_sat_value
 
-            if isinstance(self.obj.get_property('decrsaturate'), bool):
-                if self.obj.get_property('decrsaturate'):
+            if isinstance(saturate := self.obj.get_property('decrsaturate'), bool):
+                if saturate:
                     decr_sat_value = f"{self.obj.width}'d0"
                     underflow_value = decr_sat_value
                 else:
                     decr_sat_value = False
                     underflow_value = 0
+            elif isinstance(saturate, int):
+                decr_sat_value = f"{self.obj.width}'d{saturate}"
+                underflow_value = decr_sat_value
             else:
-                decr_sat_value = self.get_signal_name(
-                                    self.obj.get_property('decrsaturate'))
+                decr_sat_value = self.get_signal_name(saturate)
                 underflow_value = decr_sat_value
 
             # Determine threshold values
-            if isinstance(self.obj.get_property('incrthreshold'), bool):
-                if self.obj.get_property('incrthreshold'):
+            if isinstance(threshold := self.obj.get_property('incrthreshold'), bool):
+                if threshold:
                     incr_thr_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                 else:
                     incr_thr_value = False
+            elif isinstance(threshold, int):
+                incr_thr_value = f"{self.obj.width}'d{threshold}"
             else:
-                incr_thr_value = self.get_signal_name(
-                                    self.obj.get_property('incrthreshold'))
+                incr_thr_value = self.get_signal_name(threshold)
 
-            if isinstance(self.obj.get_property('decrthreshold'), bool):
-                if self.obj.get_property('decrthreshold'):
+            if isinstance(threshold := self.obj.get_property('decrthreshold'), bool):
+                if threshold:
                     decr_thr_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                 else:
                     decr_thr_value = False
+            elif isinstance(threshold, int):
+                decr_thr_value = f"{self.obj.width}'d{threshold}"
             else:
-                decr_thr_value = self.get_signal_name(
-                                    self.obj.get_property('decrthreshold'))
+                decr_thr_value = self.get_signal_name(threshold)
 
             # Determine with what value the counter is incremented
             # According to the spec, the incrvalue/decrvalue default to '1'

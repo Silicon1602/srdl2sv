@@ -397,7 +397,7 @@ counter_incr_thr:
           signal_type: 'logic'
 counter_decr_thr:
     rtl: |-
-        assign {path}_decr_thr{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) <= {{1'b0, {sat_value}}} + ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) ;
+        assign {path}_decr_thr{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) <= {{1'b0, {thr_value}}} + ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) ;
     output_ports:
         - name: '{path}_decr_thr'
           signal_type: 'logic'
