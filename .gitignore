@@ -1,6 +1,9 @@
 # SRDL2SV specific
 srdl2sv_out
 
+# Verilator
+obj_dir
+
 ###############################################################################################
 # Grabbed from https://github.com/github/gitignore/blob/master/Python.gitignore on 05/02/2021 #
 ###############################################################################################
