@@ -1,0 +1,63 @@
+
+addrmap aliases {
+    ///////////////////////////
+    // Example SystemRDL LRM // 
+    ///////////////////////////
+    reg some_intr_r { 
+        desc = "This register shows the alias example from Section 10.5.2 of the
+                SystemRDL2.0 spec (with some slight adaptations to make it compilable).";
+        field {
+            level intr;
+            hw=w;
+            sw=rw;
+            woclr;
+        } some_event;
+    };
+
+    some_intr_r event1;
+
+    // Create an alias for the DV team to use and modify its properties
+    // so that DV can force interrupt events and allow more rigorous structural
+    // testing of the interrupt.
+    alias event1 some_intr_r event1_for_dv;
+    event1_for_dv.some_event->woset = true;
+
+    //////////////////////////
+    // Example field-subset // 
+    //////////////////////////
+    field field_templ {
+        sw = rw;
+        hw = rw;
+        wel;
+    };
+
+    reg four_field_reg {
+        desc = "This is a register with 4 fields.";
+
+        field_templ f1 [7:0];
+        field_templ f2 [15:8];
+        field_templ f3 [23:16];
+        field_templ f4 [31:24];
+
+
+        f3->swmod = true; // swmod does work for aliased registers
+        f4->rclr = true;  // Show rclr feature
+    };
+
+    reg two_field_alias {
+        desc = "It is not mandatory that aliases have all fields of the original
+                register. A subset of the fields can be made accessible and they
+                can have different names.";
+
+        field_templ field_1 [7:0];
+        // Removed f2
+        // Removed f3
+        field_templ field_4 [31:24];
+
+        field_4->woclr = true; // Different option compared to four_field_reg.f1
+    };
+
+    four_field_reg four_field_reg; // Actual register
+    alias four_field_reg two_field_alias two_field_alias; // Alias with different properties
+
+};
