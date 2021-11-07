@@ -1,0 +1,77 @@
+addrmap counters {
+    desc = 
+        "This addressmap shows of different counter properties
+        that SystemRDL offers and can be used in the register blocks.";
+
+    signal {activelow; async; field_reset;} rst_async_n;
+
+    reg {
+        field {sw = rw; hw = na;} threshold [31:0] = 32'hffffffff;
+    } counter_a_threshold;
+
+    reg {
+        desc = "Saturating counter that can be cleared when software writes to
+                the field, has a configurable counter, and can increment and 
+                decrement.
+
+                When you want a purely incrementing or decrementing counter, set
+                incrval/decrval to 0.";
+
+        field {
+            sw = rw;
+            onwrite = wclr;
+            counter = true;
+            incrsaturate = true; // Counter saturates at 2**32-1
+            decrsaturate = true; // Counter saturates at 0
+            overflow = true;     // Generate a signal that tells if the counter overflows
+        } cnt [31:0] = 0;
+    } counter_a;
+
+    // Define a custom threshold value
+    counter_a.cnt->threshold = counter_a_threshold.threshold;
+
+
+    regfile {
+        desc = "This regfile implements a 64-bit non-saturating counter
+                that will fire an interrupt as soon as it wraps around.";
+
+        reg {
+            field {
+                sw = rw;
+                onwrite = wclr;
+                counter = true;
+                decrvalue = 0;
+                overflow = true; // Generate a signal that tells if the counter overflows
+            } cnt [31:0] = 0;
+        } counter_b_lsb;
+
+        reg {
+            field {
+                sw = rw;
+                onwrite = wclr;
+                counter = true;
+                decrvalue = 0;
+                overflow = true; // Generate a signal that tells if the counter overflows
+            } cnt [31:0] = 0;
+        } counter_b_msb;
+
+        // Daisy-chain
+        counter_b_msb.cnt->incr = counter_b_lsb.cnt->overflow;
+    } wide_counters [2]; // Mutlidimensionality supported
+
+    reg {
+        field {
+            desc = "Interrupt if the msb-part of counter_b[2] overflowed.";
+            level intr;
+        } ovrflw_1 = 0;
+
+        field {
+            desc = "Interrupt if the msb-part of counter_b[2] overflowed.";
+            level intr;
+        } ovrflw_0 = 0;
+    } counter_b_overflow_intr;
+
+    counter_b_overflow_intr.ovrflw_0->next = wide_counters[0].counter_b_msb.cnt->overflow;
+    counter_b_overflow_intr.ovrflw_1->next = wide_counters[1].counter_b_msb.cnt->overflow;
+
+};
