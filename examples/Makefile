@@ -9,3 +9,4 @@ $(ALL_DIRS):
 
 clean:
 	rm -rf */srdl2sv_out
+	rm -rf */obj_dir

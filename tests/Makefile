@@ -1,9 +1,9 @@
 ALL_COCOTB_TESTS = $(shell ls cocotb_tests/test_*.py | sed -E 's|.*?/test_(.*?).py|\1|g')
 
-.PHONY: clean
+.PHONY: clean examples
 .PRECIOUS: build_dirs/%/compile.f
 
-default: $(ALL_COCOTB_TESTS)
+default: $(ALL_COCOTB_TESTS) examples
 	@echo ""
 	@echo "-------------------------------------------------------------------------------"
 	@echo "Showing all FAILs in simulation logs:"
@@ -49,5 +49,11 @@ build_dirs/%/compile.f: systemrdl/%.rdl $(shell which srdl2sv)
 	ls $(PWD)/$(@D)/*amba*.sv >> $@
 	ls $(PWD)/$(@D)/*.sv | grep -v '.*_if.sv$$' | grep -v '.*amba.*' >> $@
 
+examples:
+	# Make examples. This does not flag any functional issues, but if
+	# a change breaks compilation, this will flag it.
+	make -C ../examples/
+
 clean:
 	rm -rf build_dirs
+	make -C ../examples/ clean
