@@ -152,10 +152,11 @@ class Register(Component):
         accesswidth = self.obj.get_property('accesswidth') - 1
         self.rtl_footer.append("")
 
+        # Save name of main register
+        main_reg_name = self.name_addr_mappings[0][0]
+
         for alias_idx, na_map in enumerate(self.name_addr_mappings):
             current_bit = 0
-
-            # Start tracking errors
 
             # Handle fields
             list_of_fields = []
@@ -276,23 +277,25 @@ class Register(Component):
                 if self.config['external']:
                     if bytes_read:
                         for field in self.children.values():
-                            sw_err_condition_vec.append(self._process_yaml(
-                                    Register.templ_dict['external_err_condition'],
-                                    {'path': '__'.join([na_map[0], field.name]),
-                                     'genvars': self.genvars_str,
-                                     'rd_or_wr': 'r'}
+                            if na_map[0] in field.readable_by:
+                                sw_err_condition_vec.append(self._process_yaml(
+                                        Register.templ_dict['external_err_condition'],
+                                        {'path': '__'.join([main_reg_name, field.name]),
+                                         'genvars': self.genvars_str,
+                                         'rd_or_wr': 'r'}
+                                    )
                                 )
-                            )
 
                     if bytes_written:
                         for field in self.children.values():
-                            sw_err_condition_vec.append(self._process_yaml(
-                                    Register.templ_dict['external_err_condition'],
-                                    {'path': '__'.join([na_map[0], field.name]),
-                                     'genvars': self.genvars_str,
-                                     'rd_or_wr': 'w'}
+                            if na_map[0] in field.writable_by:
+                                sw_err_condition_vec.append(self._process_yaml(
+                                        Register.templ_dict['external_err_condition'],
+                                        {'path': '__'.join([main_reg_name, field.name]),
+                                         'genvars': self.genvars_str,
+                                         'rd_or_wr': 'w'}
+                                    )
                                 )
-                            )
 
                 sw_err_condition = ' || '.join(sw_err_condition_vec)
             else:
@@ -307,7 +310,7 @@ class Register(Component):
                     for field in self.children.values():
                         sw_rdy_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_rdy_condition'],
-                                {'path': '__'.join([na_map[0], field.name]),
+                                {'path': '__'.join([main_reg_name, field.name]),
                                  'genvars': self.genvars_str,
                                  'rd_or_wr': 'r'}
                             )
@@ -327,7 +330,7 @@ class Register(Component):
                     for field in self.children.values():
                         sw_rdy_condition_vec.append(self._process_yaml(
                                 Register.templ_dict['external_rdy_condition'],
-                                {'path': '__'.join([na_map[0], field.name]),
+                                {'path': '__'.join([main_reg_name, field.name]),
                                  'genvars': self.genvars_str,
                                  'rd_or_wr': 'w'}
                             )

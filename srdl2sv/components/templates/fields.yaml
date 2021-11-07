@@ -520,6 +520,45 @@ external_wr_assignments:
           signal_type: ''
         - name: '{path}_ext_w_err'
           signal_type: ''
+external_rd_assignments_alias:
+    rtl: |-
+
+        /*********************************
+         * Alias external read interface *
+         *********************************
+         * The hardware gets notified via a different wire that 
+         * software accessed the register via an alias, but the return
+         * shall be done via the main register's I/O. This is similar to
+         * the implementation of an alias registers.
+         */
+        assign {path}_ext_r_req{genvars} = {path_wo_field}_sw_rd{genvars};
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
+    output_ports:
+        - name: '{path}_ext_r_req'
+          signal_type: 'logic'
+external_wr_assignments_alias:
+    rtl: |-
+
+        /**********************************
+         * Alias external write interface *
+         **********************************
+         * The hardware gets notified via a different wire that 
+         * software accessed the register via an alias, but the return
+         * shall be done via the main register's I/O. This is similar to
+         * the implementation of an alias registers.
+         */
+        assign {path}_ext_w_req{genvars} = {path_wo_field}_sw_wr{genvars};
+        assign {path}_ext_w_data{genvars} = widget_if.w_data[{msb_bus}:{lsb_bus}];
+        assign {path}_ext_w_mask{genvars} = {{{mask}}};
+    output_ports:
+        - name: '{path}_ext_w_req'
+          signal_type: 'logic'
+        - name: '{path}_ext_w_data'
+          signal_type: '{field_type}'
+        - name: '{path}_ext_w_mask'
+          signal_type: 'logic [{width}:0]'
 external_wr_mask_segment:
     rtl: |-
         {{{width}{{widget_if.byte_en[{idx}]}}}}

@@ -69,7 +69,6 @@ class Field(Component):
             self.__add_wire_const()
             self.__add_hw_rd_access()
             self.__add_swmod_swacc()
-            self.add_sw_access(obj)
         else:
             self.__add_always_ff()
 
@@ -82,7 +81,7 @@ class Field(Component):
             self.__add_swmod_swacc()
             self.__add_counter()
 
-            self.add_sw_access(obj)
+        self.add_sw_access(obj)
 
     def add_sw_access(self, obj, alias = False):
 
@@ -1113,8 +1112,8 @@ class Field(Component):
             )
 
     def create_external_rtl(self):
-        if self.properties['sw_wr']:
-            for i, alias in enumerate(self.path_underscored_vec):
+        for i, alias in enumerate(self.path_underscored_vec):
+            if self.properties['sw_wr']:
                 # Create bit-wise mask so that outside logic knows what
                 # bits it may change
                 mask = []
@@ -1132,8 +1131,10 @@ class Field(Component):
                             width = width)
                         )
 
+                wr_templ = 'external_wr_assignments' if i == 0 else 'external_wr_assignments_alias'
+
                 self.rtl_footer.append(self._process_yaml(
-                    Field.templ_dict['external_wr_assignments'],
+                    Field.templ_dict[wr_templ],
                     {'path': alias,
                      'path_wo_field': self.path_wo_field_vec[i],
                      'genvars': self.genvars_str,
@@ -1145,10 +1146,11 @@ class Field(Component):
                     }
                 ))
 
-        if self.properties['sw_rd']:
-            for i, alias in enumerate(self.path_underscored_vec):
+            if self.properties['sw_rd']:
+                rd_templ = 'external_rd_assignments' if i == 0 else 'external_rd_assignments_alias'
+
                 self.rtl_footer.append(self._process_yaml(
-                    Field.templ_dict['external_rd_assignments'],
+                    Field.templ_dict[rd_templ],
                     {'path': alias,
                      'path_wo_field': self.path_wo_field_vec[i],
                      'genvars': self.genvars_str,
