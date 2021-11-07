@@ -68,6 +68,7 @@ class Field(Component):
         elif self.storage_type is not StorageType.FLOPS:
             self.__add_wire_const()
             self.__add_hw_rd_access()
+            self.__add_swmod_swacc()
             self.add_sw_access(obj)
         else:
             self.__add_always_ff()
@@ -84,16 +85,36 @@ class Field(Component):
             self.add_sw_access(obj)
 
     def add_sw_access(self, obj, alias = False):
+
+        # Perform some basic checks
+        if onwrite := obj.get_property('onwrite') \
+                and not self.properties['sw_wr']:
+            self.logger.fatal("An onwrite property '%s' is defined but "\
+                              "software does not have write-access. This is not "\
+                              "legal.", onwrite)
+
+            sys.exit(1)
+        elif onread := obj.get_property('onread') \
+                and self.storage_type is not StorageType.FLOPS:
+            self.logger.warning("Field has an onread property but does not "
+                                "implement a flop. Since the flop itself is "
+                                "implemented outside of the register block it is "
+                                "advised to remove the property and notify the external "
+                                "hardware by using the 'swacc' property.")
+
         access_rtl = {}
 
         if alias:
-            _, _, path, path_underscored =\
+            _, _, path, alias_path_underscored = \
                 Field.create_underscored_path_static(obj)
         else:
-            owning_addrmap, full_path, path, path_underscored =\
-                self.owning_addrmap, self.full_path, self.path, self.path_underscored
+            path = self.path
 
         path_wo_field = '__'.join(path.split('.', -1)[0:-1])
+
+        # path_wo_field_vec & path_undrescored_vec only used for external registers
+        self.path_wo_field_vec.append(path_wo_field)
+        self.path_underscored_vec.append(alias_path_underscored if alias else self.path_underscored)
 
         # Define software access (if applicable)
         access_rtl['sw_write'] = ([], False)
@@ -151,7 +172,7 @@ class Field(Component):
                         access_rtl['sw_write'][0].append(
                             self._process_yaml(
                                 Field.templ_dict[str(onwrite)],
-                                {'path': path_underscored,
+                                {'path': self.path_underscored,
                                  'genvars': self.genvars_str,
                                  'i': i,
                                  'width': msb_bus - lsb_bus + 1,
@@ -186,19 +207,18 @@ class Field(Component):
 
             access_rtl['sw_write'][0].append("end")
 
-        onread = obj.get_property('onread')
-
         access_rtl['sw_read'] = ([], False)
+
         if obj.get_property('sw') in (AccessType.rw, AccessType.r):
             # Append to list of registers that can read
             self.readable_by.add(path_wo_field)
 
-            self.properties['sw_wr'] = True
+            self.properties['sw_rd'] = True
 
             # Set onread properties
-            if onread == OnReadType.ruser:
+            if onread is OnReadType.ruser:
                 self.logger.error("The OnReadType.ruser is not yet supported!")
-            elif onread:
+            elif onread and self.storage_type is StorageType.FLOPS:
                 self.properties['sw_rd_wire'] = True
 
                 access_rtl['sw_read'][0].append(
@@ -215,7 +235,7 @@ class Field(Component):
                     access_rtl['sw_read'][0].append(
                         self._process_yaml(
                             Field.templ_dict[str(onread)],
-                            {'path': path_underscored,
+                            {'path': self.path_underscored,
                              'genvars': self.genvars_str,
                              'i': i,
                              'width': msb_bus - lsb_bus + 1,
@@ -251,9 +271,6 @@ class Field(Component):
         except KeyError:
             self.access_rtl['sw_read'] = [access_rtl['sw_read']]
             self.access_rtl['sw_write'] = [access_rtl['sw_write']]
-
-        self.path_underscored_vec.append(path_underscored)
-        self.path_wo_field_vec.append(path_wo_field)
 
     def __add_counter(self):
         if self.obj.get_property('counter'):
@@ -682,6 +699,9 @@ class Field(Component):
     def __add_swmod_swacc(self):
         if self.obj.get_property('swmod'):
             self.logger.debug("Field has swmod property")
+
+            self.properties['swmod'] = True
+            self.properties['sw_wr_wire'] = True
 
             swmod_assigns = []
 
@@ -1379,7 +1399,9 @@ class Field(Component):
         sw_prop = self.obj.get_property('sw')
 
         # Check the storage type, according to Table 12 of the SystemRDL 2.0 LRM
-        if hw_prop is AccessType.r and sw_prop is AccessType.r:
+        if self.obj.get_property('intr'):
+            self.storage_type = StorageType.FLOPS
+        elif hw_prop is AccessType.r and sw_prop is AccessType.r:
             # hw=r/sw=r --> Constant
             self.storage_type = StorageType.CONST
         elif hw_prop is AccessType.na and sw_prop is AccessType.r:

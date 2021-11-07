@@ -136,42 +136,63 @@ OnWriteType.woset:
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] | widget_if.w_data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.woclr: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // woclr property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & ~widget_if.w_data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.wot: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wot property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ^ widget_if.w_data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.wzs: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wzs property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] & widget_if.w_data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.wzt: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wzt property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {path}_q{genvars}[{msb_field}:{lsb_field}] ~^ widget_if.w_data[{msb_bus}:{lsb_bus}];
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.wclr: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wclr property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {width}'b0;
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 OnWriteType.wset: 
     rtl: |-
         if (widget_if.byte_en[{i}]) // wclr property
         <<INDENT>>
         {path}_q{genvars}[{msb_field}:{lsb_field}] <= {{{width}{{1'b1}}}};
         <<UNINDENT>>
+    signals:
+        - name: '{path}_q'
+          signal_type: '{field_type}'
 sw_read_access_field: 
     rtl: |-
         if ({path_wo_field}_sw_rd{genvars})
@@ -260,13 +281,13 @@ swmod_always_comb:
         end
     output_ports:
         - name: '{path}_swmod'
-          signal_type: 'logic'
+          signal_type: 'reg'
 swmod_assign: 
     rtl: |-
         {path}_swmod{genvars} |= {path_wo_field}__any_alias_sw_{rd_wr}{genvars} && |widget_if.byte_en[{msbyte}:{lsbyte}];
     output_ports:
         - name: '{path}_swmod'
-          signal_type: 'logic'
+          signal_type: 'reg'
 counter_comment: 
     rtl: |-
       /***********************

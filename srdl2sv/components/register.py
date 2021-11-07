@@ -152,7 +152,7 @@ class Register(Component):
         accesswidth = self.obj.get_property('accesswidth') - 1
         self.rtl_footer.append("")
 
-        for na_map in self.name_addr_mappings:
+        for alias_idx, na_map in enumerate(self.name_addr_mappings):
             current_bit = 0
 
             # Start tracking errors
@@ -352,6 +352,7 @@ class Register(Component):
                      'genvars': self.genvars_str if not no_reads else '',
                      'rdy_condition': sw_rdy_condition,
                      'err_condition': sw_err_condition,
+                     'alias_indicator': '(alias)' if alias_idx > 0 else '',
                      'list_of_fields': ', '.join(reversed(list_of_fields))}
                 )
             )
@@ -471,18 +472,28 @@ class Register(Component):
                     )
 
         # Add combined signal to be used for general access of the register
+        if self.properties['swacc'] or self.properties['swmod']:
+            self.rtl_header.append(
+                self._process_yaml(
+                    Register.templ_dict['w_wire_assign_any_alias'],
+                    {'path': self.name_addr_mappings[0][0],
+                     'genvars': self.genvars_str,
+                     'sw_wrs_w_genvars': ' || '.join(
+                         [''.join([x[0], '_sw_wr', self.genvars_str])
+                             for x in self.name_addr_mappings])
+                    }
+                )
+            )
+
         if self.properties['swacc']:
             self.rtl_header.append(
                 self._process_yaml(
-                    Register.templ_dict['rw_wire_assign_any_alias'],
+                    Register.templ_dict['r_wire_assign_any_alias'],
                     {'path': self.name_addr_mappings[0][0],
                      'genvars': self.genvars_str,
                      'sw_rds_w_genvars': ' || '.join(
                          [''.join([x[0], '_sw_rd', self.genvars_str])
                              for x in self.name_addr_mappings]),
-                     'sw_wrs_w_genvars': ' || '.join(
-                         [''.join([x[0], '_sw_wr', self.genvars_str])
-                             for x in self.name_addr_mappings])
                     }
                 )
             )

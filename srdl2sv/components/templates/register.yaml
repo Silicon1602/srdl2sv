@@ -39,16 +39,21 @@ write_wire_assign_0:
     signals:
         - name: '{path}_sw_wr'
           signal_type: 'logic'
-rw_wire_assign_any_alias:
+w_wire_assign_any_alias:
     rtl: |-
 
-        // Combined register activation. These will become active 
-        assign {path}__any_alias_sw_rd{genvars} = {sw_rds_w_genvars};
+        // Combined register activation. These will become active on
+        // access via any of the alias registers.
         assign {path}__any_alias_sw_wr{genvars} = {sw_wrs_w_genvars};
     signals:
-        - name: '{path}__any_alias_sw_rd'
-          signal_type: 'logic'
         - name: '{path}__any_alias_sw_wr'
+          signal_type: 'logic'
+r_wire_assign_any_alias:
+    rtl: |-
+
+        assign {path}__any_alias_sw_rd{genvars} = {sw_rds_w_genvars};
+    signals:
+        - name: '{path}__any_alias_sw_rd'
           signal_type: 'logic'
 reg_comment: |-
 
@@ -96,9 +101,9 @@ sw_err_condition:
 sw_data_assignment:
     rtl: |-
 
-       /************************************** 
-        * Assign all fields to signal to Mux *
-        **************************************/
+       /********************************************** 
+        * Assign all fields to signal to Mux {alias_indicator:7} *
+        **********************************************/
        // Assign all fields. Fields that are not readable are tied to 0.
        assign {sw_data_assignment_var_name}{genvars} = {{{list_of_fields}}};
 
