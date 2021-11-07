@@ -281,28 +281,28 @@ counter:
         // might be tied to 0.
         always_comb
         begin
-        {path}_next{genvars}  = {path}_q{genvars};
+        {path}_next{genvars} = {path}_q{genvars};
 
         if ({path}_incr{genvars} && {path}_decr{genvars})
         begin
         if (!{path}_incr_sat{genvars} && !{path}_decr_sat{genvars})
         begin
-        {path}_next{genvars} += {path}_incr_val{genvars}; 
-        {path}_next{genvars} -= {path}_decr_val{genvars}; 
+        {path}_next{genvars} += {{{incr_zero_pad}{path}_incr_val{genvars}}};
+        {path}_next{genvars} -= {{{decr_zero_pad}{path}_decr_val{genvars}}};
         end
         end
         else if ({path}_incr{genvars})
         begin
         if (!{path}_incr_sat{genvars})
         <<INDENT>>
-        {path}_next{genvars} += {path}_incr_val{genvars}; 
+        {path}_next{genvars} += {{{incr_zero_pad}{path}_incr_val{genvars}}}; 
         <<UNINDENT>>
         end
         else if ({path}_decr{genvars})
         begin
         if (!{path}_decr_sat{genvars})
         <<INDENT>>
-        {path}_next{genvars} += {path}_decr_val{genvars}; 
+        {path}_next{genvars} -= {{{decr_zero_pad}{path}_decr_val{genvars}}}; 
         <<UNINDENT>>
         end
         end
@@ -359,7 +359,7 @@ counter_incr_sat:
         // Determine whether the counter is saturated
         // The signal is tied if the counter is not saturating
         // in the respective direction
-        assign {path}_incr_sat{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {sat_value};
+        assign {path}_incr_sat{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) - ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) > {{1'b0, {sat_value}}};
     signals:
         - name: '{path}_incr_sat'
           signal_type: 'logic'
@@ -375,7 +375,7 @@ counter_incr_sat_tied:
           signal_type: 'logic'
 counter_decr_sat:
     rtl: |-
-        assign {path}_decr_sat{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {sat_value};
+        assign {path}_decr_sat{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) < {{1'b0, {sat_value}}} + ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}});
     signals:
         - name: '{path}_decr_sat'
           signal_type: 'logic'
@@ -391,13 +391,13 @@ counter_thr_comment:
         // Define threshold signals (similar to overflow, but for a user specified value)
 counter_incr_thr:
     rtl: |-
-        assign {path}_incr_thr{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {thr_value};
+        assign {path}_incr_thr{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) - ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) >= {{1'b0, {thr_value}}};
     output_ports:
         - name: '{path}_incr_thr'
           signal_type: 'logic'
 counter_decr_thr:
     rtl: |-
-        assign {path}_decr_thr{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {thr_value};
+        assign {path}_decr_thr{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) <= {{1'b0, {sat_value}}} + ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) ;
     output_ports:
         - name: '{path}_decr_thr'
           signal_type: 'logic'
@@ -405,7 +405,7 @@ counter_overflow:
     rtl: |-
 
         // Logic to determine occurance of an overflow
-        assign {path}_overflow_int{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {overflow_value};
+        assign {path}_overflow_int{genvars} = {{1'b0, {path}_q{genvars}}} + ({{{width_plus_1}{{{path}_incr}}}} & {{{incr_sat_zero_pad}{path}_incr_val}}) - ({{{width_plus_1}{{{path}_decr}}}} & {{{decr_sat_zero_pad}{path}_decr_val}}) > {{1'b0, {overflow_value}}};
         assign {path}_overflow{genvars} = {path}_incr{genvars} && {path}_overflow_int{genvars};
     signals:
         - name: '{path}_overflow_int'
@@ -417,8 +417,8 @@ counter_underflow:
     rtl: |-
 
         // Logic to determine occurance of an underflow
-        assign {path}_underflow_int{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) - ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) > {underflow_value};
-        assign {path}_underflow{genvars} = {path}_incr{genvars} && {path}_underflow_int{genvars};
+        assign {path}_underflow_int{genvars} = {path}_q{genvars} + ({{{incr_width}{{{path}_incr}}}} & {path}_incr_val) > {underflow_value} + ({{{decr_width}{{{path}_decr}}}} & {path}_decr_val) ;
+        assign {path}_underflow{genvars} = {path}_decr{genvars} && {path}_underflow_int{genvars};
     signals:
         - name: '{path}_underflow_int'
           signal_type: 'logic'

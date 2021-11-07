@@ -87,7 +87,7 @@ class Field(Component):
         access_rtl = {}
 
         if alias:
-            owning_addrmap, full_path, path, path_underscored =\
+            _, _, path, path_underscored =\
                 Field.create_underscored_path_static(obj)
         else:
             owning_addrmap, full_path, path, path_underscored =\
@@ -264,42 +264,46 @@ class Field(Component):
             # Determine saturation values
             if isinstance(self.obj.get_property('incrsaturate'), bool):
                 if self.obj.get_property('incrsaturate'):
-                    incr_sat_value = 2**self.obj.width-1
+                    incr_sat_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                     overflow_value = incr_sat_value
                 else:
                     incr_sat_value = False
                     overflow_value = 2**self.obj.width-1
             else:
-                incr_sat_value = self.obj.get_property('incrsaturate')
+                incr_sat_value = self.get_signal_name(
+                                    self.obj.get_property('incrsaturate'))
                 overflow_value = incr_sat_value
 
             if isinstance(self.obj.get_property('decrsaturate'), bool):
                 if self.obj.get_property('decrsaturate'):
-                    decr_sat_value = 0
+                    decr_sat_value = f"{self.obj.width}'d0"
                     underflow_value = decr_sat_value
                 else:
                     decr_sat_value = False
                     underflow_value = 0
             else:
-                decr_sat_value = self.obj.get_property('decrsaturate')
+                decr_sat_value = self.get_signal_name(
+                                    self.obj.get_property('decrsaturate'))
                 underflow_value = decr_sat_value
 
             # Determine threshold values
             if isinstance(self.obj.get_property('incrthreshold'), bool):
                 if self.obj.get_property('incrthreshold'):
-                    incr_thr_value = 2**self.obj.width-1
+                    incr_thr_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                 else:
                     incr_thr_value = False
             else:
-                incr_thr_value = self.obj.get_property('incrthreshold')
+                incr_thr_value = self.get_signal_name(
+                                    self.obj.get_property('incrthreshold'))
 
             if isinstance(self.obj.get_property('decrthreshold'), bool):
                 if self.obj.get_property('decrthreshold'):
-                    decr_thr_value = 2**self.obj.width-1
+                    decr_thr_value = f"{self.obj.width}'d{2**self.obj.width-1}"
                 else:
                     decr_thr_value = False
             else:
-                decr_thr_value = self.obj.get_property('decrthreshold')
+                decr_thr_value = self.get_signal_name(
+                                    self.obj.get_property('decrthreshold'))
 
             # Determine with what value the counter is incremented
             # According to the spec, the incrvalue/decrvalue default to '1'
@@ -428,6 +432,20 @@ class Field(Component):
                         "defined. This is not legal and the decrwidth property "
                         "will be ignored!")
 
+            # Calculate the number of bits that need to be padded with 0s
+            if remaining_width := self.obj.width - incr_width:
+                incr_zero_pad = f"{remaining_width}'b0, "
+                incr_sat_zero_pad = f"{remaining_width+1}'b0, "
+            else:
+                incr_zero_pad = ""
+                incr_sat_zero_pad = "1'b0"
+
+            if remaining_width := self.obj.width - decr_width:
+                decr_zero_pad = f"{remaining_width}'b0, "
+                decr_sat_zero_pad = f"{remaining_width+1}'b0, "
+            else:
+                decr_zero_pad = ''
+                decr_sat_zero_pad = "1'b0"
 
             # If no input is defined for the decrement value, define
             # an internal signal. It is possible that this is tied to 0.
@@ -551,9 +569,10 @@ class Field(Component):
                         Field.templ_dict['counter_incr_sat'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'sat_value': incr_sat_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': decr_sat_zero_pad,
                         }
                     )
                 )
@@ -573,9 +592,10 @@ class Field(Component):
                         Field.templ_dict['counter_decr_sat'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'sat_value': decr_sat_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': decr_sat_zero_pad,
                         }
                     )
                 )
@@ -590,9 +610,10 @@ class Field(Component):
                         Field.templ_dict['counter_incr_thr'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'thr_value': incr_thr_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': incr_sat_zero_pad,
                         }
                     )
                 )
@@ -603,9 +624,10 @@ class Field(Component):
                         Field.templ_dict['counter_decr_thr'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'thr_value': decr_thr_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': decr_sat_zero_pad,
                         }
                     )
                 )
@@ -617,9 +639,10 @@ class Field(Component):
                         Field.templ_dict['counter_overflow'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'overflow_value': overflow_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': decr_sat_zero_pad,
                         }
                     )
                 )
@@ -630,9 +653,10 @@ class Field(Component):
                         Field.templ_dict['counter_underflow'],
                         {'path': self.path_underscored,
                          'genvars': self.genvars_str,
-                         'incr_width': incr_width,
-                         'decr_width': decr_width,
                          'underflow_value': underflow_value,
+                         'width_plus_1': self.obj.width + 1,
+                         'incr_sat_zero_pad': incr_sat_zero_pad,
+                         'decr_sat_zero_pad': decr_sat_zero_pad,
                         }
                     )
                 )
@@ -643,6 +667,8 @@ class Field(Component):
                     Field.templ_dict['counter'],
                     {'path': self.path_underscored,
                      'genvars': self.genvars_str,
+                     'incr_zero_pad': incr_zero_pad,
+                     'decr_zero_pad': decr_zero_pad,
                     }
                 )
             )
@@ -1466,6 +1492,12 @@ class Field(Component):
                                 "signal was defined and connected to the "\
                                 "field. Note that explicit connecting this "\
                                 "is not required if a field_reset was defined.")
+
+        if self.obj.get_property('counter') \
+                and self.obj.get_property("reset") is None:
+            self.logger.warning("Field is a counter but has no reset. "\
+                                "This should probably be fixed since this "\
+                                "will result in undefined behavior in simulations.")
 
 
     @staticmethod
