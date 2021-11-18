@@ -21,6 +21,7 @@ addrmap counters {
             sw = rw;
             onwrite = wclr;
             counter = true;
+            hwclr = true;
             incrsaturate = true; // Counter saturates at 2**32-1
             decrsaturate = true; // Counter saturates at 0
             overflow = true;     // Generate a signal that tells if the counter overflows

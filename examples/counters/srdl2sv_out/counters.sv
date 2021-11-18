@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 06 2021 18:27:58
+ *  - Time     : November 17 2021 22:15:57
  *  - Path     : /home/dpotter/srdl2sv/examples/counters
  *  - RDL file : ['counters.rdl']
  *  - Hostname : ArchXPS 
@@ -84,6 +84,7 @@ module counters
     input  [32-1:0] HWDATA                                ,
     input           HSEL                                  ,
     input           wide_counters__counter_b_lsb__cnt_incr[2],
+    input           counter_a__cnt_hwclr                  ,
     input           counter_a__cnt_incr                   ,
     input           counter_a__cnt_decr                   ,
     
@@ -292,9 +293,9 @@ begin
     end
     
     
-    /************************************** 
-     * Assign all fields to signal to Mux *
-     **************************************/
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
     assign wide_counters__counter_b_lsb_data_mux_in[gv_a] = {wide_counters__counter_b_lsb__cnt_q[gv_a]};
     
@@ -403,9 +404,9 @@ begin
     end
     
     
-    /************************************** 
-     * Assign all fields to signal to Mux *
-     **************************************/
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
     assign wide_counters__counter_b_msb_data_mux_in[gv_a] = {wide_counters__counter_b_msb__cnt_q[gv_a]};
     
@@ -473,9 +474,9 @@ end // of counter_a_threshold__threshold's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign counter_a_threshold_data_mux_in = {counter_a_threshold__threshold_q};
 
@@ -527,7 +528,7 @@ assign counter_a_sw_wr = counter_a_active && widget_if.w_vld;
 // access       : hw = rw  
 //                sw = rw (precedence)
 // reset        : active_low / asynchronous
-// flags        : ['sw', 'onwrite', 'counter', 'incrsaturate', 'saturate', 'decrsaturate', 'overflow', 'threshold', 'incrthreshold']
+// flags        : ['sw', 'onwrite', 'counter', 'hwclr', 'incrsaturate', 'saturate', 'decrsaturate', 'overflow', 'threshold', 'incrthreshold']
 // external     : False
 // storage type : StorageType.FLOPS
 //-----------------------------------------------
@@ -550,6 +551,9 @@ begin
         if (widget_if.byte_en[3]) // wclr property
             counter_a__cnt_q[31:24] <= 8'b0;
     end
+    else
+    if (counter_a__cnt_hwclr)
+        counter_a__cnt_q <= {32{1'b0}};
     else
     if (counter_a__cnt_incr || counter_a__cnt_decr)
         counter_a__cnt_q <= counter_a__cnt_next;
@@ -607,9 +611,9 @@ begin
 end
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign counter_a_data_mux_in = {counter_a__cnt_q};
 
@@ -736,9 +740,9 @@ assign counter_b_overflow_intr__ovrflw_0_sticky_latch = wide_counters__counter_b
 assign counter_b_overflow_intr_intr = |(counter_b_overflow_intr__ovrflw_1_q) || |(counter_b_overflow_intr__ovrflw_0_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign counter_b_overflow_intr_data_mux_in = {{30{1'b0}}, counter_b_overflow_intr__ovrflw_0_q, counter_b_overflow_intr__ovrflw_1_q};
 
