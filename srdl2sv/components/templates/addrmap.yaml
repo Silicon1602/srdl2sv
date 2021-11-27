@@ -87,7 +87,7 @@ import_package:
         import {name}_pkg::*;
 reset_port: 
     rtl:
-        input  {name},
+        input               {name},
 port:
     rtl: |-
       {direction:6} {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
