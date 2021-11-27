@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 04 2021 23:31:13
+ *  - Time     : November 26 2021 16:33:16
  *  - Path     : /home/dpotter/srdl2sv/examples/parameters
  *  - RDL file : ['parameters.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Address Errors   : True
  *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
@@ -69,32 +70,41 @@
 module paremeters
     
 (
-    // Resets
+    // Reset signals declared for registers
     input  rst_async_n, 
     
-    // Inputs
-    input               clk               ,
-    input               HRESETn           ,
-    input  [31:0]       HADDR             ,
-    input               HWRITE            ,
-    input  [2:0]        HSIZE             ,
-    input  [3:0]        HPROT             ,
-    input  [1:0]        HTRANS            ,
-    input  [32-1:0]     HWDATA            ,
-    input               HSEL              ,
-    input  [31:0]       reg32__data_in    ,
-    input  [31:0]       reg32_arr__data_in[8],
-    input  [15:0]       reg16__data_in    ,
-    input  [7:0]        reg8__data_in     ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output              HREADYOUT        ,
-    output              HRESP            ,
-    output [32-1:0]     HRDATA           ,
-    output [31:0]       reg32__data_r    ,
-    output [31:0]       reg32_arr__data_r[8],
-    output [15:0]       reg16__data_r    ,
-    output [7:0]        reg8__data_r     
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'reg32'
+    input  [31:0]       reg32__data_in,
+    output [31:0]       reg32__data_r ,
+    
+    // Ports for 'reg32_arr'
+    input  [31:0]       reg32_arr__data_in[8],
+    output [31:0]       reg32_arr__data_r [8],
+    
+    // Ports for 'reg16'
+    input  [15:0]       reg16__data_in,
+    output [15:0]       reg16__data_r ,
+    
+    // Ports for 'reg8'
+    input  [7:0]        reg8__data_in,
+    output [7:0]        reg8__data_r 
+    
 );
 
 
@@ -196,9 +206,9 @@ assign reg32__data_r = reg32__data_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign reg32_data_mux_in = {reg32__data_q};
 
@@ -272,9 +282,9 @@ begin
     
     
     
-    /************************************** 
-     * Assign all fields to signal to Mux *
-     **************************************/
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
     assign reg32_arr_data_mux_in[gv_a] = {reg32_arr__data_q[gv_a]};
     
@@ -300,7 +310,7 @@ endgenerate
 
 logic        reg16_active     ;
 logic        reg16_sw_wr      ;
-logic [15:0] reg16_data_mux_in;
+logic [31:0] reg16_data_mux_in;
 logic        reg16_rdy_mux_in ;
 logic        reg16_err_mux_in ;
 logic [15:0] reg16__data_q    ;
@@ -345,11 +355,11 @@ assign reg16__data_r = reg16__data_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
-assign reg16_data_mux_in = {reg16__data_q};
+assign reg16_data_mux_in = {{16{1'b0}}, reg16__data_q};
 
 // Internal registers are ready immediately
 assign reg16_rdy_mux_in = 1'b1;
@@ -367,15 +377,15 @@ assign reg16_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[1:0])) || (w
 /*******************************************************************
 /*******************************************************************/
 
-logic       reg8_active     ;
-logic [7:0] reg8_data_mux_in;
-logic       reg8_rdy_mux_in ;
-logic       reg8_err_mux_in ;
-logic [7:0] reg8__data_q    ;
+logic        reg8_active     ;
+logic [31:0] reg8_data_mux_in;
+logic        reg8_rdy_mux_in ;
+logic        reg8_err_mux_in ;
+logic [7:0]  reg8__data_q    ;
 
 
 // Register-activation for 'reg8' 
-assign reg8_active = widget_if.addr == 38;
+assign reg8_active = widget_if.addr == 40;
 
 //-----------------FIELD SUMMARY-----------------
 // name         : data (reg8[7:0])
@@ -404,11 +414,11 @@ assign reg8__data_r = reg8__data_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
-assign reg8_data_mux_in = {reg8__data_q};
+assign reg8_data_mux_in = {{24{1'b0}}, reg8__data_q};
 
 // Internal registers are ready immediately
 assign reg8_rdy_mux_in = 1'b1;

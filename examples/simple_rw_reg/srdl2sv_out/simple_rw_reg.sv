@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 02 2021 23:27:37
+ *  - Time     : November 26 2021 16:32:58
  *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Address Errors   : True
  *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
@@ -69,42 +70,49 @@
 module simple_rw_reg
     
 (
-    // Resets
+    // Reset signals declared for registers
      
     
-    // Inputs
-    input               clk                  ,
-    input               HRESETn              ,
-    input  [31:0]       HADDR                ,
-    input               HWRITE               ,
-    input  [2:0]        HSIZE                ,
-    input  [3:0]        HPROT                ,
-    input  [1:0]        HTRANS               ,
-    input  [32-1:0]     HWDATA               ,
-    input               HSEL                 ,
+    // Ports for 'General Clock'
+    input               clk,
+    
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'register_1d'
     input               register_1d__f1_hw_wr,
     input  [15:0]       register_1d__f1_in   ,
+    output [15:0]       register_1d__f1_r    ,
     input               register_1d__f2_hw_wr,
     input  [15:0]       register_1d__f2_in   ,
+    output [15:0]       register_1d__f2_r    ,
+    
+    // Ports for 'register_2d'
     input               register_2d__f1_hw_wr[2],
     input  [15:0]       register_2d__f1_in   [2],
+    output [15:0]       register_2d__f1_r    [2],
     input               register_2d__f2_hw_wr[2],
     input  [15:0]       register_2d__f2_in   [2],
+    output [15:0]       register_2d__f2_r    [2],
+    
+    // Ports for 'register_3d'
     input               register_3d__f1_hw_wr[2][2],
     input  [15:0]       register_3d__f1_in   [2][2],
+    output [15:0]       register_3d__f1_r    [2][2],
     input               register_3d__f2_hw_wr[2][2],
     input  [15:0]       register_3d__f2_in   [2][2],
+    output [15:0]       register_3d__f2_r    [2][2]
     
-    // Outputs
-    output              HREADYOUT        ,
-    output              HRESP            ,
-    output [32-1:0]     HRDATA           ,
-    output [15:0]       register_1d__f1_r,
-    output [15:0]       register_1d__f2_r,
-    output [15:0]       register_2d__f1_r[2],
-    output [15:0]       register_2d__f2_r[2],
-    output [15:0]       register_3d__f1_r[2][2],
-    output [15:0]       register_3d__f2_r[2][2]
 );
 
 
@@ -227,9 +235,9 @@ assign register_1d__f2_r = register_1d__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign register_1d_data_mux_in = {register_1d__f2_q, register_1d__f1_q};
 
@@ -324,9 +332,9 @@ begin
     
     
     
-    /************************************** 
-     * Assign all fields to signal to Mux *
-     **************************************/
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
     assign register_2d_data_mux_in[gv_a] = {register_2d__f2_q[gv_a], register_2d__f1_q[gv_a]};
     
@@ -427,9 +435,9 @@ begin
         
         
         
-        /************************************** 
-         * Assign all fields to signal to Mux *
-         **************************************/
+        /********************************************** 
+         * Assign all fields to signal to Mux         *
+         **********************************************/
         // Assign all fields. Fields that are not readable are tied to 0.
         assign register_3d_data_mux_in[gv_a][gv_b] = {register_3d__f2_q[gv_a][gv_b], register_3d__f1_q[gv_a][gv_b]};
         

@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 02 2021 23:27:37
+ *  - Time     : November 26 2021 16:32:56
  *  - Path     : /home/dpotter/srdl2sv/examples/enums
  *  - RDL file : ['enums.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Address Errors   : True
  *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
@@ -70,40 +71,49 @@ module enums
     import enums_pkg::*;
     import enums__regfile_1_pkg::*;
 (
-    // Resets
+    // Reset signals declared for registers
      
     
-    // Inputs
-    input                                    clk                    ,
-    input                                    HRESETn                ,
-    input  [31:0]                            HADDR                  ,
-    input                                    HWRITE                 ,
-    input  [2:0]                             HSIZE                  ,
-    input  [3:0]                             HPROT                  ,
-    input  [1:0]                             HTRANS                 ,
-    input  [32-1:0]                          HWDATA                 ,
-    input                                    HSEL                   ,
-    input  enums_pkg::third_enum             regfile_1__reg_c__f1_in,
-    input  [1:0]                             regfile_1__reg_c__f2_in,
-    input  enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_in,
-    input  [1:0]                             regfile_1__reg_d__f2_in,
-    input  enums_pkg::first_enum             reg_a__f1_in           ,
-    input  [1:0]                             reg_a__f2_in           ,
-    input  enums_pkg::second_enum            reg_b__f1_in           ,
-    input  [1:0]                             reg_b__f2_in           ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output                                   HREADYOUT             ,
-    output                                   HRESP                 ,
-    output [32-1:0]                          HRDATA                ,
-    output enums_pkg::third_enum             regfile_1__reg_c__f1_r,
-    output [1:0]                             regfile_1__reg_c__f2_r,
-    output enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_r,
-    output [1:0]                             regfile_1__reg_d__f2_r,
-    output enums_pkg::first_enum             reg_a__f1_r           ,
-    output [1:0]                             reg_a__f2_r           ,
-    output enums_pkg::second_enum            reg_b__f1_r           ,
-    output [1:0]                             reg_b__f2_r           
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'regfile_1__reg_c'
+    input  enums_pkg::third_enum regfile_1__reg_c__f1_in,
+    output enums_pkg::third_enum regfile_1__reg_c__f1_r ,
+    input  [1:0]                 regfile_1__reg_c__f2_in,
+    output [1:0]                 regfile_1__reg_c__f2_r ,
+    
+    // Ports for 'regfile_1__reg_d'
+    input  enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_in,
+    output enums__regfile_1_pkg::fourth_enum regfile_1__reg_d__f1_r ,
+    input  [1:0]                             regfile_1__reg_d__f2_in,
+    output [1:0]                             regfile_1__reg_d__f2_r ,
+    
+    // Ports for 'reg_a'
+    input  enums_pkg::first_enum reg_a__f1_in,
+    output enums_pkg::first_enum reg_a__f1_r ,
+    input  [1:0]                 reg_a__f2_in,
+    output [1:0]                 reg_a__f2_r ,
+    
+    // Ports for 'reg_b'
+    input  enums_pkg::second_enum reg_b__f1_in,
+    output enums_pkg::second_enum reg_b__f1_r ,
+    input  [1:0]                  reg_b__f2_in,
+    output [1:0]                  reg_b__f2_r 
+    
 );
 
 
@@ -227,9 +237,9 @@ assign regfile_1__reg_c__f2_r = regfile_1__reg_c__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign regfile_1__reg_c_data_mux_in = {{22{1'b0}}, regfile_1__reg_c__f2_q, {6{1'b0}}, regfile_1__reg_c__f1_q};
 
@@ -317,9 +327,9 @@ assign regfile_1__reg_d__f2_r = regfile_1__reg_d__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign regfile_1__reg_d_data_mux_in = {{22{1'b0}}, regfile_1__reg_d__f2_q, {6{1'b0}}, regfile_1__reg_d__f1_q};
 
@@ -407,9 +417,9 @@ assign reg_a__f2_r = reg_a__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign reg_a_data_mux_in = {{22{1'b0}}, reg_a__f2_q, {6{1'b0}}, reg_a__f1_q};
 
@@ -497,9 +507,9 @@ assign reg_b__f2_r = reg_b__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign reg_b_data_mux_in = {{22{1'b0}}, reg_b__f2_q, {6{1'b0}}, reg_b__f1_q};
 

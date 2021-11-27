@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 07 2021 11:34:07
+ *  - Time     : November 26 2021 16:31:40
  *  - Path     : /home/dpotter/srdl2sv/examples/aliases
  *  - RDL file : ['aliases.rdl']
  *  - Hostname : ArchXPS 
@@ -70,61 +70,68 @@
 module aliases
     
 (
-    // Resets
+    // Reset signals declared for registers
      
     
-    // Inputs
-    input               clk                                    ,
-    input               HRESETn                                ,
-    input  [31:0]       HADDR                                  ,
-    input               HWRITE                                 ,
-    input  [2:0]        HSIZE                                  ,
-    input  [3:0]        HPROT                                  ,
-    input  [1:0]        HTRANS                                 ,
-    input  [32-1:0]     HWDATA                                 ,
-    input               HSEL                                   ,
-    input               example_rf__ext_main_reg__f1_ext_r_err [4],
-    input               example_rf__ext_main_reg__f1_ext_r_ack [4],
-    input               example_rf__ext_main_reg__f2_ext_r_err [4],
-    input               example_rf__ext_main_reg__f2_ext_r_ack [4],
-    input               example_rf__ext_main_reg__f1_ext_w_err [4],
-    input               example_rf__ext_main_reg__f1_ext_w_ack [4],
-    input               example_rf__ext_main_reg__f2_ext_w_err [4],
-    input               example_rf__ext_main_reg__f2_ext_w_ack [4],
-    input  [15:0]       example_rf__ext_main_reg__f1_ext_r_data[4],
-    input  [15:0]       example_rf__ext_main_reg__f2_ext_r_data[4],
-    input  [0:0]        event1__some_event_in                  ,
-    input               four_field_reg__f1_hw_wr               ,
-    input  [7:0]        four_field_reg__f1_in                  ,
-    input               four_field_reg__f2_hw_wr               ,
-    input  [7:0]        four_field_reg__f2_in                  ,
-    input               four_field_reg__f3_hw_wr               ,
-    input  [7:0]        four_field_reg__f3_in                  ,
-    input               four_field_reg__f4_hw_wr               ,
-    input  [7:0]        four_field_reg__f4_in                  ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output              HREADYOUT                               ,
-    output              HRESP                                   ,
-    output [32-1:0]     HRDATA                                  ,
-    output              example_rf__ext_main_reg__f1_ext_w_req  [4],
-    output [15:0]       example_rf__ext_main_reg__f1_ext_w_data [4],
-    output [15:0]       example_rf__ext_main_reg__f1_ext_w_mask [4],
-    output              example_rf__ext_main_reg__f1_ext_r_req  [4],
-    output              example_rf__ext_alias_reg__field_1_ext_w_req[4],
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'example_rf__ext_main_reg'
+    input               example_rf__ext_main_reg__f1_ext_r_err       [4],
+    input               example_rf__ext_main_reg__f1_ext_r_ack       [4],
+    input               example_rf__ext_main_reg__f2_ext_r_err       [4],
+    input               example_rf__ext_main_reg__f2_ext_r_ack       [4],
+    input               example_rf__ext_main_reg__f1_ext_w_err       [4],
+    input               example_rf__ext_main_reg__f1_ext_w_ack       [4],
+    input               example_rf__ext_main_reg__f2_ext_w_err       [4],
+    input               example_rf__ext_main_reg__f2_ext_w_ack       [4],
+    output              example_rf__ext_main_reg__f1_ext_w_req       [4],
+    output [15:0]       example_rf__ext_main_reg__f1_ext_w_data      [4],
+    output [15:0]       example_rf__ext_main_reg__f1_ext_w_mask      [4],
+    input  [15:0]       example_rf__ext_main_reg__f1_ext_r_data      [4],
+    output              example_rf__ext_main_reg__f1_ext_r_req       [4],
+    output              example_rf__ext_alias_reg__field_1_ext_w_req [4],
     output [15:0]       example_rf__ext_alias_reg__field_1_ext_w_data[4],
     output [15:0]       example_rf__ext_alias_reg__field_1_ext_w_mask[4],
-    output              example_rf__ext_alias_reg__field_1_ext_r_req[4],
-    output              example_rf__ext_main_reg__f2_ext_w_req  [4],
-    output [15:0]       example_rf__ext_main_reg__f2_ext_w_data [4],
-    output [15:0]       example_rf__ext_main_reg__f2_ext_w_mask [4],
-    output              example_rf__ext_main_reg__f2_ext_r_req  [4],
-    output              event1_intr                             ,
-    output [7:0]        four_field_reg__f1_r                    ,
-    output [7:0]        four_field_reg__f2_r                    ,
-    output [7:0]        four_field_reg__f3_r                    ,
-    output reg          four_field_reg__f3_swmod                ,
-    output [7:0]        four_field_reg__f4_r                    
+    output              example_rf__ext_alias_reg__field_1_ext_r_req [4],
+    output              example_rf__ext_main_reg__f2_ext_w_req       [4],
+    output [15:0]       example_rf__ext_main_reg__f2_ext_w_data      [4],
+    output [15:0]       example_rf__ext_main_reg__f2_ext_w_mask      [4],
+    input  [15:0]       example_rf__ext_main_reg__f2_ext_r_data      [4],
+    output              example_rf__ext_main_reg__f2_ext_r_req       [4],
+    
+    // Ports for 'event1'
+    output              event1_intr          ,
+    input  [0:0]        event1__some_event_in,
+    
+    // Ports for 'four_field_reg'
+    input               four_field_reg__f1_hw_wr,
+    input  [7:0]        four_field_reg__f1_in   ,
+    output [7:0]        four_field_reg__f1_r    ,
+    input               four_field_reg__f2_hw_wr,
+    input  [7:0]        four_field_reg__f2_in   ,
+    output [7:0]        four_field_reg__f2_r    ,
+    input               four_field_reg__f3_hw_wr,
+    input  [7:0]        four_field_reg__f3_in   ,
+    output [7:0]        four_field_reg__f3_r    ,
+    output reg          four_field_reg__f3_swmod,
+    input               four_field_reg__f4_hw_wr,
+    input  [7:0]        four_field_reg__f4_in   ,
+    output [7:0]        four_field_reg__f4_r    
+    
 );
 
 

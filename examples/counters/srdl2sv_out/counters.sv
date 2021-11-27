@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 17 2021 22:15:57
+ *  - Time     : November 26 2021 16:32:56
  *  - Path     : /home/dpotter/srdl2sv/examples/counters
  *  - RDL file : ['counters.rdl']
  *  - Hostname : ArchXPS 
@@ -70,36 +70,45 @@
 module counters
     
 (
-    // Resets
+    // Reset signals declared for registers
     input  rst_async_n, 
     
-    // Inputs
-    input           clk                                   ,
-    input           HRESETn                               ,
-    input  [31:0]   HADDR                                 ,
-    input           HWRITE                                ,
-    input  [2:0]    HSIZE                                 ,
-    input  [3:0]    HPROT                                 ,
-    input  [1:0]    HTRANS                                ,
-    input  [32-1:0] HWDATA                                ,
-    input           HSEL                                  ,
-    input           wide_counters__counter_b_lsb__cnt_incr[2],
-    input           counter_a__cnt_hwclr                  ,
-    input           counter_a__cnt_incr                   ,
-    input           counter_a__cnt_decr                   ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output              HREADYOUT                               ,
-    output              HRESP                                   ,
-    output [32-1:0]     HRDATA                                  ,
-    output [31:0]       wide_counters__counter_b_lsb__cnt_r     [2],
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'wide_counters__counter_b_lsb'
+    output [31:0]       wide_counters__counter_b_lsb__cnt_r       [2],
+    input               wide_counters__counter_b_lsb__cnt_incr    [2],
     output              wide_counters__counter_b_lsb__cnt_overflow[2],
-    output [31:0]       wide_counters__counter_b_msb__cnt_r     [2],
+    
+    // Ports for 'wide_counters__counter_b_msb'
+    output [31:0]       wide_counters__counter_b_msb__cnt_r       [2],
     output              wide_counters__counter_b_msb__cnt_overflow[2],
-    output [31:0]       counter_a__cnt_r                        ,
-    output              counter_a__cnt_incr_thr                 ,
-    output              counter_a__cnt_overflow                 ,
-    output              counter_b_overflow_intr_intr            
+    
+    // Ports for 'counter_a'
+    input               counter_a__cnt_hwclr   ,
+    output [31:0]       counter_a__cnt_r       ,
+    input               counter_a__cnt_incr    ,
+    input               counter_a__cnt_decr    ,
+    output              counter_a__cnt_incr_thr,
+    output              counter_a__cnt_overflow,
+    
+    // Ports for 'counter_b_overflow_intr'
+    output              counter_b_overflow_intr_intr
+    
 );
 
 /*******************************************************************
@@ -161,36 +170,36 @@ that will fire an interrupt as soon as it wraps around.
 /*******************************************************************/
 
 // Variables of register 'counter_b_lsb'
-logic        wide_counters__counter_b_lsb_active     [2];
-logic        wide_counters__counter_b_lsb_sw_wr      [2];
-logic [31:0] wide_counters__counter_b_lsb_data_mux_in[2];
-logic        wide_counters__counter_b_lsb_rdy_mux_in [2];
-logic        wide_counters__counter_b_lsb_err_mux_in [2];
-logic [31:0] wide_counters__counter_b_lsb__cnt_q     [2];
-logic        wide_counters__counter_b_lsb__cnt_update_cnt[2];
-logic [31:0] wide_counters__counter_b_lsb__cnt_next  [2];
-logic [0:0]  wide_counters__counter_b_lsb__cnt_incr_val[2];
-logic [0:0]  wide_counters__counter_b_lsb__cnt_decr_val[2];
-logic        wide_counters__counter_b_lsb__cnt_decr  [2];
-logic        wide_counters__counter_b_lsb__cnt_incr_sat[2];
-logic        wide_counters__counter_b_lsb__cnt_decr_sat[2];
+logic        wide_counters__counter_b_lsb_active           [2];
+logic        wide_counters__counter_b_lsb_sw_wr            [2];
+logic [31:0] wide_counters__counter_b_lsb_data_mux_in      [2];
+logic        wide_counters__counter_b_lsb_rdy_mux_in       [2];
+logic        wide_counters__counter_b_lsb_err_mux_in       [2];
+logic [31:0] wide_counters__counter_b_lsb__cnt_q           [2];
+logic        wide_counters__counter_b_lsb__cnt_update_cnt  [2];
+logic [31:0] wide_counters__counter_b_lsb__cnt_next        [2];
+logic [0:0]  wide_counters__counter_b_lsb__cnt_incr_val    [2];
+logic [0:0]  wide_counters__counter_b_lsb__cnt_decr_val    [2];
+logic        wide_counters__counter_b_lsb__cnt_decr        [2];
+logic        wide_counters__counter_b_lsb__cnt_incr_sat    [2];
+logic        wide_counters__counter_b_lsb__cnt_decr_sat    [2];
 logic        wide_counters__counter_b_lsb__cnt_overflow_int[2];
 
 // Variables of register 'counter_b_msb'
-logic        wide_counters__counter_b_msb_active     [2];
-logic        wide_counters__counter_b_msb_sw_wr      [2];
-logic [31:0] wide_counters__counter_b_msb_data_mux_in[2];
-logic        wide_counters__counter_b_msb_rdy_mux_in [2];
-logic        wide_counters__counter_b_msb_err_mux_in [2];
-logic [31:0] wide_counters__counter_b_msb__cnt_q     [2];
-logic        wide_counters__counter_b_msb__cnt_update_cnt[2];
-logic [31:0] wide_counters__counter_b_msb__cnt_next  [2];
-logic [0:0]  wide_counters__counter_b_msb__cnt_incr_val[2];
-logic [0:0]  wide_counters__counter_b_msb__cnt_decr_val[2];
-logic        wide_counters__counter_b_msb__cnt_incr  [2];
-logic        wide_counters__counter_b_msb__cnt_decr  [2];
-logic        wide_counters__counter_b_msb__cnt_incr_sat[2];
-logic        wide_counters__counter_b_msb__cnt_decr_sat[2];
+logic        wide_counters__counter_b_msb_active           [2];
+logic        wide_counters__counter_b_msb_sw_wr            [2];
+logic [31:0] wide_counters__counter_b_msb_data_mux_in      [2];
+logic        wide_counters__counter_b_msb_rdy_mux_in       [2];
+logic        wide_counters__counter_b_msb_err_mux_in       [2];
+logic [31:0] wide_counters__counter_b_msb__cnt_q           [2];
+logic        wide_counters__counter_b_msb__cnt_update_cnt  [2];
+logic [31:0] wide_counters__counter_b_msb__cnt_next        [2];
+logic [0:0]  wide_counters__counter_b_msb__cnt_incr_val    [2];
+logic [0:0]  wide_counters__counter_b_msb__cnt_decr_val    [2];
+logic        wide_counters__counter_b_msb__cnt_incr        [2];
+logic        wide_counters__counter_b_msb__cnt_decr        [2];
+logic        wide_counters__counter_b_msb__cnt_incr_sat    [2];
+logic        wide_counters__counter_b_msb__cnt_decr_sat    [2];
 logic        wide_counters__counter_b_msb__cnt_overflow_int[2];
 
 generate
@@ -633,14 +642,14 @@ assign counter_a_err_mux_in = !((widget_if.r_vld && (|widget_if.byte_en[3:0])) |
 /*******************************************************************
 /*******************************************************************/
 
-logic        counter_b_overflow_intr_active          ;
-logic        counter_b_overflow_intr_sw_wr           ;
-logic [31:0] counter_b_overflow_intr_data_mux_in     ;
-logic        counter_b_overflow_intr_rdy_mux_in      ;
-logic        counter_b_overflow_intr_err_mux_in      ;
-logic [0:0]  counter_b_overflow_intr__ovrflw_1_q     ;
+logic        counter_b_overflow_intr_active                ;
+logic        counter_b_overflow_intr_sw_wr                 ;
+logic [31:0] counter_b_overflow_intr_data_mux_in           ;
+logic        counter_b_overflow_intr_rdy_mux_in            ;
+logic        counter_b_overflow_intr_err_mux_in            ;
+logic [0:0]  counter_b_overflow_intr__ovrflw_1_q           ;
 logic [0:0]  counter_b_overflow_intr__ovrflw_1_sticky_latch;
-logic [0:0]  counter_b_overflow_intr__ovrflw_0_q     ;
+logic [0:0]  counter_b_overflow_intr__ovrflw_0_q           ;
 logic [0:0]  counter_b_overflow_intr__ovrflw_0_sticky_latch;
 
 

@@ -1,0 +1,99 @@
+verilator -cc -sv srdl2sv_out/aliases.sv srdl2sv_out/srdl2sv_amba3ahblite.sv srdl2sv_out/srdl2sv_widget_if.sv
+%Error: srdl2sv_out/aliases.sv:103:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f1_ext_w_ack'
+  103 |     input               example_rf__ext_main_reg__f1_ext_w_ack       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:98:25: ... Location of original declaration
+   98 |     input               example_rf__ext_main_reg__f1_ext_w_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:104:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f1_ext_w_err'
+  104 |     input               example_rf__ext_main_reg__f1_ext_w_err       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:97:25: ... Location of original declaration
+   97 |     input               example_rf__ext_main_reg__f1_ext_w_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:109:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f1_ext_r_ack'
+  109 |     input               example_rf__ext_main_reg__f1_ext_r_ack       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:94:25: ... Location of original declaration
+   94 |     input               example_rf__ext_main_reg__f1_ext_r_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:110:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f1_ext_r_err'
+  110 |     input               example_rf__ext_main_reg__f1_ext_r_err       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:93:25: ... Location of original declaration
+   93 |     input               example_rf__ext_main_reg__f1_ext_r_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:118:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f2_ext_w_ack'
+  118 |     input               example_rf__ext_main_reg__f2_ext_w_ack [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:100:25: ... Location of original declaration
+  100 |     input               example_rf__ext_main_reg__f2_ext_w_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:119:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f2_ext_w_err'
+  119 |     input               example_rf__ext_main_reg__f2_ext_w_err [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:99:25: ... Location of original declaration
+   99 |     input               example_rf__ext_main_reg__f2_ext_w_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:124:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f2_ext_r_ack'
+  124 |     input               example_rf__ext_main_reg__f2_ext_r_ack [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:96:25: ... Location of original declaration
+   96 |     input               example_rf__ext_main_reg__f2_ext_r_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:125:25: Duplicate declaration of signal: 'example_rf__ext_main_reg__f2_ext_r_err'
+  125 |     input               example_rf__ext_main_reg__f2_ext_r_err [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:95:25: ... Location of original declaration
+   95 |     input               example_rf__ext_main_reg__f2_ext_r_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:103:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f1_ext_w_ack'
+  103 |     input               example_rf__ext_main_reg__f1_ext_w_ack       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:98:25: ... Location of original declaration
+   98 |     input               example_rf__ext_main_reg__f1_ext_w_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:104:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f1_ext_w_err'
+  104 |     input               example_rf__ext_main_reg__f1_ext_w_err       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:97:25: ... Location of original declaration
+   97 |     input               example_rf__ext_main_reg__f1_ext_w_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:109:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f1_ext_r_ack'
+  109 |     input               example_rf__ext_main_reg__f1_ext_r_ack       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:94:25: ... Location of original declaration
+   94 |     input               example_rf__ext_main_reg__f1_ext_r_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:110:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f1_ext_r_err'
+  110 |     input               example_rf__ext_main_reg__f1_ext_r_err       [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:93:25: ... Location of original declaration
+   93 |     input               example_rf__ext_main_reg__f1_ext_r_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:118:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f2_ext_w_ack'
+  118 |     input               example_rf__ext_main_reg__f2_ext_w_ack [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:100:25: ... Location of original declaration
+  100 |     input               example_rf__ext_main_reg__f2_ext_w_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:119:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f2_ext_w_err'
+  119 |     input               example_rf__ext_main_reg__f2_ext_w_err [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:99:25: ... Location of original declaration
+   99 |     input               example_rf__ext_main_reg__f2_ext_w_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:124:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f2_ext_r_ack'
+  124 |     input               example_rf__ext_main_reg__f2_ext_r_ack [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:96:25: ... Location of original declaration
+   96 |     input               example_rf__ext_main_reg__f2_ext_r_ack[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: srdl2sv_out/aliases.sv:125:25: Duplicate declaration of port: 'example_rf__ext_main_reg__f2_ext_r_err'
+  125 |     input               example_rf__ext_main_reg__f2_ext_r_err [4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        srdl2sv_out/aliases.sv:95:25: ... Location of original declaration
+   95 |     input               example_rf__ext_main_reg__f2_ext_r_err[4],
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to 16 error(s)
+make: *** [Makefile:8: verilog_compile] Error 1

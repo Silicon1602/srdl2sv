@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 02 2021 23:27:37
+ *  - Time     : November 26 2021 16:32:57
  *  - Path     : /home/dpotter/srdl2sv/examples/hierarchical_regfiles
  *  - RDL file : ['hierarchical_regfiles.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Address Errors   : True
  *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
@@ -69,49 +70,60 @@
 module hierarchical_regfiles
     
 (
-    // Resets
+    // Reset signals declared for registers
      
     
-    // Inputs
-    input               clk                               ,
-    input               HRESETn                           ,
-    input  [31:0]       HADDR                             ,
-    input               HWRITE                            ,
-    input  [2:0]        HSIZE                             ,
-    input  [3:0]        HPROT                             ,
-    input  [1:0]        HTRANS                            ,
-    input  [32-1:0]     HWDATA                            ,
-    input               HSEL                              ,
-    input               regfile_1__reg_a__f1_hw_wr        ,
-    input  [15:0]       regfile_1__reg_a__f1_in           ,
-    input               regfile_1__reg_a__f2_hw_wr        ,
-    input  [15:0]       regfile_1__reg_a__f2_in           ,
-    input               regfile_1__reg_b__f1_hw_wr        ,
-    input  [15:0]       regfile_1__reg_b__f1_in           ,
-    input               regfile_1__reg_b__f2_hw_wr        ,
-    input  [15:0]       regfile_1__reg_b__f2_in           ,
-    input  [15:0]       regfile_2__regfile_3__reg_d__f1_in[3][4][2],
-    input  [15:0]       regfile_2__regfile_3__reg_d__f2_in[3][4][2],
-    input  [7:0]        regfile_2__reg_c__f1_in           [3],
-    input  [15:0]       regfile_2__reg_c__f3_in           [3],
-    input               reg_e__f1_hw_wr                   ,
-    input  [15:0]       reg_e__f1_in                      ,
-    input               reg_e__f2_hw_wr                   ,
-    input  [15:0]       reg_e__f2_in                      ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output              HREADYOUT                        ,
-    output              HRESP                            ,
-    output [32-1:0]     HRDATA                           ,
-    output [15:0]       regfile_1__reg_a__f1_r           ,
-    output [15:0]       regfile_1__reg_a__f2_r           ,
-    output [15:0]       regfile_1__reg_b__f1_r           ,
-    output [15:0]       regfile_1__reg_b__f2_r           ,
-    output [15:0]       regfile_2__regfile_3__reg_d__f1_r[3][4][2],
-    output [15:0]       regfile_2__regfile_3__reg_d__f2_r[3][4][2],
-    output [7:0]        regfile_2__reg_c__f2_r           [3],
-    output [15:0]       reg_e__f1_r                      ,
-    output [15:0]       reg_e__f2_r                      
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'regfile_1__reg_a'
+    input               regfile_1__reg_a__f1_hw_wr,
+    input  [15:0]       regfile_1__reg_a__f1_in   ,
+    output [15:0]       regfile_1__reg_a__f1_r    ,
+    input               regfile_1__reg_a__f2_hw_wr,
+    input  [15:0]       regfile_1__reg_a__f2_in   ,
+    output [15:0]       regfile_1__reg_a__f2_r    ,
+    
+    // Ports for 'regfile_1__reg_b'
+    input               regfile_1__reg_b__f1_hw_wr,
+    input  [15:0]       regfile_1__reg_b__f1_in   ,
+    output [15:0]       regfile_1__reg_b__f1_r    ,
+    input               regfile_1__reg_b__f2_hw_wr,
+    input  [15:0]       regfile_1__reg_b__f2_in   ,
+    output [15:0]       regfile_1__reg_b__f2_r    ,
+    
+    // Ports for 'regfile_2__regfile_3__reg_d'
+    input  [15:0]       regfile_2__regfile_3__reg_d__f1_in[3][4][2],
+    output [15:0]       regfile_2__regfile_3__reg_d__f1_r [3][4][2],
+    input  [15:0]       regfile_2__regfile_3__reg_d__f2_in[3][4][2],
+    output [15:0]       regfile_2__regfile_3__reg_d__f2_r [3][4][2],
+    
+    // Ports for 'regfile_2__reg_c'
+    input  [7:0]        regfile_2__reg_c__f1_in[3],
+    output [7:0]        regfile_2__reg_c__f2_r [3],
+    input  [15:0]       regfile_2__reg_c__f3_in[3],
+    
+    // Ports for 'reg_e'
+    input               reg_e__f1_hw_wr,
+    input  [15:0]       reg_e__f1_in   ,
+    output [15:0]       reg_e__f1_r    ,
+    input               reg_e__f2_hw_wr,
+    input  [15:0]       reg_e__f2_in   ,
+    output [15:0]       reg_e__f2_r    
+    
 );
 
 
@@ -242,9 +254,9 @@ assign regfile_1__reg_a__f2_r = regfile_1__reg_a__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign regfile_1__reg_a_data_mux_in = {regfile_1__reg_a__f2_q, regfile_1__reg_a__f1_q};
 
@@ -336,9 +348,9 @@ assign regfile_1__reg_b__f2_r = regfile_1__reg_b__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign regfile_1__reg_b_data_mux_in = {regfile_1__reg_b__f2_q, regfile_1__reg_b__f1_q};
 
@@ -465,9 +477,9 @@ begin
             
             
             
-            /************************************** 
-             * Assign all fields to signal to Mux *
-             **************************************/
+            /********************************************** 
+             * Assign all fields to signal to Mux         *
+             **********************************************/
             // Assign all fields. Fields that are not readable are tied to 0.
             assign regfile_2__regfile_3__reg_d_data_mux_in[gv_a][gv_b][gv_c] = {regfile_2__regfile_3__reg_d__f2_q[gv_a][gv_b][gv_c], regfile_2__regfile_3__reg_d__f1_q[gv_a][gv_b][gv_c]};
             
@@ -509,6 +521,8 @@ begin
     // a reset, or change the sw/hw access properties
     assign regfile_2__reg_c__f1_q[gv_a] = regfile_2__reg_c__f1_in[gv_a];
     
+    
+    
     //-----------------FIELD SUMMARY-----------------
     // name         : f2 (regfile_2__reg_c[15:8])
     // access       : hw = r  
@@ -524,6 +538,8 @@ begin
     
     // Connect register to hardware output port
     assign regfile_2__reg_c__f2_r[gv_a] = regfile_2__reg_c__f2_q[gv_a];
+    
+    
     
     //-----------------FIELD SUMMARY-----------------
     // name         : f3 (regfile_2__reg_c[31:16])
@@ -552,9 +568,9 @@ begin
     
     
     
-    /************************************** 
-     * Assign all fields to signal to Mux *
-     **************************************/
+    /********************************************** 
+     * Assign all fields to signal to Mux         *
+     **********************************************/
     // Assign all fields. Fields that are not readable are tied to 0.
     assign regfile_2__reg_c_data_mux_in[gv_a] = {regfile_2__reg_c__f3_q[gv_a], regfile_2__reg_c__f2_q[gv_a], regfile_2__reg_c__f1_q[gv_a]};
     
@@ -649,9 +665,9 @@ assign reg_e__f2_r = reg_e__f2_q;
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign reg_e_data_mux_in = {reg_e__f2_q, reg_e__f1_q};
 

@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 02 2021 23:27:21
+ *  - Time     : November 26 2021 16:32:57
  *  - Path     : /home/dpotter/srdl2sv/examples/interrupt_hierarchy
  *  - RDL file : ['interrupt_hierarchy.rdl']
  *  - Hostname : ArchXPS 
@@ -35,6 +35,7 @@
  *  - Use Real Tabs    : False
  *  - Tab Width        : 4
  *  - Enums Enabled    : True
+ *  - Address Errors   : True
  *  - Unpacked I/Os    : True
  *  - Register Bus Type: amba3ahblite
  *  - Address width    : 32
@@ -69,53 +70,68 @@
 module interrupt_hierarchy
     
 (
-    // Resets
+    // Reset signals declared for registers
     input  field_reset_n, 
     
-    // Inputs
-    input              clk                                ,
-    input              HRESETn                            ,
-    input  [31:0]      HADDR                              ,
-    input              HWRITE                             ,
-    input  [2:0]       HSIZE                              ,
-    input  [3:0]       HPROT                              ,
-    input  [1:0]       HTRANS                             ,
-    input  [32-1:0]    HWDATA                             ,
-    input              HSEL                               ,
-    input  [0:0]       block_a_int__crc_error_in          ,
-    input  [0:0]       block_a_int__len_error_in          ,
-    input  [0:0]       block_a_int__multi_bit_ecc_error_in,
-    input  [3:0]       block_a_int__active_ecc_master_in  ,
-    input  [0:0]       block_b_int__crc_error_in          ,
-    input  [0:0]       block_b_int__len_error_in          ,
-    input  [0:0]       block_b_int__multi_bit_ecc_error_in,
-    input  [3:0]       block_b_int__active_ecc_master_in  ,
-    input  [0:0]       block_c_int__crc_error_in          ,
-    input  [0:0]       block_c_int__len_error_in          ,
-    input  [0:0]       block_c_int__multi_bit_ecc_error_in,
-    input  [3:0]       block_c_int__active_ecc_master_in  ,
-    input  [0:0]       block_d_int__crc_error_in          ,
-    input  [0:0]       block_d_int__len_error_in          ,
-    input  [0:0]       block_d_int__multi_bit_ecc_error_in,
-    input  [3:0]       block_d_int__active_ecc_master_in  ,
+    // Ports for 'General Clock'
+    input               clk,
     
-    // Outputs
-    output          HREADYOUT       ,
-    output          HRESP           ,
-    output [32-1:0] HRDATA          ,
-    output          block_a_int_intr,
-    output          block_a_int_halt,
-    output          block_b_int_intr,
-    output          block_b_int_halt,
-    output          block_c_int_intr,
-    output          block_c_int_halt,
-    output          block_d_int_intr,
-    output          block_d_int_halt,
-    output          master_int_intr ,
-    output          master_halt_intr,
-    output          master_halt_halt,
-    output          global_int_intr ,
-    output          global_int_halt 
+    // Ports for 'AHB Protocol'
+    input               HRESETn  ,
+    input  [31:0]       HADDR    ,
+    input               HWRITE   ,
+    input  [2:0]        HSIZE    ,
+    input  [3:0]        HPROT    ,
+    input  [1:0]        HTRANS   ,
+    input  [32-1:0]     HWDATA   ,
+    input               HSEL     ,
+    output              HREADYOUT,
+    output              HRESP    ,
+    output [32-1:0]     HRDATA   ,
+    
+    // Ports for 'block_a_int'
+    output              block_a_int_intr                   ,
+    output              block_a_int_halt                   ,
+    input  [0:0]        block_a_int__crc_error_in          ,
+    input  [0:0]        block_a_int__len_error_in          ,
+    input  [0:0]        block_a_int__multi_bit_ecc_error_in,
+    input  [3:0]        block_a_int__active_ecc_master_in  ,
+    
+    // Ports for 'block_b_int'
+    output              block_b_int_intr                   ,
+    output              block_b_int_halt                   ,
+    input  [0:0]        block_b_int__crc_error_in          ,
+    input  [0:0]        block_b_int__len_error_in          ,
+    input  [0:0]        block_b_int__multi_bit_ecc_error_in,
+    input  [3:0]        block_b_int__active_ecc_master_in  ,
+    
+    // Ports for 'block_c_int'
+    output              block_c_int_intr                   ,
+    output              block_c_int_halt                   ,
+    input  [0:0]        block_c_int__crc_error_in          ,
+    input  [0:0]        block_c_int__len_error_in          ,
+    input  [0:0]        block_c_int__multi_bit_ecc_error_in,
+    input  [3:0]        block_c_int__active_ecc_master_in  ,
+    
+    // Ports for 'block_d_int'
+    output              block_d_int_intr                   ,
+    output              block_d_int_halt                   ,
+    input  [0:0]        block_d_int__crc_error_in          ,
+    input  [0:0]        block_d_int__len_error_in          ,
+    input  [0:0]        block_d_int__multi_bit_ecc_error_in,
+    input  [3:0]        block_d_int__active_ecc_master_in  ,
+    
+    // Ports for 'master_int'
+    output              master_int_intr,
+    
+    // Ports for 'master_halt'
+    output              master_halt_intr,
+    output              master_halt_halt,
+    
+    // Ports for 'global_int'
+    output              global_int_intr,
+    output              global_int_halt
+    
 );
 
 
@@ -163,19 +179,19 @@ srdl2sv_amba3ahblite_inst
 /*******************************************************************
 /*******************************************************************/
 
-logic        block_a_int_active                      ;
-logic        block_a_int_sw_wr                       ;
-logic [31:0] block_a_int_data_mux_in                 ;
-logic        block_a_int_rdy_mux_in                  ;
-logic        block_a_int_err_mux_in                  ;
-logic [0:0]  block_a_int__crc_error_q                ;
-logic [0:0]  block_a_int__crc_error_sticky_latch     ;
-logic [0:0]  block_a_int__len_error_q                ;
-logic [0:0]  block_a_int__len_error_sticky_latch     ;
-logic [0:0]  block_a_int__multi_bit_ecc_error_q      ;
+logic        block_a_int_active                           ;
+logic        block_a_int_sw_wr                            ;
+logic [31:0] block_a_int_data_mux_in                      ;
+logic        block_a_int_rdy_mux_in                       ;
+logic        block_a_int_err_mux_in                       ;
+logic [0:0]  block_a_int__crc_error_q                     ;
+logic [0:0]  block_a_int__crc_error_sticky_latch          ;
+logic [0:0]  block_a_int__len_error_q                     ;
+logic [0:0]  block_a_int__len_error_sticky_latch          ;
+logic [0:0]  block_a_int__multi_bit_ecc_error_q           ;
 logic [0:0]  block_a_int__multi_bit_ecc_error_sticky_latch;
-logic [3:0]  block_a_int__active_ecc_master_q        ;
-logic [3:0]  block_a_int__active_ecc_master_sticky_latch;
+logic [3:0]  block_a_int__active_ecc_master_q             ;
+logic [3:0]  block_a_int__active_ecc_master_sticky_latch  ;
 
 
 // Register-activation for 'block_a_int' 
@@ -346,9 +362,9 @@ assign block_a_int_intr = |(block_a_int__crc_error_q & block_a_int_en__crc_error
 assign block_a_int_halt = |(block_a_int__crc_error_q & ~block_a_halt_en__crc_error_q) || |(block_a_int__len_error_q & ~block_a_halt_en__len_error_q) || |(block_a_int__multi_bit_ecc_error_q & ~block_a_halt_en__multi_bit_ecc_error_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_a_int_data_mux_in = {{24{1'b0}}, block_a_int__active_ecc_master_q, {1{1'b0}}, block_a_int__multi_bit_ecc_error_q, block_a_int__len_error_q, block_a_int__crc_error_q};
 
@@ -461,9 +477,9 @@ end // of block_a_int_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_a_int_en_data_mux_in = {{29{1'b0}}, block_a_int_en__multi_bit_ecc_error_q, block_a_int_en__len_error_q, block_a_int_en__crc_error_q};
 
@@ -576,9 +592,9 @@ end // of block_a_halt_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_a_halt_en_data_mux_in = {{29{1'b0}}, block_a_halt_en__multi_bit_ecc_error_q, block_a_halt_en__len_error_q, block_a_halt_en__crc_error_q};
 
@@ -598,19 +614,19 @@ assign block_a_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])
 /*******************************************************************
 /*******************************************************************/
 
-logic        block_b_int_active                      ;
-logic        block_b_int_sw_wr                       ;
-logic [31:0] block_b_int_data_mux_in                 ;
-logic        block_b_int_rdy_mux_in                  ;
-logic        block_b_int_err_mux_in                  ;
-logic [0:0]  block_b_int__crc_error_q                ;
-logic [0:0]  block_b_int__crc_error_sticky_latch     ;
-logic [0:0]  block_b_int__len_error_q                ;
-logic [0:0]  block_b_int__len_error_sticky_latch     ;
-logic [0:0]  block_b_int__multi_bit_ecc_error_q      ;
+logic        block_b_int_active                           ;
+logic        block_b_int_sw_wr                            ;
+logic [31:0] block_b_int_data_mux_in                      ;
+logic        block_b_int_rdy_mux_in                       ;
+logic        block_b_int_err_mux_in                       ;
+logic [0:0]  block_b_int__crc_error_q                     ;
+logic [0:0]  block_b_int__crc_error_sticky_latch          ;
+logic [0:0]  block_b_int__len_error_q                     ;
+logic [0:0]  block_b_int__len_error_sticky_latch          ;
+logic [0:0]  block_b_int__multi_bit_ecc_error_q           ;
 logic [0:0]  block_b_int__multi_bit_ecc_error_sticky_latch;
-logic [3:0]  block_b_int__active_ecc_master_q        ;
-logic [3:0]  block_b_int__active_ecc_master_sticky_latch;
+logic [3:0]  block_b_int__active_ecc_master_q             ;
+logic [3:0]  block_b_int__active_ecc_master_sticky_latch  ;
 
 
 // Register-activation for 'block_b_int' 
@@ -781,9 +797,9 @@ assign block_b_int_intr = |(block_b_int__crc_error_q & block_b_int_en__crc_error
 assign block_b_int_halt = |(block_b_int__crc_error_q & ~block_b_halt_en__crc_error_q) || |(block_b_int__len_error_q & ~block_b_halt_en__len_error_q) || |(block_b_int__multi_bit_ecc_error_q & ~block_b_halt_en__multi_bit_ecc_error_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_b_int_data_mux_in = {{24{1'b0}}, block_b_int__active_ecc_master_q, {1{1'b0}}, block_b_int__multi_bit_ecc_error_q, block_b_int__len_error_q, block_b_int__crc_error_q};
 
@@ -896,9 +912,9 @@ end // of block_b_int_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_b_int_en_data_mux_in = {{29{1'b0}}, block_b_int_en__multi_bit_ecc_error_q, block_b_int_en__len_error_q, block_b_int_en__crc_error_q};
 
@@ -1011,9 +1027,9 @@ end // of block_b_halt_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_b_halt_en_data_mux_in = {{29{1'b0}}, block_b_halt_en__multi_bit_ecc_error_q, block_b_halt_en__len_error_q, block_b_halt_en__crc_error_q};
 
@@ -1033,19 +1049,19 @@ assign block_b_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])
 /*******************************************************************
 /*******************************************************************/
 
-logic        block_c_int_active                      ;
-logic        block_c_int_sw_wr                       ;
-logic [31:0] block_c_int_data_mux_in                 ;
-logic        block_c_int_rdy_mux_in                  ;
-logic        block_c_int_err_mux_in                  ;
-logic [0:0]  block_c_int__crc_error_q                ;
-logic [0:0]  block_c_int__crc_error_sticky_latch     ;
-logic [0:0]  block_c_int__len_error_q                ;
-logic [0:0]  block_c_int__len_error_sticky_latch     ;
-logic [0:0]  block_c_int__multi_bit_ecc_error_q      ;
+logic        block_c_int_active                           ;
+logic        block_c_int_sw_wr                            ;
+logic [31:0] block_c_int_data_mux_in                      ;
+logic        block_c_int_rdy_mux_in                       ;
+logic        block_c_int_err_mux_in                       ;
+logic [0:0]  block_c_int__crc_error_q                     ;
+logic [0:0]  block_c_int__crc_error_sticky_latch          ;
+logic [0:0]  block_c_int__len_error_q                     ;
+logic [0:0]  block_c_int__len_error_sticky_latch          ;
+logic [0:0]  block_c_int__multi_bit_ecc_error_q           ;
 logic [0:0]  block_c_int__multi_bit_ecc_error_sticky_latch;
-logic [3:0]  block_c_int__active_ecc_master_q        ;
-logic [3:0]  block_c_int__active_ecc_master_sticky_latch;
+logic [3:0]  block_c_int__active_ecc_master_q             ;
+logic [3:0]  block_c_int__active_ecc_master_sticky_latch  ;
 
 
 // Register-activation for 'block_c_int' 
@@ -1216,9 +1232,9 @@ assign block_c_int_intr = |(block_c_int__crc_error_q & block_c_int_en__crc_error
 assign block_c_int_halt = |(block_c_int__crc_error_q & ~block_c_halt_en__crc_error_q) || |(block_c_int__len_error_q & ~block_c_halt_en__len_error_q) || |(block_c_int__multi_bit_ecc_error_q & ~block_c_halt_en__multi_bit_ecc_error_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_c_int_data_mux_in = {{24{1'b0}}, block_c_int__active_ecc_master_q, {1{1'b0}}, block_c_int__multi_bit_ecc_error_q, block_c_int__len_error_q, block_c_int__crc_error_q};
 
@@ -1331,9 +1347,9 @@ end // of block_c_int_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_c_int_en_data_mux_in = {{29{1'b0}}, block_c_int_en__multi_bit_ecc_error_q, block_c_int_en__len_error_q, block_c_int_en__crc_error_q};
 
@@ -1446,9 +1462,9 @@ end // of block_c_halt_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_c_halt_en_data_mux_in = {{29{1'b0}}, block_c_halt_en__multi_bit_ecc_error_q, block_c_halt_en__len_error_q, block_c_halt_en__crc_error_q};
 
@@ -1468,19 +1484,19 @@ assign block_c_halt_en_err_mux_in = !((widget_if.r_vld && (widget_if.byte_en[0])
 /*******************************************************************
 /*******************************************************************/
 
-logic        block_d_int_active                      ;
-logic        block_d_int_sw_wr                       ;
-logic [31:0] block_d_int_data_mux_in                 ;
-logic        block_d_int_rdy_mux_in                  ;
-logic        block_d_int_err_mux_in                  ;
-logic [0:0]  block_d_int__crc_error_q                ;
-logic [0:0]  block_d_int__crc_error_sticky_latch     ;
-logic [0:0]  block_d_int__len_error_q                ;
-logic [0:0]  block_d_int__len_error_sticky_latch     ;
-logic [0:0]  block_d_int__multi_bit_ecc_error_q      ;
+logic        block_d_int_active                           ;
+logic        block_d_int_sw_wr                            ;
+logic [31:0] block_d_int_data_mux_in                      ;
+logic        block_d_int_rdy_mux_in                       ;
+logic        block_d_int_err_mux_in                       ;
+logic [0:0]  block_d_int__crc_error_q                     ;
+logic [0:0]  block_d_int__crc_error_sticky_latch          ;
+logic [0:0]  block_d_int__len_error_q                     ;
+logic [0:0]  block_d_int__len_error_sticky_latch          ;
+logic [0:0]  block_d_int__multi_bit_ecc_error_q           ;
 logic [0:0]  block_d_int__multi_bit_ecc_error_sticky_latch;
-logic [3:0]  block_d_int__active_ecc_master_q        ;
-logic [3:0]  block_d_int__active_ecc_master_sticky_latch;
+logic [3:0]  block_d_int__active_ecc_master_q             ;
+logic [3:0]  block_d_int__active_ecc_master_sticky_latch  ;
 
 
 // Register-activation for 'block_d_int' 
@@ -1651,9 +1667,9 @@ assign block_d_int_intr = |(block_d_int__crc_error_q & block_d_int_en__crc_error
 assign block_d_int_halt = |(block_d_int__crc_error_q & ~block_d_halt_en__crc_error_q) || |(block_d_int__len_error_q & ~block_d_halt_en__len_error_q) || |(block_d_int__multi_bit_ecc_error_q & ~block_d_halt_en__multi_bit_ecc_error_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_d_int_data_mux_in = {{24{1'b0}}, block_d_int__active_ecc_master_q, {1{1'b0}}, block_d_int__multi_bit_ecc_error_q, block_d_int__len_error_q, block_d_int__crc_error_q};
 
@@ -1766,9 +1782,9 @@ end // of block_d_int_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_d_int_en_data_mux_in = {{29{1'b0}}, block_d_int_en__multi_bit_ecc_error_q, block_d_int_en__len_error_q, block_d_int_en__crc_error_q};
 
@@ -1881,9 +1897,9 @@ end // of block_d_halt_en__multi_bit_ecc_error's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign block_d_halt_en_data_mux_in = {{29{1'b0}}, block_d_halt_en__multi_bit_ecc_error_q, block_d_halt_en__len_error_q, block_d_halt_en__crc_error_q};
 
@@ -2022,9 +2038,9 @@ end // of master_int__module_d_int's always_ff
 assign master_int_intr = |(master_int__module_a_int_q & master_int_en__module_a_int_en_q) || |(master_int__module_b_int_q & master_int_en__module_b_int_en_q) || |(master_int__module_c_int_q & master_int_en__module_c_int_en_q) || |(master_int__module_d_int_q & master_int_en__module_d_int_en_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign master_int_data_mux_in = {{28{1'b0}}, master_int__module_d_int_q, master_int__module_c_int_q, master_int__module_b_int_q, master_int__module_a_int_q};
 
@@ -2166,9 +2182,9 @@ assign master_halt_intr = |(master_halt__module_a_int_q) || |(master_halt__modul
 assign master_halt_halt = |(master_halt__module_a_int_q & ~master_halt_en__module_a_halt_en_q) || |(master_halt__module_b_int_q & ~master_halt_en__module_b_halt_en_q) || |(master_halt__module_c_int_q & ~master_halt_en__module_c_halt_en_q) || |(master_halt__module_d_int_q & ~master_halt_en__module_d_halt_en_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign master_halt_data_mux_in = {{28{1'b0}}, master_halt__module_d_int_q, master_halt__module_c_int_q, master_halt__module_b_int_q, master_halt__module_a_int_q};
 
@@ -2308,9 +2324,9 @@ end // of master_int_en__module_d_int_en's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign master_int_en_data_mux_in = {{28{1'b0}}, master_int_en__module_d_int_en_q, master_int_en__module_c_int_en_q, master_int_en__module_b_int_en_q, master_int_en__module_a_int_en_q};
 
@@ -2450,9 +2466,9 @@ end // of master_halt_en__module_d_halt_en's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign master_halt_en_data_mux_in = {{28{1'b0}}, master_halt_en__module_d_halt_en_q, master_halt_en__module_c_halt_en_q, master_halt_en__module_b_halt_en_q, master_halt_en__module_a_halt_en_q};
 
@@ -2542,9 +2558,9 @@ assign global_int_intr = |(global_int__global_int_q & global_int_en__global_int_
 assign global_int_halt = |(global_int__global_int_q) || |(global_int__global_halt_q & ~global_int_en__global_halt_en_q);
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign global_int_data_mux_in = {{30{1'b0}}, global_int__global_halt_q, global_int__global_int_q};
 
@@ -2630,9 +2646,9 @@ end // of global_int_en__global_halt_en's always_ff
 
 
 
-/************************************** 
- * Assign all fields to signal to Mux *
- **************************************/
+/********************************************** 
+ * Assign all fields to signal to Mux         *
+ **********************************************/
 // Assign all fields. Fields that are not readable are tied to 0.
 assign global_int_en_data_mux_in = {{30{1'b0}}, global_int_en__global_halt_en_q, global_int_en__global_int_en_q};
 
