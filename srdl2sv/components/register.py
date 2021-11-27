@@ -511,20 +511,18 @@ class Register(Component):
 
     def get_signal_instantiations_list(self):
         dict_list = list(self.get_signals().items())
-
-        signal_width = min(max([len(value[0]) for (_, value) in dict_list]), 40)
-
-        name_width = min(max([len(key) for (key, _) in dict_list]), 40)
+        signal_width = max(max([len(value.datatype) for (_, value) in dict_list]), 12)
+        name_width = max([len(key) for (key, _) in dict_list])
 
         return [Register.templ_dict['signal_declaration'].format(
                    name = key,
-                   type = value[0],
+                   type = value.datatype,
                    signal_width = signal_width,
                    name_width = name_width,
                    unpacked_dim = '[{}]'.format(
                        ']['.join(
-                           [str(y) for y in value[1]]))
-                       if value[1] else '')
+                           [str(y) for y in value.dim]))
+                       if value.dim else '')
                for (key, value) in dict_list]
 
     def add_alias(self, obj: node.RegNode):

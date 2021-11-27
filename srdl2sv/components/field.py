@@ -110,10 +110,11 @@ class Field(Component):
         else:
             path = self.path
 
-        path_wo_field = '__'.join(path.split('.', -1)[0:-1])
+        # This is different than self.path_underscored_wo_field
+        path_underscored_wo_field = '__'.join(path.split('.', -1)[0:-1])
 
         # path_wo_field_vec & path_undrescored_vec only used for external registers
-        self.path_wo_field_vec.append(path_wo_field)
+        self.path_wo_field_vec.append(path_underscored_wo_field)
         self.path_underscored_vec.append(alias_path_underscored if alias else self.path_underscored)
 
         # Define software access (if applicable)
@@ -121,7 +122,7 @@ class Field(Component):
 
         if self.properties['sw_wr']:
             # Append to list of registers that can write
-            self.writable_by.add(path_wo_field)
+            self.writable_by.add(path_underscored_wo_field)
 
             # This will need a wire to indicate that a write is taking place
             self.properties['sw_wr_wire'] = True
@@ -133,7 +134,7 @@ class Field(Component):
                 access_rtl['sw_write'][0].append(
                     self._process_yaml(
                         Field.templ_dict['sw_access_field_swwe'],
-                        {'path_wo_field': path_wo_field,
+                        {'path_wo_field': path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'swwe': self.get_signal_name(swwe),
                          'field_type': self.field_type}
@@ -143,7 +144,7 @@ class Field(Component):
                 access_rtl['sw_write'][0].append(
                     self._process_yaml(
                         Field.templ_dict['sw_access_field_swwel'],
-                        {'path_wo_field': path_wo_field,
+                        {'path_wo_field': path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'swwel': self.get_signal_name(swwel),
                          'field_type': self.field_type}
@@ -153,7 +154,7 @@ class Field(Component):
                 access_rtl['sw_write'][0].append(
                     self._process_yaml(
                         Field.templ_dict['sw_access_field'],
-                        {'path_wo_field': path_wo_field,
+                        {'path_wo_field': path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'field_type': self.field_type}
                     )
@@ -211,7 +212,7 @@ class Field(Component):
 
         if obj.get_property('sw') in (AccessType.rw, AccessType.r):
             # Append to list of registers that can read
-            self.readable_by.add(path_wo_field)
+            self.readable_by.add(path_underscored_wo_field)
 
             self.properties['sw_rd'] = True
 
@@ -224,7 +225,7 @@ class Field(Component):
                 access_rtl['sw_read'][0].append(
                     self._process_yaml(
                         Field.templ_dict['sw_read_access_field'],
-                        {'path_wo_field': path_wo_field,
+                        {'path_wo_field': path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'field_type': self.field_type}
                     )
@@ -711,7 +712,7 @@ class Field(Component):
                     self._process_yaml(
                         Field.templ_dict['swmod_assign'],
                         {'path': self.path_underscored,
-                         'path_wo_field': self.path_wo_field,
+                         'path_wo_field': self.path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'rd_wr': 'rd',
                          'msbyte': self.msbyte,
@@ -727,7 +728,7 @@ class Field(Component):
                     self._process_yaml(
                         Field.templ_dict['swmod_assign'],
                         {'path': self.path_underscored,
-                         'path_wo_field': self.path_wo_field,
+                         'path_wo_field': self.path_underscored_wo_field,
                          'genvars': self.genvars_str,
                          'rd_wr': 'wr',
                          'msbyte': self.msbyte,
@@ -762,7 +763,7 @@ class Field(Component):
             swacc_props = self._process_yaml(
                 Field.templ_dict['swacc_assign'],
                 {'path': self.path_underscored,
-                 'path_wo_field': self.path_wo_field,
+                 'path_wo_field': self.path_underscored_wo_field,
                  'genvars': self.genvars_str,
                  'msbyte': self.msbyte,
                  'lsbyte': self.lsbyte,
@@ -1349,7 +1350,7 @@ class Field(Component):
             self,
             obj: FieldNode):
         # Create full name
-        self.path_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
+        self.path_underscored_wo_field = '__'.join(self.path.split('.', -1)[0:-1])
         self.register_name = ''.join([self.path_underscored, '_q'])
 
         self.path_underscored_vec = []
@@ -1451,7 +1452,7 @@ class Field(Component):
                 external = self.config['external'],
                 lsb = self.obj.lsb,
                 msb = self.obj.msb,
-                path_wo_field = self.path_wo_field,
+                path_wo_field = self.path_underscored_wo_field,
                 storage_type = self.storage_type,
             )
 

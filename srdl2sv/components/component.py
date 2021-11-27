@@ -3,6 +3,7 @@ import math
 import sys
 from typing import NamedTuple, Optional
 from dataclasses import dataclass
+from enum import Enum
 
 from systemrdl import node
 
@@ -27,6 +28,15 @@ class SWMuxEntryDimensioned():
     mux_entry: SWMuxEntry
     dim: str
 
+class SignalType(NamedTuple):
+    datatype: str
+    dim: list
+
+class PortType(NamedTuple):
+    datatype: str
+    dim: list
+    direction: str # String "input" or "output"
+
 class Component():
     def __init__(
             self,
@@ -42,8 +52,6 @@ class Component():
         self.ports = {}
         self.resets = set()
         self.signals = {}
-        self.ports['input'] = {}
-        self.ports['output'] = {}
         self.field_type = ''
 
         # Save object
@@ -146,13 +154,19 @@ class Component():
 
         return self.resets
 
-    def get_ports(self, port_type: str):
+    def get_ports(self):
         self.logger.debug("Return port list")
 
         for child in self.children.values():
-            self.ports[port_type] |= child.get_ports(port_type)
+            for key, value in child.get_ports().items():
+                if key in self.ports:
+                    self.logger.debug("Group '%s' already present in port list")
+                    self.ports[key] |= value
+                else:
+                    self.logger.debug("Adding group '%s' to port list")
+                    self.ports |= {key: value}
 
-        return self.ports[port_type]
+        return self.ports
 
     def get_max_dim_depth(self) -> int:
         self.logger.debug("Return depth '%s' for dimensions (including parents) '%s'.",
@@ -285,8 +299,12 @@ class Component():
             name.append('_q')
         elif isinstance(obj, node.SignalNode):
             # Must add it to signal list
-            self.ports['input'][obj.inst_name] =\
-                ("logic" if obj.width == 1 else f"logic [{obj.width}:0]", [])
+            self.ports['Signals'][obj.inst_name] =\
+                PortType (
+                    datatype = "logic" if obj.width == 1 else f"logic [{obj.width}:0]",
+                    dim = [],
+                    direction = "input"
+                )
         else:
             name.append('_')
             name.append(obj.name)
@@ -325,8 +343,10 @@ class Component():
                     array_dimensions = self.total_array_dimensions
 
                 self.signals[signal['name'].format(**values)] =\
-                         (signal['signal_type'].format(**values),
-                         array_dimensions)
+                        SignalType (
+                            datatype = signal['signal_type'].format(**values),
+                            dim = array_dimensions,
+                        )
         except (TypeError, KeyError):
             pass
 
@@ -341,9 +361,29 @@ class Component():
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['input'][input_p['name'].format(**values)] =\
-                         (input_p['signal_type'].format(**values),
-                         array_dimensions)
+                try:
+                    group = input_p['group'].format(**values)
+                except KeyError:
+                    group = self.path_underscored_wo_field
+
+                name = input_p['name'].format(**values)
+
+                if group not in self.ports:
+                    self.ports[group] = {
+                        name:
+                        PortType (
+                            datatype = input_p['signal_type'].format(**values),
+                            dim = array_dimensions,
+                            direction = "input",
+                        )
+                    }
+                elif name not in self.ports[group]:
+                    self.ports[group][name] =\
+                        PortType (
+                            datatype = input_p['signal_type'].format(**values),
+                            dim = array_dimensions,
+                            direction = "input",
+                        )
         except (TypeError, KeyError):
             pass
 
@@ -358,9 +398,29 @@ class Component():
                 except KeyError:
                     array_dimensions = self.total_array_dimensions
 
-                self.ports['output'][output_p['name'].format(**values)] =\
-                         (output_p['signal_type'].format(**values),
-                         array_dimensions)
+                try:
+                    group = output_p['group'].format(**values)
+                except KeyError:
+                    group = self.path_underscored_wo_field
+
+                name = output_p['name'].format(**values)
+
+                if group not in self.ports:
+                    self.ports[group] = {
+                        name:
+                        PortType (
+                            datatype = output_p['signal_type'].format(**values),
+                            dim = array_dimensions,
+                            direction = "output",
+                        )
+                    }
+                elif name not in self.ports[group]:
+                    self.ports[group][name] =\
+                        PortType (
+                            datatype = output_p['signal_type'].format(**values),
+                            dim = array_dimensions,
+                            direction = "output",
+                        )
         except (TypeError, KeyError):
             pass
 
@@ -370,6 +430,9 @@ class Component():
     def create_underscored_path(self):
         self.owning_addrmap, self.full_path, self.path, self.path_underscored =\
             Component.create_underscored_path_static(self.obj)
+
+        # By default, this is identical to path_underscored. Fields will override this
+        self.path_underscored_wo_field = self.path_underscored
 
     @staticmethod
     def create_underscored_path_static(obj):

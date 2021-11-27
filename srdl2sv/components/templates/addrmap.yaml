@@ -75,14 +75,11 @@ module_declaration:
         <<UNINDENT>>
         (
         <<INDENT>>
-        // Resets
+        // Reset signals declared for registers
         {resets} 
 
-        // Inputs
-        {inputs}
+        {ports}
 
-        // Outputs
-        {outputs}
         <<UNINDENT>>
         );
 import_package:
@@ -91,12 +88,9 @@ import_package:
 reset_port: 
     rtl:
         input  {name},
-input_port:
-    rtl:
-        input  {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
-output_port:
-    rtl: 
-        output {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
+port:
+    rtl: |-
+      {direction:6} {signal_type:{signal_width}} {name:{name_width}}{unpacked_dim},
 signal_declaration: |-
     {type:{signal_width}} {name:{name_width}}{unpacked_dim};
 package_declaration:
