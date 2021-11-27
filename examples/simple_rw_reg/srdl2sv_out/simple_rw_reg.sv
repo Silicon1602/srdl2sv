@@ -20,7 +20,7 @@
  *
  * Generation information:
  *  - User:    : dpotter
- *  - Time     : November 26 2021 16:32:58
+ *  - Time     : November 26 2021 16:52:16
  *  - Path     : /home/dpotter/srdl2sv/examples/simple_rw_reg
  *  - RDL file : ['simple_rw_reg.rdl']
  *  - Hostname : ArchXPS 
@@ -71,7 +71,8 @@ module simple_rw_reg
     
 (
     // Reset signals declared for registers
-     
+    input               async_rst_n,
+    input               sync_rst_n, 
     
     // Ports for 'General Clock'
     input               clk,
@@ -277,13 +278,18 @@ begin
     // name         : f1 (register_2d[15:0])
     // access       : hw = rw  
     //                sw = rw (precedence)
-    // reset        : - / -
-    // flags        : ['sw', 'we']
+    // reset        : active_low / asynchronous
+    // flags        : ['sw', 'we', 'resetsignal']
     // external     : False
     // storage type : StorageType.FLOPS
     //-----------------------------------------------
     
-    always_ff @(posedge clk)
+    always_ff @(posedge clk or negedge async_rst_n)
+    if (!async_rst_n)
+    begin
+        register_2d__f1_q[gv_a] <= 16'd0;
+    end
+    else
     begin
         if (register_2d_sw_wr[gv_a])
         begin
@@ -306,13 +312,18 @@ begin
     // name         : f2 (register_2d[31:16])
     // access       : hw = rw  
     //                sw = rw (precedence)
-    // reset        : - / -
-    // flags        : ['sw', 'we']
+    // reset        : active_low / asynchronous
+    // flags        : ['sw', 'we', 'resetsignal']
     // external     : False
     // storage type : StorageType.FLOPS
     //-----------------------------------------------
     
-    always_ff @(posedge clk)
+    always_ff @(posedge clk or negedge async_rst_n)
+    if (!async_rst_n)
+    begin
+        register_2d__f2_q[gv_a] <= 16'dx;
+    end
+    else
     begin
         if (register_2d_sw_wr[gv_a])
         begin
@@ -380,13 +391,18 @@ begin
         // name         : f1 (register_3d[15:0])
         // access       : hw = rw  
         //                sw = rw (precedence)
-        // reset        : - / -
-        // flags        : ['sw', 'we']
+        // reset        : active_high / synchronous
+        // flags        : ['sw', 'we', 'resetsignal']
         // external     : False
         // storage type : StorageType.FLOPS
         //-----------------------------------------------
         
         always_ff @(posedge clk)
+        if (sync_rst_n)
+        begin
+            register_3d__f1_q[gv_a][gv_b] <= 16'd0;
+        end
+        else
         begin
             if (register_3d_sw_wr[gv_a][gv_b])
             begin
@@ -409,13 +425,18 @@ begin
         // name         : f2 (register_3d[31:16])
         // access       : hw = rw  
         //                sw = rw (precedence)
-        // reset        : - / -
-        // flags        : ['sw', 'we']
+        // reset        : active_high / synchronous
+        // flags        : ['sw', 'we', 'resetsignal']
         // external     : False
         // storage type : StorageType.FLOPS
         //-----------------------------------------------
         
         always_ff @(posedge clk)
+        if (sync_rst_n)
+        begin
+            register_3d__f2_q[gv_a][gv_b] <= 16'dx;
+        end
+        else
         begin
             if (register_3d_sw_wr[gv_a][gv_b])
             begin

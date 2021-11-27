@@ -2,26 +2,46 @@
 //      - A 1-dimensional register
 //      - A 2-dimensional register
 //      - A 3-dimensional register
-//
-// Note that no reset is defined, so none of the registers will be
-// resetable.
+
+// Not defined as field_reset!
+signal {activelow; async;} async_rst_n;
+signal {activehigh; sync;} sync_rst_n;
 
 addrmap simple_rw_reg {
     // 1-D register
     reg {
+        desc = "None of the fields in this register have a reset";
+
         field {sw=rw; hw=rw; we;} f1 [15:0];
         field {sw=rw; hw=rw; we;} f2 [31:16];
     } register_1d;
 
     // 2-D register
     reg {
+        desc = "Both fields are connected to a reset signal, but
+                only one field actually gets a reset value.";
+
         field {sw=rw; hw=rw; we;} f1 [15:0];
         field {sw=rw; hw=rw; we;} f2 [31:16];
+
+        f1->resetsignal = async_rst_n;
+        f2->resetsignal = async_rst_n;
+
+        f1->reset = 0;
     } register_2d[2];
 
     // 3-D register
     reg {
+        desc = "Similar to register_2d, but now the resets are
+                reset synchronously.";
+
         field {sw=rw; hw=rw; we;} f1 [15:0];
         field {sw=rw; hw=rw; we;} f2 [31:16];
+
+        f1->resetsignal = sync_rst_n;
+        f2->resetsignal = sync_rst_n;
+
+        f1->reset = 0;
+        // Show what happens if a field is not reset
     } register_3d[2][2];
 };
